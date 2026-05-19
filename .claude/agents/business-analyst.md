@@ -20,7 +20,6 @@ Main Claude passes:
 - `.claude/templates/feature.requirement.md` (the structural template).
 - `docs/architecture.md` if it exists — always check.
 - Other features' `docs/<feature>/<feature>.status.md` files — skim for in-flight context and possible conflicts.
-- `.claude/skills/dotnet-rules/` only when this feature touches code (skip for pure docs / config / process features).
 
 ## What you do
 

@@ -14,7 +14,7 @@ The main Claude passes you:
 - Path to the raw requirement (e.g., `docs/payments-export/payments-export.requirement.md`).
 - (Optional) any user-provided context.
 
-You read **only the raw requirement file**. You do not walk other features' status files, you do not read `docs/architecture.md`, and you do not skim the `dotnet-rules` skill - those are engineering muscle, not PO muscle. The downstream BA / Architect / SE will pick those up.
+You read **only the raw requirement file**. You do not walk other features' status files, you do not read `docs/architecture.md` - those are engineering muscle, not PO muscle. The downstream BA / Architect / SE will pick those up.
 
 ## What you do
 

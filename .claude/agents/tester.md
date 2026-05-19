@@ -20,7 +20,6 @@ Main Claude passes:
 - `docs/<feature>/<feature>.analyzed.md` — the Test Strategy row for the current step (4-column table per R7).
 - `docs/<feature>/<feature>.requirement.md` — acceptance criteria, esp. for end-of-feature pass.
 - `docs/architecture.md` if it exists.
-- `.claude/skills/dotnet-rules/dotnet-rules.md` when the feature touches code (skip for pure docs / config / process features).
 - Existing test projects under `tests/*` if present, to match naming/style conventions.
 
 ## /workflow:step-start — draft test cases before SE implements

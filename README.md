@@ -58,27 +58,24 @@ Full beginner-friendly walkthrough: [`docs/workflow-feature-pipeline.md`](docs/w
 
 ### 2. The Domain Wiki Pipeline — "Living map of your codebase"
 
-A second pair of agents builds and maintains a clean, human-readable wiki of
-your codebase under `docs/domain/`. Think of it as the table of contents,
-glossary, and "who-talks-to-whom" diagram for the code — written in plain
-business language ("Order", "Payment", "Customer") instead of technical jargon.
+A trio of agents builds and maintains a clean, human-readable map of your codebase. There are two trees: `docs/narrative/` (the friendly tour — one page about the repo as a whole, then one walkthrough per "area of the business") and `docs/domain/` (the canonical DDD schema — bounded contexts, aggregates, events, commands, repositories, services, glossary, context map). Read narrative first when you arrive at a new codebase; drill into the schema when you need precise structure.
+
+Think of the narrative as a friendly tour with diagrams and plain-words intros, and the schema as the table of contents, glossary, and "who-talks-to-whom" diagram for the code — both written in plain business language ("Order", "Payment", "Customer") instead of technical jargon.
 
 There are only two commands:
 
+- `/project:overview <path>` — used **once** when you first arrive at a repo, **before** `/project:explore`. The agent reads the code, suggests "areas of the business" (bounded contexts) just like `/project:explore` does, asks you to APPROVE the groupings, then writes a plain-language tour at `docs/narrative/` — one short `architecture.md` for the whole repo, one `walkthrough.md` per area with a diagram, a 3-paragraph intro, and a per-endpoint / per-worker drill-down. Optional but recommended for non-technical readers.
 - `/project:explore <path>` — used **once** when you first arrive at a repo.
   The agent reads the code, suggests groupings (called "bounded contexts" —
   basically "areas of the business this code is about"), asks you to APPROVE
-  the groupings, then writes the wiki.
+  the groupings, then writes the wiki. If you ran `/project:overview` first, it also reads that narrative as a hint to better order and describe the areas; without it, `/project:explore` works exactly as before.
 - `/project:enhance-wiki [path]` — run this whenever the code has changed.
   The agent figures out **what** changed, asks before adding any new area,
   preserves anything you wrote by hand (as long as it's wrapped in special
   marker comments), and only re-writes pages that actually differ. If
   nothing changed, it says so and exits cleanly.
 
-The wiki you get back has a predictable shape: one folder per business area,
-each with its aggregates (the main things — like an Order), events (things
-that happen — like "Order placed"), commands (things you can do), services,
-repositories, and a glossary of terms used in that area.
+The two trees have predictable shapes. `docs/narrative/` carries one `architecture.md` (overview, file structure, dependencies, endpoints, workers) plus one `<bc>/walkthrough.md` per area (Mermaid sequence diagram + 3-paragraph intro + per-endpoint / per-worker drill-down). `docs/domain/` carries one folder per business area, each with its aggregates (the main things — like an Order), events (things that happen — like "Order placed"), commands (things you can do), services, repositories, and a glossary of terms used in that area.
 
 Full beginner-friendly walkthrough: [`docs/workflow-domain-wiki.md`](docs/workflow-domain-wiki.md).
 
@@ -92,7 +89,7 @@ Full beginner-friendly walkthrough: [`docs/workflow-domain-wiki.md`](docs/workfl
 4. Open the project in Claude Code.
 5. Pick the workflow you want:
    - To plan and build a new feature: run `/feature:new my-feature-name`.
-   - To create a wiki of an existing codebase: run `/project:explore <path-to-that-codebase>`.
+   - To create a wiki of an existing codebase: run `/project:overview <path-to-that-codebase>` first (optional but recommended — gives you a plain-language tour at `docs/narrative/`), then `/project:explore <path-to-that-codebase>` to produce the canonical schema at `docs/domain/`.
 
 That's the whole setup. Everything else is the agents asking you questions
 and waiting for `APPROVE`.
@@ -110,6 +107,7 @@ and waiting for `APPROVE`.
 - `docs/<feature>/` — everything the feature pipeline produces, one folder
   per feature.
 - `docs/domain/` — the living wiki the domain pipeline produces and updates.
+- `docs/narrative/` — the plain-language tour the new narrative pipeline produces. Optional; only appears if you run `/project:overview`.
 
 ---
 
@@ -117,9 +115,7 @@ and waiting for `APPROVE`.
 
 1. **Nothing is done until you type `APPROVE`.** Every step has a gate.
    Until you approve, no checkbox flips and no next step starts.
-2. **Hand-written edits inside `docs/domain/` need fences.** If you
-   personally edit a generated wiki page, wrap your edits like this
-   so they survive the next update:
+2. **Hand-written edits inside `docs/domain/` and `docs/narrative/` need fences.** If you personally edit a generated wiki page (either tree), wrap your edits like this so they survive the next update:
 
    ```
    <!-- human:begin -->

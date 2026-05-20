@@ -94,6 +94,31 @@ Concrete observable code patterns per DDD category. See `./research.md#ddd-code-
 
 Heuristic for extracting candidate glossary terms from code. See `./research.md#ubiquitous-language-extraction-heuristic` for the named heuristic and step-by-step recipe.
 
+## Soft input: docs/narrative/
+
+### When narrative is read
+
+After the repo walk completes (operating procedure step 3) and before BC candidate surfacing begins (operating procedure step 5), the agent checks the working directory's `docs/narrative/` for two file kinds: `docs/narrative/architecture.md` and any `docs/narrative/<bc>/walkthrough.md` files. The check is filesystem-only — no git, no remote, no cloning. If neither path exists, the agent skips the entire `## Soft input: docs/narrative/` section and proceeds to BC candidate surfacing with no narrative input — this is the backward-compat no-op path.
+
+### Backward-compat invariant
+
+When `docs/narrative/` is absent or empty, the agent's behaviour is **byte-identical** to runs before this section was added. The output schema, frontmatter contract, write order, hallucination guard, and APPROVE gate contract all run unchanged. Specifically: a downstream repo that has never invoked `/project:overview` MUST produce the same `docs/domain/` tree (modulo `generated_at` timestamp and `last_generated_sha` when HEAD has moved) as it produced before this hook landed. Any divergence is a regression.
+
+### How narrative augments BC candidate surfacing
+
+- **(a) BC candidate ordering.** When `docs/narrative/architecture.md` contains a `## Logic overview` section listing BCs in narrative order, the agent uses that order as the **display order** for the BC candidate report in step 5. The underlying candidate list (which BCs surface) is unchanged — only the order in which they appear in the report changes.
+- **(b) Per-aggregate description seeds.** When `docs/narrative/<bc>/walkthrough.md` contains drill-down sections for a detected endpoint or handler, the agent may use the plain-language description from that drill-down as a seed for the BC's per-aggregate description in the candidate report's rationale line. The seed is a **suggestion only** — the agent must still cite `file:line` for the aggregate detection itself. Plain-language text without a `file:line` citation is never elevated to the canonical aggregate doc.
+- **(b-marker) Rationale-line narrative marker.** When narrative augmented a BC's surfacing (one or both of (a) ordering / (b) description seed applied for THIS candidate), the candidate report's `Rationale` line gains a third comma-separated entry of the literal form `narrative: docs/narrative/<bc>/walkthrough.md` (relative path, lowercase, trailing-slash on the bc folder name only). Existing entries (`folder: ...`, `namespace: ...`) remain byte-identical and appear before the narrative entry in source-of-truth order (folder, namespace, narrative). When the narrative did NOT augment this candidate (e.g., narrative absent, narrative malformed, or narrative present but no rule (a)/(b) applied to THIS bc), the `narrative:` entry is omitted entirely. This is the grep-able marker the Step D Tester smoke (path B of the Step D smoke checklist) verifies.
+- **(c) BC name preference (advisory).** When `docs/narrative/<bc>/` exists as a folder, the agent may prefer the folder name as the candidate BC's display name (over the namespace token) IF the namespace token and folder name disagree. The fallback to the namespace token still applies when no narrative folder exists. This rule is advisory — the underlying grouping rule (`### Grouping rule`) is not changed.
+
+### Hallucination guard (narrative variant)
+
+Soft input is *input*, not *source of truth*. Code remains the source of truth for every `file:line` citation, every aggregate detection, every event/command/repository/service row in the output schema. The agent MUST NOT invent a `file:line` citation, an aggregate, an event, or a BC because the narrative says so. The narrative shifts BC display order and seeds plain-language descriptions; it never adds rows to the output schema. If the narrative claims a BC the code walk does not detect, the agent logs the divergence in `context-map.md`'s `## Skipped candidates` H2 section as `<narrative-claimed-bc>: not detected by code walk (narrative said exists; no namespace / folder match)`. The narrative-claimed BC is NOT promoted to a `<bounded-context>/` folder.
+
+### Malformed narrative degraded path
+
+If `docs/narrative/architecture.md` or any `docs/narrative/<bc>/walkthrough.md` file exists but its YAML frontmatter does NOT parse (missing block, malformed YAML, or fewer than the four sibling-parity fields `source_repo` / `branch_name` / `generated_at` / `skill_version` present), the agent logs the literal line `narrative file at <absolute-path>: malformed (frontmatter does not parse); skipping soft-input augmentation` (substituting the actual absolute path of the offending file) and proceeds as if that file did not exist — the narrative-absent backward-compat no-op path. No stop condition fires. `last_generated_sha` is tolerate-missing per Step A Q2 and does NOT count toward the four required fields.
+
 ## Output schema
 
 The agent emits an Evans-canonical tree under `docs/domain/` of the working directory. The five subsections below define exactly which files are written, what content each file carries, how the small-repo fallback degrades, the write order, and the hallucination guard. Frontmatter contract for every emitted file is defined in `## Frontmatter contract`; every file under `docs/domain/` carries the four-field YAML block as its first content.

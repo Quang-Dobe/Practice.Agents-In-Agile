@@ -23,10 +23,11 @@ I reload `.claude/skills/project-explorer/SKILL.md` at the start of every run an
 1. **Idempotency guard.** See SKILL.md `## Idempotency guard`.
 2. **Skill load.** Reload `.claude/skills/project-explorer/SKILL.md` and treat it as the operating manual; stop if missing or malformed.
 3. **Repo walk.** See SKILL.md `## Code signals` (which in turn cites `research.md#ddd-code-signals`).
-4. **BC candidate surfacing.** See SKILL.md `## BC candidate surfacing`.
-5. **Human-in-the-loop APPROVE gate.** See SKILL.md `## BC candidate surfacing`.
-6. **Output generation.** See SKILL.md `## Output schema` (per-file content contract filled in by Step D).
-7. **Frontmatter recording.** See SKILL.md `## Frontmatter contract`.
+4. **Narrative soft-input read.** See `SKILL.md` `## Soft input: docs/narrative/`. When `docs/narrative/architecture.md` and/or `docs/narrative/<bc>/walkthrough.md` files exist in the working directory, read them as supplementary context for the BC candidate surfacing step that follows. When they are absent, this step is a no-op and the agent proceeds directly to BC candidate surfacing — behaviour is byte-identical to runs before this hook was added.
+5. **BC candidate surfacing.** See SKILL.md `## BC candidate surfacing`.
+6. **Human-in-the-loop APPROVE gate.** See SKILL.md `## BC candidate surfacing`.
+7. **Output generation.** See SKILL.md `## Output schema` (per-file content contract filled in by Step D).
+8. **Frontmatter recording.** See SKILL.md `## Frontmatter contract`.
 
 ## Stop conditions
 

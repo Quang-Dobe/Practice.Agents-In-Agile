@@ -116,6 +116,8 @@ Every file the agent emits under `docs/narrative/` carries `<!-- human:begin -->
 
 The narrative-side diff-aware updater is now active and preserves the fenced content byte-for-byte per `## Fenced human-edit zone splice (narrative)` below, which cite-by-references `.claude/skills/project-wiki-enhancer/SKILL.md` `### Fenced human-edit zone splice`. The fences are no longer inert.
 
+**Migration shift on the narrative side (identical contract to the domain side).** With the narrative per-BC pre-check (`## Per-BC SHA pre-check (narrative)` below) in place, regen never fires for a BC whose narrative source slice is unchanged — so an outside-fence human edit in a `walkthrough.md` or `architecture.md` now **survives until that BC's narrative source slice changes**, at which point regen fires and overwrites it exactly as before. Fences (`<!-- human:begin --> ... <!-- human:end -->`) remain the **only** way to make an edit durable **across a source change** on the narrative side too — an outside-fence edit gains a reprieve only while the BC's narrative slice is unchanged, not durability in general. This is the **identical contract** to the domain side; see `.claude/skills/project-wiki-enhancer/SKILL.md` `## Migration caveat` for the canonical statement, and `analyzed.md` D5 for the contract choice.
+
 ## Diff-aware update mode
 
 This section and every section below cite-by-reference contracts from `.claude/skills/project-wiki-enhancer/SKILL.md` and are loaded by the `project-wiki-enhancer` agent when the narrative pass runs. The bootstrap `project-overview` agent ignores everything under this heading; the bootstrap agent's contract is fully described in `## Operating procedure` above and finishes at `## Stop conditions`.
@@ -137,6 +139,22 @@ Diff strategy: full-walk fallback (reason: <missing-git | missing-sha | unreacha
 ## Path -> BC classifier (narrative)
 
 See `.claude/skills/project-wiki-enhancer/SKILL.md` `## Path -> BC classifier` (including `### Exclusion globs (verbatim)`, `### Namespace -> BC mapping`, `### Classification buckets`, and the per-bucket count-summary audit line). The narrative pass reuses the same three buckets (`BC-affecting` / `infra — no BC impact` / `new-namespace`) and the same eight exclusion globs without modification.
+
+## Per-BC SHA pre-check (narrative)
+
+See `.claude/skills/project-wiki-enhancer/SKILL.md` `## Per-BC SHA pre-check` for the full per-BC pre-check contract (per-BC source-path resolution via the reverse mapping, per-BC SHA gather, conservative any-missing/any-unreachable/unresolvable -> no-skip gates, oldest-wins `min(reachable)` base, empty->SKIP / non-empty->fall-through). The narrative pass uses the **identical algorithm** — same gates, same oldest-wins base; only the inputs differ, not the logic. It does **not** fork or restate the gate logic, the SHA-gather loop, the reachability test, or the diff command — the enhancer section owns those literals and the narrative pass borrows them by reference.
+
+**Narrative-side source slice.** The narrative pass resolves the **narrative** source slice for a BC — the endpoints / handlers / workers its `walkthrough.md` drills into — which is **distinct** from the domain slice (the aggregates / events / commands / repositories / services its schema rows cite). Same algorithm, different inputs. The narrative pass gathers per-file `last_generated_sha` from the BC's narrative output under `docs/narrative/<bc>/` (the narrative tree's **own** frontmatter), **not** from `docs/domain/<bc>/`. `architecture.md` is the repo-wide narrative roll-up and is **out of per-BC scope**, mirroring how `context-map.md` / `glossary.md` are roll-ups on the domain side (per D6). For which narrative files carry `last_generated_sha` and how the narrative pass samples them, see `## Hybrid diff strategy (narrative)` above (the sampled file is `architecture.md` or any `<bc>/walkthrough.md`) — that fact is not redefined here.
+
+**Per-pass independence (the D4 assertion).** The narrative pass and the domain pass each own their **own** pre-check decision — independent decisions, not coupled. In a **single run** the narrative pass MAY **SKIP** a BC while the domain pass **REGENERATES** the same BC, **or vice versa** (the domain pass SKIPs a BC the narrative pass regenerates). This divergence is **expected and correct, NOT a bug**, and MUST NOT be "fixed" by coupling the two decisions — coupling would force regen of a tree whose own slice is unchanged, re-introducing the exact waste this feature removes. The two trees carry **independent** `last_generated_sha` values and **independent** source slices, which is the structural reason the decisions diverge. See `analyzed.md` D4.
+
+**Reuse the skip line with `pass=narrative`.** The narrative SKIP reuses the **same** skip-line literal defined in `.claude/skills/project-wiki-enhancer/SKILL.md` `### Skip log line (verbose/debug only)` (cited by exact heading name); it does **not** redefine the parameterized literal. The narrative-side application emits the concrete instance:
+
+```
+SKIP bc=<name> pass=narrative (sha unchanged)
+```
+
+The **same** verbose/debug-only emission condition applies: the line is emitted only under verbose/debug mode, once per SKIPPED BC; a **normal** narrative-pass run stays **silent** for a skipped BC. The locked `No changes detected. 0 files written.` cross-pass exit is **unchanged** — per `## Idempotency exit (narrative)` it fires **once per run** across both passes, so the narrative SKIP introduces no new normal-run line.
 
 ## Fenced human-edit zone splice (narrative)
 

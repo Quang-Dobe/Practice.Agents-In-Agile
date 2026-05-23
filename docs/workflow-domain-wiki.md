@@ -216,7 +216,54 @@ In each pass, every changed file is placed into one of three buckets:
 The same three-bucket classification runs once per pass, against that
 pass's own tree.
 
-### 5. APPROVE gates — up to two per run
+### 5. Skip business areas that did not actually change (per pass)
+
+This is where the workflow stops re-doing work it doesn't need to do.
+
+When a business area's underlying code has **not** changed since its pages
+were last written, the agent now **skips that area entirely** — it does not
+even regenerate the pages in memory. (This is stronger than the byte-for-byte
+write check in the next steps: that check still rewrites the pages in memory
+and only suppresses the *write*; here, the work never starts.) In a repo with
+many areas where only one of them changed, the agent does the expensive work
+for that one area, not for all of them. Big repos with lots of areas get the
+biggest win.
+
+**How it decides, in plain words.** Every page is stamped with the code
+version it was built from (the metadata block from Step 1 sub-section 5). The
+agent compares that stamp against the current code for **just that area's slice**
+of the codebase. If nothing in that slice changed, it skips the area. To stay
+safe, if any page in an area is missing its stamp, or the stamp can no longer
+be found (for example after a force-push rewrote history), the agent does
+**not** skip — it falls back to fully refreshing that area. The rule of thumb
+is: better to over-work than to leave a page stale.
+
+**Each pass decides on its own.** The two passes (narrative and domain) make
+this skip decision **independently**. In a single run, the narrative side may
+skip an area while the domain side refreshes that same area — or the other way
+round. This is **expected and fine, not a bug**: each tree tracks its own code
+version and its own slice of the code, so they can legitimately disagree about
+whether a given area needs work.
+
+**What this changes for your hand-written notes.** Because an unchanged area is
+now skipped, a note you wrote **outside** the fence markers will **survive
+across runs for as long as that area's code does not change**. The next time
+that area's code *does* change and its pages are refreshed, that unfenced note
+is **overwritten — exactly as before**. The load-bearing rule from
+`## Things worth knowing` is unchanged: **fences are still the only way to make
+an edit durable across a code change.** Wrapping your edits in fences is the
+only thing that guarantees they survive a refresh; the skip just buys unfenced
+notes a reprieve while the area sits still. (See `## Things worth knowing` for
+the canonical fence rule — it is not restated here.)
+
+**No new output on a normal run.** This skip does not add anything to what a
+normal run prints. A zero-write run still prints exactly the locked
+`No changes detected. 0 files written.` line and nothing else (see
+sub-section 10). The per-area skip signal is a verbose/debug-only diagnostic
+for troubleshooting — it is not part of normal output, so you will not see a
+new "skipped area X" line on an ordinary run.
+
+### 6. APPROVE gates — up to two per run
 
 Each pass has its **own auto-skipping APPROVE gate**. If — and only if —
 that pass's third bucket has any files, the agent prints the candidate new
@@ -226,7 +273,7 @@ folders. The check is strict and exact-case, just like the bootstrap.
 If no new areas are needed in a pass, that pass's gate is skipped silently.
 Both buckets empty → zero prompts.
 
-### 6. `--bypass-approval` for low-friction runs
+### 7. `--bypass-approval` for low-friction runs
 
 For unattended scenarios (CI, post-merge hooks, batch refresh), you can
 opt into `--bypass-approval`:
@@ -248,7 +295,7 @@ verbatim in the skill file; the walkthrough does not restate it. The
 operator's remediation is to re-invoke `/project:enhance-wiki` *without*
 the flag, which gives you the normal interactive APPROVE gate.
 
-### 7. Note any disappeared areas (per pass, log-only)
+### 8. Note any disappeared areas (per pass, log-only)
 
 If a business area used to exist but the underlying code has been removed
 or renamed away, neither pass **deletes** the existing folder. Your notes
@@ -262,7 +309,7 @@ its own context file:
 
 You decide later whether to clean either side up by hand.
 
-### 8. Regenerate, then preserve your hand-written notes (per pass)
+### 9. Regenerate, then preserve your hand-written notes (per pass)
 
 Each pass regenerates its affected pages in memory. Before writing, the
 agent looks at the existing file on disk for any "fenced human-edit zone" —
@@ -281,7 +328,7 @@ is the rule. The fence convention is now active in **both trees**: it has
 always been load-bearing in `docs/domain/`, and as of this command it is
 load-bearing in `docs/narrative/` too.
 
-### 9. Write only what actually changed (per pass + cross-pass exit)
+### 10. Write only what actually changed (per pass + cross-pass exit)
 
 This is the nice part. In each pass, the agent compares the freshly
 generated content (with your fenced edits spliced back in) against what is
@@ -304,7 +351,7 @@ Otherwise, it prints a small summary: how many pages were written across
 both passes, how many new areas were created, how many disappeared areas
 were logged, and which strategy (fast vs safe) each pass used.
 
-### 10. Reserved doctor coupling
+### 11. Reserved doctor coupling
 
 **Reserved coupling — /project:doctor.** Once `/project:doctor` (the
 cross-tree invariant checker) ships, `/project:enhance-wiki` will invoke it

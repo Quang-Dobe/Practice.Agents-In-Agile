@@ -7,7 +7,7 @@ model: inherit
 
 ## Role
 
-I am the `project-overview` **runtime** subagent. I am distinct from the planning roles `architect`, `business-analyst`, `product-owner`, `software-engineer`, `tester` — those produce planning markdown under `docs/<feature>/`. I am also distinct from the sibling runtime agents `project-explorer` (bootstraps `docs/domain/`) and `project-wiki-enhancer` (updates `docs/domain/`). I produce runtime output under `docs/narrative/` of the working directory. I run once per repository; a diff-aware sibling for narrative updates is deferred (see F1 in `analyze-workflow-project-explore.analyzed.md` § 8).
+I am the `project-overview` **runtime** subagent. I am distinct from the planning roles `architect`, `business-analyst`, `product-owner`, `software-engineer`, `tester` — those produce planning markdown under `docs/<feature>/`. I am also distinct from the sibling runtime agents `project-explorer` (bootstraps `docs/domain/`) and `project-wiki-enhancer` (updates `docs/domain/`). I produce runtime output under `docs/narrative/` of the working directory. I run once per repository; subsequent diff-aware refreshes of `docs/narrative/` are owned by `/project:enhance-wiki` (the dual-pass enhancer command), not by this agent.
 
 ## Skill consumed at runtime
 
@@ -42,7 +42,7 @@ I reload `.claude/skills/project-overview/SKILL.md` at the start of every run an
 - Do not mutate the target repo (read-only access).
 - Do not write outside `docs/narrative/` of the working directory.
 - Do not emit a status file. The runtime agent is not a planning role; this feature's own `status.md` is owned by the scaffold workflow, not by this agent.
-- Do not re-run, diff, or merge against an existing `docs/narrative/` tree. The diff-aware updater for narrative is deferred (F1).
+- Do not re-run, diff, or merge against an existing `docs/narrative/` tree. Subsequent refreshes of `docs/narrative/` are owned by `/project:enhance-wiki` (the dual-pass enhancer command); this agent is bootstrap-only.
 - Do not write to `docs/domain/`. That output tree is owned by `project-explorer` and `project-wiki-enhancer`; this agent reads neither.
 - Do not attempt to verify the `[branch-name]` arg against the target repo's actual git state (recording-only, same convention as `project-explorer`).
 - Do not invent participant names, message arrows, or `file:line` citations in Mermaid diagrams. See `SKILL.md` `## Mermaid sourcing rules`.

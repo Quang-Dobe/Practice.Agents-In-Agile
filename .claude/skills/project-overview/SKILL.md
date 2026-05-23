@@ -7,7 +7,7 @@ consumed_by: project-overview agent
 
 ## Purpose
 
-This skill is the operating manual the `project-overview` runtime agent reloads at the start of every run. It is the auditable source for narrative-tree generation under `docs/narrative/` — BC detection cited by reference to `project-explorer`, narrative file content contracts (`architecture.md` + `walkthrough.md`), Mermaid sourcing rules, frontmatter contract, human-edit fence convention, APPROVE gate, idempotency guard. The agent treats this file as authoritative for the run; the co-located `research.md` carries the long-form citations and per-category enumerations that this file cites by reference.
+This skill is the operating manual the `project-overview` runtime agent reloads at the start of every run. It is the auditable source for narrative-tree generation under `docs/narrative/` — BC detection cited by reference to `project-explorer`, narrative file content contracts (`architecture.md` + `walkthrough.md`), Mermaid sourcing rules, frontmatter contract, human-edit fence convention, APPROVE gate, idempotency guard. The agent treats this file as authoritative for the run; the co-located `research.md` carries the long-form citations and per-category enumerations that this file cites by reference. This file is also reloaded by `.claude/agents/project-wiki-enhancer.md` when it runs the narrative pass of `/project:enhance-wiki` (see `## Diff-aware update mode` below); the bootstrap `project-overview` agent uses sections above `## Diff-aware update mode`, the enhancer agent uses sections at or below it.
 
 ## Inputs
 
@@ -70,11 +70,11 @@ docs/
 
 ### Per-file content contract
 
-All `file:line` citations in the output tree use paths relative to the `<path>` root the agent was invoked against. Empty sections are rendered as `(none)` rather than omitted, preserving the locked file shape for the deferred narrative diff updater (F1).
+All `file:line` citations in the output tree use paths relative to the `<path>` root the agent was invoked against. Empty sections are rendered as `(none)` rather than omitted, preserving the locked file shape consumed by the narrative diff-aware updater documented in `## Diff-aware update mode` below.
 
 | File | Required content |
 |---|---|
-| `architecture.md` | One-pager narrative overview. Section list in order: `## Overview` (3-paragraph plain-words intro to the repo and its business purpose), `## File structure` (annotated tree of the top-level repo layout — directories + one-line descriptions), `## Dependencies` (bulleted list of top-level external dependencies — frameworks, runtimes, datastores — derived from `*.csproj` / `package.json` / `pom.xml` / equivalent), `## Exposed endpoints` (table of detected HTTP / gRPC / message-queue entry points with `file:line` citation column), `## Workers` (table of detected background workers / hosted services / scheduled jobs with `file:line` citation column), `## Logic overview` (one paragraph per detected BC summarising its responsibility in plain words). `(none)` for empty sections. All `file:line` citations relative to `<path>`. |
+| `architecture.md` | One-pager narrative overview. Section list in order: `## Overview` (3-paragraph plain-words intro to the repo and its business purpose), `## File structure` (annotated tree of the top-level repo layout — directories + one-line descriptions), `## Dependencies` (bulleted list of top-level external dependencies — frameworks, runtimes, datastores — derived from `*.csproj` / `package.json` / `pom.xml` / equivalent), `## Exposed endpoints` (table of detected HTTP / gRPC / message-queue entry points with `file:line` citation column), `## Workers` (table of detected background workers / hosted services / scheduled jobs with `file:line` citation column), `## Logic overview` (one paragraph per detected BC summarising its responsibility in plain words), `## Skipped candidates` (removed-BC log target per `## Removed-BC logging (narrative)` below; body renders as `(none)` when bootstrap detected no skips). `(none)` for empty sections. All `file:line` citations relative to `<path>`. |
 | `<bounded-context>/walkthrough.md` | Per-BC narrative walkthrough. Section list in order: `## Sequence diagram` (exactly one Mermaid sequence diagram of the BC's main flow — see `## Mermaid sourcing rules` for derived-vs-stub policy), `## Intro` (3-paragraph plain-words intro to what this BC does, who its actors are, and what its key invariants are), one `## Drill-down: <name>` section per detected endpoint / handler / worker inside the BC (each contains a 1-2 paragraph technical explanation with `file:line` citations as inline-code spans). `(none)` for empty sections. Single file per BC — no fan-out. |
 
 ### Stubs summary contract
@@ -114,7 +114,58 @@ Every file the agent emits under `docs/narrative/` carries `<!-- human:begin -->
 - In `walkthrough.md`: one fence pair immediately after each `## Intro` H2 heading. The fenced zone is the space where a human reader records additional plain-language context, corrections, or domain-expert commentary that should survive future regenerations.
 - In `architecture.md`: one fence pair immediately after the `## Overview` H2 heading. The fenced zone is the space where a human reader records repo-level commentary (e.g., business context, historical decisions) that should survive future regenerations.
 
-Any future diff-aware narrative updater (deferred F1) preserves the fenced content byte-for-byte per `.claude/skills/project-wiki-enhancer/SKILL.md` `### Fenced human-edit zone splice`'s rule. v1 narrative is one-shot bootstrap and therefore the fences are inert until F1 lands — they are emitted as scaffolding so the first human reviewer can drop edits inside them immediately.
+The narrative-side diff-aware updater is now active and preserves the fenced content byte-for-byte per `## Fenced human-edit zone splice (narrative)` below, which cite-by-references `.claude/skills/project-wiki-enhancer/SKILL.md` `### Fenced human-edit zone splice`. The fences are no longer inert.
+
+## Diff-aware update mode
+
+This section and every section below cite-by-reference contracts from `.claude/skills/project-wiki-enhancer/SKILL.md` and are loaded by the `project-wiki-enhancer` agent when the narrative pass runs. The bootstrap `project-overview` agent ignores everything under this heading; the bootstrap agent's contract is fully described in `## Operating procedure` above and finishes at `## Stop conditions`.
+
+## Hybrid diff strategy (narrative)
+
+See `.claude/skills/project-wiki-enhancer/SKILL.md` `## Hybrid diff strategy` for the full contract (git fast path / full-walk fallback / reason-token short-circuit / first-failure-wins ordering / `last_generated_sha` tolerate-missing). The narrative pass samples ONE file under `docs/narrative/` for `last_generated_sha`; the sampled file is `architecture.md` or any `<bc>/walkthrough.md` (NOT `<bc>/glossary.md`, which exists only under `docs/domain/`).
+
+The narrative pass surfaces the same `Diff strategy:` audit lines verbatim as the enhancer prints them for the domain pass — one line per run depending on which path fires:
+
+```
+Diff strategy: git fast path (<last_generated_sha>..HEAD)
+```
+
+```
+Diff strategy: full-walk fallback (reason: <missing-git | missing-sha | unreachable-sha>)
+```
+
+## Path -> BC classifier (narrative)
+
+See `.claude/skills/project-wiki-enhancer/SKILL.md` `## Path -> BC classifier` (including `### Exclusion globs (verbatim)`, `### Namespace -> BC mapping`, `### Classification buckets`, and the per-bucket count-summary audit line). The narrative pass reuses the same three buckets (`BC-affecting` / `infra — no BC impact` / `new-namespace`) and the same eight exclusion globs without modification.
+
+## Fenced human-edit zone splice (narrative)
+
+See `.claude/skills/project-wiki-enhancer/SKILL.md` `### Fenced human-edit zone splice` for the per-file algorithm, never-touch invariant, and anchor-drift limitation. The narrative pass uses the identical algorithm. Per D8, the narrative fences have two canonical placements per `## Human-edit fences` above (one fence pair after each `## Intro` H2 in `walkthrough.md`; one fence pair after the `## Overview` H2 in `architecture.md`); both placements survive the splice unchanged because the algorithm is anchor-position based, not section-name based.
+
+## Removed-BC logging (narrative)
+
+The narrative-side equivalent of `.claude/skills/project-wiki-enhancer/SKILL.md` `## Removed-BC logging`. For each existing `<bc>/` folder under `docs/narrative/` whose namespace is no longer present in source, the enhancer appends one bullet to the log target described below. **Never delete** the `<bc>/walkthrough.md` file. **Never delete** the `<bc>/` folder. **Never touch** any file inside a removed-BC folder beyond the single `architecture.md` append.
+
+- **Log target.** The append target is the `## Skipped candidates` H2 section in `docs/narrative/architecture.md`. The bootstrap writer (operating procedure step 6) MUST also emit this `## Skipped candidates` section as part of the per-file content contract for `architecture.md`, rendering the body as `(none)` when bootstrap detected no skips — same convention as the domain side's `context-map.md`.
+- **Bullet format.** Identical to the domain side. The bullet template is exactly `- <bc-name>: namespace no longer present` (single locked reason token per `.claude/skills/project-wiki-enhancer/SKILL.md` `### Reason token (locked)`).
+- **Folder-name vs namespace-token disambiguation.** The `<bc-name>` is the on-disk folder name under `docs/narrative/<bc>/`, NOT the source namespace token. Case preserved verbatim from the filesystem. The folder name is the user-visible identifier the human reader recognises from their `docs/narrative/` tree; the source namespace token may already have disappeared by the time this code runs.
+- **Idempotency of the log.** Before appending, the enhancer reads the body of the `## Skipped candidates` section and checks for an existing matching line. The duplicate check is **exact-line match** (the full literal line including the leading `- ` bullet prefix), **case-sensitive**, scoped between the `## Skipped candidates` H2 and the next H2 (or EOF). Verbatim per `.claude/skills/project-wiki-enhancer/SKILL.md` `### Idempotency of the log`. Note: in `docs/narrative/architecture.md`, `## Skipped candidates` IS the final H2 (it is inserted after `## Logic overview` per `### Per-file content contract` above), so the EOF clause of the scope rule is the one that fires for this file in practice.
+- **`(none)` placeholder handling.** If the body of `## Skipped candidates` is the literal single line `(none)` (the bootstrap placeholder when no skips were detected), the enhancer replaces that line **in place** with the first bullet on first append. Identical replacement-in-place rule per `.claude/skills/project-wiki-enhancer/SKILL.md` `` ### `(none)` placeholder handling ``.
+- **Strict no-delete contract.** Never delete `<bc>/walkthrough.md`. Never delete the `<bc>/` folder. Never rewrite any file inside a removed-BC folder beyond the single `architecture.md` append. The folder is frozen until the human author decides to remove it manually.
+- **Tolerate-missing on first run.** If `## Skipped candidates` is absent from a pre-feature `docs/narrative/architecture.md` (bootstrapped before this feature shipped), the updater emits the section with the first bullet (or with `(none)` if no removed BCs were detected this run). Cross-reference accepted risk row 4 in `analyzed.md` Section 9.
+
+## Byte-compare + selective write + frontmatter refresh (narrative)
+
+See `.claude/skills/project-wiki-enhancer/SKILL.md` `### Byte-compare` (UTF-8 byte-exact comparison; no normalization; skip-write decision) and `### Selective write + frontmatter refresh` (4-numbered-step refresh order; preserved `source_repo`; refreshed `branch_name`; refreshed `generated_at`; refreshed `skill_version`; `last_generated_sha` per the per-file git-path rule). The narrative pass writes only files whose post-fence-splice bytes differ from the on-disk bytes, exactly as the domain pass does. Frontmatter refresh stamps `skill_version` from this `project-overview/SKILL.md`'s `version` field (NOT the enhancer's), because output-schema versioning belongs to the schema owner — same rule the enhancer applies for the domain pass against the `project-explorer` skill version.
+
+## Idempotency exit (narrative)
+
+See `.claude/skills/project-wiki-enhancer/SKILL.md` `## Idempotency exit` for the zero-write exit message literal (`No changes detected. 0 files written.`), the non-zero-write summary format, and the no-partial-exit rule. **Cross-pass aggregation rule (load-bearing):** the canonical zero-write exit message is emitted **once per run**, NOT once per pass. It fires only when both passes (narrative + domain) together wrote zero files. On any non-zero-write run, the summary line aggregates counts across both passes — every write the narrative pass made plus every write the domain pass made contributes to the single run-summary line.
+
+## Known coupling
+
+- **Doctor-coupling marker (D6).** Once `/project:doctor` ships, `/project:enhance-wiki` will invoke `/project:doctor` as a default last step on mismatch / conflict / out-of-date signals. No code, no detection logic in v1 — this bullet records the contract so the future doctor implementer knows the enhancer is meant to be its caller.
+- **Soft-input cite-back (D7).** `.claude/skills/project-explorer/SKILL.md` already documents the soft-input read of `docs/narrative/<bc>/walkthrough.md`. That soft-input contract is now fully active (it was inert when narrative was bootstrap-only and the diff path didn't exist; with the narrative diff-aware updater in this skill, the soft input is always available across runs).
 
 ## Mermaid sourcing rules
 

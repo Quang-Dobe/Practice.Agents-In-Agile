@@ -36,20 +36,30 @@ Three runtime agents own everything under `docs/domain/` and `docs/narrative/`. 
    candidates for human APPROVE, then writes the full Evans-canonical tree under
    `docs/domain/` of the working directory. Refuses if `docs/domain/` already has
    content (it is not a re-runner). Reads `docs/narrative/architecture.md` and `docs/narrative/<bc>/walkthrough.md` as **soft input** when present, augmenting BC candidate ordering and per-aggregate description seeds; behaviour is byte-identical to today when `docs/narrative/` is absent.
-2. `/project:overview <path> [branch]` — one-shot narrative bootstrap. Spawns the `project-overview` agent which walks the target repo, surfaces bounded-context candidates for human APPROVE, then writes `docs/narrative/architecture.md` (one-page repo overview) plus `docs/narrative/<bc>/walkthrough.md` per detected BC (Mermaid sequence diagram + 3-paragraph intro + per-endpoint / handler / worker drill-down) under `docs/narrative/` of the working directory. Refuses if `docs/narrative/` already has content (one-shot only; the diff-aware narrative updater is deferred — see `docs/analyze-workflow-project-explore/analyze-workflow-project-explore.analyzed.md` § 8 F1).
-3. `/project:enhance-wiki [path]` — diff-aware update. Spawns the
-   `project-wiki-enhancer` agent which reloads both its own skill and the
-   `project-explorer` skill, picks a git fast-path or full-walk fallback, classifies
-   changed files (`BC-affecting` / `infra — no BC impact` / `new-namespace`),
-   gates any new BC on APPROVE, preserves `<!-- human:begin -->`/`<!-- human:end -->`
-   fenced edits byte-for-byte, and writes only files whose bytes actually changed.
-   Refuses if `docs/domain/` is missing or empty (points the user back at
-   `/project:explore`).
+2. `/project:overview <path> [branch]` — one-shot narrative bootstrap. Spawns the `project-overview` agent which walks the target repo, surfaces bounded-context candidates for human APPROVE, then writes `docs/narrative/architecture.md` (one-page repo overview) plus `docs/narrative/<bc>/walkthrough.md` per detected BC (Mermaid sequence diagram + 3-paragraph intro + per-endpoint / handler / worker drill-down) under `docs/narrative/` of the working directory. Refuses if `docs/narrative/` already has content (it is not a re-runner; subsequent narrative refreshes are owned by `/project:enhance-wiki`).
+3. `/project:enhance-wiki [path] [--bypass-approval]` — **dual-pass**
+   diff-aware update. Spawns the `project-wiki-enhancer` agent which reloads
+   its own skill, then the `project-overview` skill, then the
+   `project-explorer` skill (three skills, locked order), picks a per-pass
+   git fast-path or full-walk fallback, refreshes `docs/narrative/` first
+   then `docs/domain/`, classifies changed files
+   (`BC-affecting` / `infra — no BC impact` / `new-namespace`), gates any
+   new BC on APPROVE (per pass, auto-skipping when empty), preserves
+   `<!-- human:begin -->`/`<!-- human:end -->` fenced edits byte-for-byte
+   in **both** trees, and writes only files whose bytes actually changed.
+   `--bypass-approval` is an opt-in flag that auto-approves non-critical
+   changes for low-friction / CI runs and exits 1 with a locked diagnostic
+   when any of the four critical categories fires (new BC, BC renamed, BC
+   removed, write inside a fenced block). Refuses at the command layer
+   when **both** `docs/narrative/` and `docs/domain/` are missing; prints
+   a one-line symmetric advisory when exactly one is missing and proceeds
+   with the present-tree pass. F1 (the deferred narrative diff-aware
+   updater) is shipped as part of this command.
 
 Both commands accept a local filesystem path only — remote URLs are refused in v1.
 Neither command writes outside its own output tree (`/project:overview` writes only `docs/narrative/`; `/project:explore` and `/project:enhance-wiki` write only `docs/domain/`).
 
-**Migration story (no-op for existing trees).** Nothing existing moves. The canonical schema continues to live at `docs/domain/` exactly as before; no rename, no folder shift, no path change to any frontmatter field. The only visible difference for a downstream repo is the *appearance* of a new tree at `docs/narrative/` *if and only if* the user opts in by invoking `/project:overview`. Repos that never invoke the new command are byte-identical before and after this change.
+**Migration story (no-op for existing trees).** Nothing existing moves. The canonical schema continues to live at `docs/domain/` exactly as before; no rename, no folder shift, no path change to any frontmatter field. The only visible difference for a downstream repo is the *appearance* of a new tree at `docs/narrative/` *if and only if* the user opts in by invoking `/project:overview`. Repos that never invoke the new command are byte-identical before and after this change. The fences inside `docs/narrative/` are now load-bearing on the diff path (no longer inert).
 
 ## Layout
 
@@ -60,7 +70,7 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 - `.claude/hooks/` — `post-cs-edit.py` (PostToolUse for `Edit|Write|MultiEdit`), `session-start-banner.py`
 - `docs/<FEATURE>/` — feature pipeline artifacts: `<FEATURE>.requirement.md`, `.overview-plan.md`, `.plan.md`, `.analyzed.md`, `.status.md`. Raw requirements also start here.
 - `docs/domain/` — domain wiki output owned by the project-explorer / project-wiki-enhancer agents. Bootstrapped once, then diff-updated on every subsequent run.
-- `docs/narrative/` — human-readable narrative tree owned by the `project-overview` agent. One file per bounded context (`<bc>/walkthrough.md`) plus a top-level `architecture.md`. Bootstrapped once; diff-aware updater deferred.
+- `docs/narrative/` — human-readable narrative tree owned by the `project-overview` agent at bootstrap and by `/project:enhance-wiki` on every subsequent code change. One file per bounded context (`<bc>/walkthrough.md`) plus a top-level `architecture.md`.
 - `.claude/agents/project-overview.md` — runtime agent definition for the narrative bootstrap. Mirrors the `project-explorer` / `project-wiki-enhancer` sibling pattern.
 
 ## Conventions
@@ -68,12 +78,12 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 - Skill folder names mirror their owning agent where applicable (e.g. `dotnet-rules` skill ↔ `dotnet-rules-checker` agent; `project-explorer` skill ↔ `project-explorer` agent; `project-wiki-enhancer` skill ↔ `project-wiki-enhancer` agent; `project-overview` skill ↔ `project-overview` agent).
 - `/dotnet:rule-check` and the `test-runner` agent are tooling for **downstream C# projects** that consume this scaffold — they do not run against this repo.
 - The three domain-wiki agents (`project-explorer`, `project-wiki-enhancer`, `project-overview`) are tooling for downstream repos; they are runtime, never planning, and never emit a `status.md`.
-- Human edits to generated `docs/domain/` and `docs/narrative/` files must live inside `<!-- human:begin --> ... <!-- human:end -->` fences to survive any future regeneration. `docs/domain/` fences survive `/project:enhance-wiki`; `docs/narrative/` fences are reserved for the deferred narrative updater (F1) — v1 narrative is one-shot only, so the fences are inert today but recorded for forward compatibility.
+- Human edits to generated `docs/domain/` and `docs/narrative/` files must live inside `<!-- human:begin --> ... <!-- human:end -->` fences to survive any future regeneration. Fences are load-bearing in BOTH trees: `docs/domain/` fences survive `/project:enhance-wiki`'s domain pass, and `docs/narrative/` fences survive its narrative pass byte-for-byte.
 
 ## When to use which workflow
 
 - New product feature, need to plan & build it → **Feature pipeline** (`/feature:new` then `/feature:structure`).
-- Onboarding a new repo, want a living domain wiki → **Domain wiki pipeline**. Run `/project:overview` first to produce a plain-language narrative under `docs/narrative/` (skip if you only want the canonical schema). Then run `/project:explore` once to produce the canonical schema under `docs/domain/` (it will read the narrative as soft input when present). Use `/project:enhance-wiki` whenever code changes to update `docs/domain/`.
+- Onboarding a new repo, want a living domain wiki → **Domain wiki pipeline**. Run `/project:overview` first to produce a plain-language narrative under `docs/narrative/` (skip if you only want the canonical schema). Then run `/project:explore` once to produce the canonical schema under `docs/domain/` (it will read the narrative as soft input when present). Use `/project:enhance-wiki` whenever code changes to refresh both `docs/narrative/` and `docs/domain/` in one command.
 - Both can be used in the same repo. The feature pipeline writes under `docs/<FEATURE>/`; the wiki pipeline writes under `docs/domain/`. They never touch each other's files.
 
 ## Environment

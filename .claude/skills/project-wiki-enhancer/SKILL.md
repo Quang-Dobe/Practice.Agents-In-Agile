@@ -12,6 +12,7 @@ description: Operating manual for the project-wiki-enhancer runtime agent that o
 ## Inputs
 
 - `[path]` (optional) — local filesystem path to the target repository. Defaults to the current working directory when omitted. Local path only; no remote URLs, no clone, no git checkout side-effect. Same semantics as `/project:explore`.
+- `--bypass-approval` (optional flag) — opt-in for low-friction / CI runs. Auto-approves non-critical changes; always escalates on the four critical categories (see `## --bypass-approval semantics` below). When a critical category fires, the run exits nonzero (exit 1) per D2; no interactive pause.
 
 ## Pre-flight refuse condition
 
@@ -23,12 +24,66 @@ docs/domain/ is missing or empty. Run /project:explore first to bootstrap, then 
 
 and exits before the skill-load step. This mirrors `project-explorer`'s refusal-points-at-sibling pattern in reverse: `project-explorer` refuses when `docs/domain/` is non-empty (pointing at this enhancer); this enhancer refuses when `docs/domain/` is missing/empty (pointing back at `project-explorer`).
 
+## --bypass-approval semantics
+
+- **Flag scope.** Opt-in only. Default behaviour (flag absent) is identical to today's interactive APPROVE-gate semantics — no behavioural change for human-at-terminal users who never pass the flag.
+- **Auto-approve bucket.** Pure description rewrites outside fences, infra-only churn surfaced as a frontmatter-only diff (rare; the byte-compare contract suppresses most of these), doc reformatting that survives byte-compare, removed-BC bullet appends to `## Skipped candidates`. Anything in this bucket bypasses the APPROVE gate when the flag is set.
+- **Critical-category list (locked at four).** Verbatim:
+  1. **New BC introduced** in either tree (narrative or domain) -> critical, always requires human APPROVE.
+  2. **BC renamed** in either tree -> critical, always requires human APPROVE.
+  3. **BC removed** in either tree -> critical, always requires human APPROVE.
+  4. **Any write that would land inside a `<!-- human:begin --> ... <!-- human:end -->` block** -> critical, always requires human APPROVE.
+- **Escalation behaviour on critical category (D2 — nonzero exit).** When any critical category fires AND `--bypass-approval` is set, the agent prints the candidate report (so the operator sees what would have been gated), then prints the locked literal diagnostic message verbatim, then exits 1. **No interactive pause, no env-var hybrid.**
+- **Locked literal diagnostic message** (byte-for-byte; do not alter, do not localize):
+
+  ```
+  Critical change detected; --bypass-approval cannot self-approve. Re-run without --bypass-approval to inspect and APPROVE interactively.
+  ```
+
+- **Exit code.** `1`. Same exit code the agent uses for any other non-zero exit per the no-partial-exit rule in `## Idempotency exit`. NOT 2 (usage error), NOT 130 (SIGINT-equivalent).
+- **Per-pass scope.** The critical-category check fires **per pass**. A narrative-pass critical escalation halts the run before the domain pass starts (intentional per accepted risk row 3 of `analyze-workflow-enhance-wiki.analyzed.md` — the domain pass reads narrative as soft input; if narrative is gated, domain must wait).
+
+## Tree-presence advisories
+
+Four-way tree-presence matrix (mirroring `analyze-workflow-enhance-wiki.analyzed.md` Section 8):
+
+| Narrative present? | Domain present? | Behaviour |
+|---|---|---|
+| yes | yes | Both passes run. Two APPROVE gates (each auto-skipping when its `new-namespace` bucket is empty). Happy path. |
+| yes | no | Domain-absent advisory fires. Narrative pass runs. Domain pass is skipped. |
+| no | yes | Narrative-absent advisory fires. Narrative pass is skipped. Domain pass runs. |
+| no | no | Refused at the command layer (no agent spawn). See `## Pre-flight refuse condition` for the agent-level contract; the command-level refusal is the authoritative one. |
+
+- **Domain-absent advisory (D9 row 2 — narrative present, domain missing).** When `docs/narrative/` is present and `docs/domain/` is missing, the agent prints the literal advisory:
+
+  ```
+  Note: docs/domain/ not present. Run /project:explore first to enable schema enhancement.
+  ```
+
+  The agent then proceeds with the narrative pass only and skips the domain pass.
+- **Narrative-absent advisory (D9 row 3 — narrative missing, domain present).** When `docs/narrative/` is missing and `docs/domain/` is present, the agent prints the literal advisory:
+
+  ```
+  Note: docs/narrative/ not present. Run /project:overview first to enable narrative-informed domain regeneration.
+  ```
+
+  The agent then skips the narrative pass and proceeds with the domain pass only.
+- **Both-missing refusal (D9 row 4).** Refused at the command layer (`.claude/commands/project/enhance-wiki.md`) before the agent is spawned. The agent never runs in this case. The literal refusal message is locked at the command layer; see Step F.
+
+## Dual-pass orchestration
+
+- **Fixed order.** Narrative pass first, then domain pass. No `--reverse-order`, no `--narrative-only`, no `--domain-only` flag exists in v1.
+- **Rationale.** The domain pass reads `docs/narrative/<bc>/walkthrough.md` as soft input via `.claude/skills/project-explorer/SKILL.md` `## Soft input: docs/narrative/`. If the narrative tree is stale at domain-pass time, the soft input is stale and the operator would need a second invocation to converge. Fixed order makes the single invocation converge.
+- **Per-pass cross-tree side effects.** When the narrative pass critical-escalates (D2 nonzero exit), the domain pass never runs in that invocation. The operator must re-invoke after the narrative gate is resolved interactively (see accepted risk row 3 of `analyze-workflow-enhance-wiki.analyzed.md`).
+- **Shared run-summary.** Per `## Idempotency exit`, the non-zero-write exit summary aggregates per-pass counts (files written, new BCs created, removed BCs logged) into a single block. The zero-write exit message (`No changes detected. 0 files written.`) is emitted **once per run** when both passes together wrote zero files (cross-pass aggregation rule, mirroring the narrative-side rule in `.claude/skills/project-overview/SKILL.md` `## Idempotency exit (narrative)`).
+
 ## Operating procedure
 
-Numbered steps 1-11. The agent must execute these in order. Each step mirrors `project-wiki-enhancer.overview-plan.md` Section 5 (Core Behaviour); later sections in this skill fill in the precise contract per step.
+Numbered steps 0-11. The agent must execute these in order. Each step mirrors `project-wiki-enhancer.overview-plan.md` Section 5 (Core Behaviour); later sections in this skill fill in the precise contract per step.
 
+0. **Run-mode dispatch.** Read the `--bypass-approval` flag from the spawn-prompt inputs (default false). Read the four-way tree-presence matrix from `## Tree-presence advisories`. Plan the run order: narrative pass first (when `docs/narrative/` is present), domain pass second (when `docs/domain/` is present). When both trees are missing, the command-layer refusal already fired before this agent was spawned — see `## Pre-flight refuse condition` for the agent-level documentation of that contract.
 1. **Resolve target.** Resolve `[path]` (defaults to the current working directory). Locate the current working directory's `docs/domain/`. If `docs/domain/` is missing or empty, refuse with the message pointing the user at `/project:explore` (see `## Pre-flight refuse condition` above) — bootstrap first, then enhance.
-2. **Skill load (both).** The subagent loads its own `.claude/skills/project-wiki-enhancer/SKILL.md` first, then reloads `.claude/skills/project-explorer/SKILL.md` verbatim. Both are treated as authoritative for the run; enhancer-specific behaviour (diff strategy, fence handling, idempotency exit message) lives in this skill, output schema + frontmatter + BC heuristics live in the project-explorer skill. See `## Skill reload contract` for the explicit reload targets.
+2. **Skill load (all three).** The subagent loads its own `.claude/skills/project-wiki-enhancer/SKILL.md` first, then reloads `.claude/skills/project-overview/SKILL.md` second, then reloads `.claude/skills/project-explorer/SKILL.md` third — verbatim, in that locked order. All three are treated as authoritative for the run; enhancer-specific behaviour (diff strategy, fence handling, idempotency exit message) lives in this skill, narrative-side output schema + frontmatter + diff-aware update mode live in the project-overview skill, and domain-side output schema + frontmatter + BC heuristics live in the project-explorer skill. See `## Skill reload contract` for the explicit reload targets.
 3. **Diff strategy selection (hybrid).** Read `last_generated_sha` from frontmatter (sample one file under `docs/domain/`; all frontmatter is treated as consistent — every file's `last_generated_sha` advances together on a successful run).
    - **Git fast path** fires when `[path]` is a git working tree AND `last_generated_sha` is present AND that SHA is reachable from HEAD. Command: `git diff --name-only <last_generated_sha>..HEAD`. Apply the exclusion globs verbatim. Map each surviving file to its owning BC via `project-explorer`'s namespace/folder heuristic.
    - **Full-walk fallback** fires when any git-fast-path precondition fails (no git, no `last_generated_sha`, or SHA unreachable — including the first enhancer run against a `project-explorer`-bootstrapped tree where `last_generated_sha` is absent). Walks every BC under `[path]` per `project-explorer`'s skill and compares every regenerated file in memory against the on-disk file.
@@ -45,12 +100,13 @@ Numbered steps 1-11. The agent must execute these in order. Each step mirrors `p
 
 ## Skill reload contract
 
-The enhancer agent reloads two skills in this order, at the start of every run:
+The enhancer agent reloads three skills in this order, at the start of every run:
 
 1. `.claude/skills/project-wiki-enhancer/SKILL.md` — this file. Loaded first.
-2. `.claude/skills/project-explorer/SKILL.md` — loaded verbatim **after** this skill. Treated as authoritative for everything the enhancer regenerates.
+2. `.claude/skills/project-overview/SKILL.md` — loaded **second**. Treated as authoritative for the narrative-side output schema, frontmatter contract, fence convention, and the seven new `## Diff-aware update mode` sub-sections.
+3. `.claude/skills/project-explorer/SKILL.md` — loaded **third**. Treated as authoritative for everything both passes regenerate against (BC heuristics, exclusion globs, candidate report format, APPROVE gate contract).
 
-The enhancer treats the sibling skill as authoritative for:
+The enhancer treats `project-explorer`'s skill as authoritative for:
 
 - The output schema — `project-explorer`'s `## Output schema` (file tree, per-file content contract, small-repo fallback variant, write order, hallucination guard).
 - The frontmatter contract — `project-explorer`'s `## Frontmatter contract` (the four-field YAML block — `source_repo`, `branch_name`, `generated_at`, `skill_version`). This feature adds `last_generated_sha` on top per `## Frontmatter refresh rules` below.
@@ -58,7 +114,9 @@ The enhancer treats the sibling skill as authoritative for:
 - Exclusion globs — the eight globs enumerated under `project-explorer`'s `### Small-repo fallback detection`. Reused verbatim by `### Exclusion globs (verbatim)` below.
 - The APPROVE gate format — `project-explorer`'s `### Candidate report format` and `### APPROVE gate contract`. Reused verbatim by the new-BC discovery gate.
 
-This skill owns the enhancer-specific behaviour the sibling skill does not cover: the hybrid diff strategy, the path -> BC classifier with its three classification buckets, the fenced human-edit zone splice rule, `last_generated_sha` semantics, the removed-BC log-only rule, the byte-perfect idempotency contract with its canonical exit message, and the two load-bearing prose sections `## Known coupling` and `## Migration caveat`.
+The enhancer treats `project-overview`'s skill as authoritative for the narrative-side equivalents of the same contracts: the narrative output schema, the narrative frontmatter contract, the fence convention used inside `docs/narrative/` files, and the six cite-by-reference sub-sections under `## Diff-aware update mode` (`## Hybrid diff strategy (narrative)`, `## Path -> BC classifier (narrative)`, `## Fenced human-edit zone splice (narrative)`, `## Removed-BC logging (narrative)`, `## Byte-compare + selective write + frontmatter refresh (narrative)`, and `## Idempotency exit (narrative)`). The narrative pass uses these sections; the domain pass does not.
+
+This skill owns the enhancer-specific behaviour the sibling skills do not cover: the hybrid diff strategy, the path -> BC classifier with its three classification buckets, the fenced human-edit zone splice rule, `last_generated_sha` semantics, the removed-BC log-only rule, the byte-perfect idempotency contract with its canonical exit message, and the two load-bearing prose sections `## Known coupling` and `## Migration caveat`.
 
 ## Hybrid diff strategy
 
@@ -394,17 +452,20 @@ where `<N>`, `<P>`, `<R>` are integer counts; the two name lists render as `(non
 
 ## Known coupling
 
-This skill is load-bearing because the enhancer reloads the sibling `.claude/skills/project-explorer/SKILL.md` verbatim at runtime; an edit to any of the following contracts in that file silently changes enhancer behaviour. The human editor who touches `project-explorer`'s `SKILL.md` is obligated to run a paired enhancer audit against this file. No `skill_version` pin or `compatible_with` check exists or is planned — this section itself is the trip-wire.
+This skill is load-bearing because the enhancer reloads two sibling skills verbatim at runtime — `.claude/skills/project-explorer/SKILL.md` (domain-pass authority) and `.claude/skills/project-overview/SKILL.md` `## Diff-aware update mode` (narrative-pass authority); an edit to any of the contracts cited below in either sibling silently changes enhancer behaviour. The human editor who touches either sibling skill is obligated to run a paired enhancer audit against this file. No `skill_version` pin or `compatible_with` check exists or is planned — this section itself is the trip-wire.
 
-The enhancer reloads, by name, the following five contracts from `.claude/skills/project-explorer/SKILL.md`:
+The enhancer reloads, by name, the following contracts (five from `.claude/skills/project-explorer/SKILL.md`, plus the `## Diff-aware update mode` block from `.claude/skills/project-overview/SKILL.md`):
 
 - `## Output schema` (including `### Files written`, `### Per-file content contract`, `### Small-repo fallback variant`, `### Write order`, `### Hallucination guard`) — the full file tree + per-file content rules + small-repo fallback variant + write order + hallucination guard the enhancer regenerates against.
 - `## Frontmatter contract` — the four-field YAML block (`source_repo`, `branch_name`, `generated_at`, `skill_version`); this feature adds `last_generated_sha` on top per `## Frontmatter refresh rules` above.
 - `## BC candidate surfacing` `### Grouping rule` — the namespace -> BC mapping the path classifier reuses (see `### Namespace -> BC mapping` above).
 - `### Small-repo fallback detection` — the eight exclusion globs enumerated there are the verbatim source for `### Exclusion globs (verbatim)` above.
 - `### Candidate report format` and `### APPROVE gate contract` — reused verbatim by `## New-BC discovery APPROVE gate` for the candidate report layout, the literal `Type APPROVE to write docs/domain/, or describe edits.` prompt, the exact-case `APPROVE` token check, and the edit-revision loop.
+- `.claude/skills/project-overview/SKILL.md` `## Diff-aware update mode` (and its six cite-by-reference sub-sections: `## Hybrid diff strategy (narrative)`, `## Path -> BC classifier (narrative)`, `## Fenced human-edit zone splice (narrative)`, `## Removed-BC logging (narrative)`, `## Byte-compare + selective write + frontmatter refresh (narrative)`, `## Idempotency exit (narrative)`) — reloaded by the enhancer agent as the second of three skills per `## Skill reload contract` above. The narrative pass uses these sections; the domain pass does not.
 
-Any edit to those sections in `.claude/skills/project-explorer/SKILL.md` silently changes enhancer behaviour. The editor is obligated to (a) re-read this skill end-to-end, (b) re-read `project-wiki-enhancer.analyzed.md` Section 3 for the coupling rationale, and (c) re-run the Step F acceptance pass against a known fixture before considering the edit complete.
+Any edit to those sections in either `.claude/skills/project-explorer/SKILL.md` or `.claude/skills/project-overview/SKILL.md` `## Diff-aware update mode` silently changes enhancer behaviour. The editor is obligated to (a) re-read this skill end-to-end, (b) re-read `project-wiki-enhancer.analyzed.md` Section 3 for the coupling rationale, and (c) re-run the Step F acceptance pass against a known fixture before considering the edit complete.
+
+**Reserved coupling — `/project:doctor`.** Once `/project:doctor` (the cross-tree invariant checker) ships, `/project:enhance-wiki` will invoke it as a **default last step** whenever any "mismatch", "conflict", or "out-of-date" signal is detected during the enhance run. No code is written for this coupling in v1; the marker is recorded here so a future doctor implementer knows enhance-wiki is intended to be its caller. See `analyze-workflow-enhance-wiki.analyzed.md` Section 7 for the full rationale and filed follow-up F1 for the doctor feature itself.
 
 ## Migration caveat
 

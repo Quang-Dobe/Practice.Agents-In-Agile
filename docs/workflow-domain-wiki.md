@@ -54,7 +54,7 @@ They are siblings: one builds the wiki for the first time, the other keeps
 it in sync. They politely refuse to do each other's job:
 
 - `project-explorer` refuses if `docs/domain/` already has content.
-- `project-wiki-enhancer` refuses if `docs/domain/` is missing or empty.
+- `project-wiki-enhancer` refuses to bootstrap; when both `docs/narrative/` and `docs/domain/` are missing, the command layer refuses before the agent is spawned (see `## Step 2` sub-section 1). When exactly one tree is missing, the present-tree pass still runs and a one-line advisory points at the bootstrap command for the missing tree.
 
 ---
 
@@ -153,14 +153,44 @@ Here is what happens, in plain English:
 
 ### 1. Safety check (in reverse)
 
-The agent checks `docs/domain/`. If it is missing or empty, it refuses with
-a message pointing you at `/project:explore`. The enhancer is not a
-bootstrapper — it only updates what is already there.
+The enhancer is not a bootstrapper — it only updates what is already there.
+Before doing anything else, the command checks which of the two trees
+(`docs/narrative/` and `docs/domain/`) actually exist on disk. There are
+three cases:
 
-### 2. Pick a smart vs safe strategy
+- **Both trees present** — the happy path. The command proceeds into the
+  dual-pass refresh described in the next sub-sections.
+- **Exactly one tree missing** — the command prints a one-line advisory
+  pointing you at the right bootstrap command for the missing side, then
+  proceeds with the pass for the tree that *is* present. You get a useful
+  partial refresh and a clear hint about how to enable the other pass.
+- **Both trees missing** — terminal refusal at the command layer (no agent
+  is spawned). The command exits immediately with this message:
 
+  ```
+  Both docs/narrative/ and docs/domain/ are missing. Run /project:overview to bootstrap docs/narrative/, then /project:explore to bootstrap docs/domain/, then /project:enhance-wiki to update.
+  ```
+
+### 2. Two passes, one command
+
+When both trees are present, `/project:enhance-wiki` runs **two passes in a
+single command invocation**, in a fixed order:
+
+1. The **narrative pass** refreshes `docs/narrative/` first.
+2. The **domain pass** refreshes `docs/domain/` second.
+
+The order is intentional and is not configurable — there are no
+`--narrative-only` or `--domain-only` flags. The reason for narrative-first
+is that the domain pass reads `docs/narrative/<bc>/walkthrough.md` as soft
+input via the `project-explorer` skill's existing contract; running domain
+first would force a second invocation to pick up any cross-tree fix-ups,
+defeating the point of a single-command refresh.
+
+### 3. Pick a smart vs safe strategy (per pass)
+
+Each pass picks its own diff strategy independently against its own tree.
 The agent looks at the metadata stamped on the existing wiki pages and
-decides between two strategies:
+decides between:
 
 - **Fast path (git)** — when the codebase is a git repository and the
   stamp on the wiki is still reachable from the current code state, the
@@ -170,12 +200,12 @@ decides between two strategies:
   codebase and compares the existing wiki page-by-page against what the
   current code says it should be. Slower, but always correct.
 
-You don't have to do anything — the agent picks. It also prints which path
-it picked so you can audit it.
+You don't have to do anything — each pass picks its own strategy and prints
+which path it picked so you can audit both decisions.
 
-### 3. Classify changes
+### 4. Classify changes (per pass)
 
-Every changed file is placed into one of three buckets:
+In each pass, every changed file is placed into one of three buckets:
 
 | Bucket               | Meaning                                                          |
 | -------------------- | ---------------------------------------------------------------- |
@@ -183,27 +213,59 @@ Every changed file is placed into one of three buckets:
 | `infra — no BC impact` | The file is build output, tests, generated code, or otherwise not part of the business model. Ignored. |
 | `new-namespace`      | The file looks like the start of a **new** business area the agent has never seen before. |
 
-### 4. APPROVE gate (only if there are new business areas)
+The same three-bucket classification runs once per pass, against that
+pass's own tree.
 
-If — and only if — the third bucket has any files, the agent uses the
-**same APPROVE gate** as the bootstrap. It prints the candidate new areas
-and asks you to APPROVE before creating any new folders. The check is
-strict and exact-case, just like before.
+### 5. APPROVE gates — up to two per run
 
-If no new areas are needed, this step is skipped silently.
+Each pass has its **own auto-skipping APPROVE gate**. If — and only if —
+that pass's third bucket has any files, the agent prints the candidate new
+areas for that tree and asks you to APPROVE before creating any new
+folders. The check is strict and exact-case, just like the bootstrap.
 
-### 5. Note any disappeared areas (log-only)
+If no new areas are needed in a pass, that pass's gate is skipped silently.
+Both buckets empty → zero prompts.
+
+### 6. `--bypass-approval` for low-friction runs
+
+For unattended scenarios (CI, post-merge hooks, batch refresh), you can
+opt into `--bypass-approval`:
+
+```
+/project:enhance-wiki [path] --bypass-approval
+```
+
+This flag auto-approves non-critical changes so the run does not pause for
+interactive input. **Four critical categories always escalate** even with
+the flag set (named, not restated here — see the `project-wiki-enhancer`
+skill's `## --bypass-approval semantics` for the canonical list): new BC,
+BC renamed, BC removed, and any write that would land inside a fenced
+human-edit block.
+
+When a critical category fires under `--bypass-approval`, the run **exits 1
+(not pause) with a locked diagnostic message**. The diagnostic itself lives
+verbatim in the skill file; the walkthrough does not restate it. The
+operator's remediation is to re-invoke `/project:enhance-wiki` *without*
+the flag, which gives you the normal interactive APPROVE gate.
+
+### 7. Note any disappeared areas (per pass, log-only)
 
 If a business area used to exist but the underlying code has been removed
-or renamed away, the agent **does not delete** the existing folder. Your
-notes and history are preserved. Instead, the agent writes a single bullet
-into `context-map.md` saying "namespace no longer present". You decide
-later whether to clean it up by hand.
+or renamed away, neither pass **deletes** the existing folder. Your notes
+and history are preserved. Instead, each pass writes a single bullet into
+its own context file:
 
-### 6. Regenerate, then preserve your hand-written notes
+- The narrative pass appends to `docs/narrative/architecture.md` under
+  `## Skipped candidates`.
+- The domain pass appends to `docs/domain/context-map.md` under
+  `## Skipped candidates`.
 
-The agent regenerates each affected page in memory. Before writing, it
-looks at the existing file on disk for any "fenced human-edit zone" —
+You decide later whether to clean either side up by hand.
+
+### 8. Regenerate, then preserve your hand-written notes (per pass)
+
+Each pass regenerates its affected pages in memory. Before writing, the
+agent looks at the existing file on disk for any "fenced human-edit zone" —
 content you wrote yourself between two special marker comments:
 
 ```
@@ -215,29 +277,40 @@ content you wrote yourself between two special marker comments:
 Anything between those markers is preserved **byte-for-byte** when the page
 is rewritten. Anything outside the markers is replaced by the freshly
 regenerated content. Without fences, your edits will be overwritten — that
-is the rule.
+is the rule. The fence convention is now active in **both trees**: it has
+always been load-bearing in `docs/domain/`, and as of this command it is
+load-bearing in `docs/narrative/` too.
 
-### 7. Write only what actually changed
+### 9. Write only what actually changed (per pass + cross-pass exit)
 
-This is the nice part. The agent compares the freshly generated content
-(with your fenced edits spliced back in) against what is already on disk,
-**byte for byte**. It writes a page only if the bytes are different. If
-nothing changed, nothing is written.
+This is the nice part. In each pass, the agent compares the freshly
+generated content (with your fenced edits spliced back in) against what is
+already on disk, **byte for byte**. It writes a page only if the bytes are
+different. If nothing changed, nothing is written.
 
-When the whole run produced zero writes, the agent prints exactly one
-line:
+When the **whole run** (both passes aggregated together) produced zero
+writes, the agent prints exactly one line:
 
 ```
 No changes detected. 0 files written.
 ```
 
-…and exits. That's it. This makes it safe to run the command on every
-commit, even when nothing relevant happened — you won't get noise in your
-git history.
+…and exits. The zero-write exit message is emitted **once per run** as a
+cross-pass aggregation, not once per pass. This makes it safe to run the
+command on every commit, even when nothing relevant happened — you won't
+get noise in your git history.
 
-Otherwise, it prints a small summary: how many pages it wrote, how many
-new areas were created, how many disappeared areas were logged, and which
-strategy (fast vs safe) it used.
+Otherwise, it prints a small summary: how many pages were written across
+both passes, how many new areas were created, how many disappeared areas
+were logged, and which strategy (fast vs safe) each pass used.
+
+### 10. Reserved doctor coupling
+
+**Reserved coupling — /project:doctor.** Once `/project:doctor` (the
+cross-tree invariant checker) ships, `/project:enhance-wiki` will invoke it
+as a default last step whenever any mismatch / conflict / out-of-date
+signal is detected during the enhance run. No-op today; the future doctor
+feature inherits this contract.
 
 ---
 
@@ -286,8 +359,10 @@ Tuesday next week, you re-run on an unchanged codebase:
   `sure` — none of these count. This is deliberate — it prevents
   accidental approvals when you're skimming.
 - **Wrap your edits in fences.** If you personally improve a generated
-  page, wrap your improvements in `<!-- human:begin -->` / `<!-- human:end -->`.
-  Unfenced edits are at risk every time the enhancer runs.
+  page (in either `docs/domain/` or `docs/narrative/`), wrap your
+  improvements in `<!-- human:begin -->` / `<!-- human:end -->`. Unfenced
+  edits are at risk every time the enhancer runs. Fences are now
+  load-bearing in BOTH trees.
 
 ---
 

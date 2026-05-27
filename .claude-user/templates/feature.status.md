@@ -12,8 +12,9 @@ One paragraph: where the feature is, what was delivered last session, what block
 | Step | Doc / Scope | Status |
 | --- | --- | --- |
 | 1 | `docs/<feature>/<feature>.overview-plan.md` | <pending / [Waiting for Approval] / **APPROVED <date>**> |
-| 2 | `docs/<feature>/<feature>.plan.md` | <...> |
+| 2 | `docs/<feature>/<feature>.test.md` | <...> |
 | 3 | `docs/<feature>/<feature>.analyzed.md` | <...> |
+| 4 | `docs/<feature>/<feature>.plan.md` | <...> |
 | A | <Step A short title> | <...> |
 | B | <Step B short title> | <...> |
 | ... | ... | ... |

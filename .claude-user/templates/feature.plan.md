@@ -63,9 +63,13 @@
 
 ---
 
-## Step G - End-to-End Validation (Manual)
+## Step G - E2E Validation Gate (final step)
 
-Numbered manual steps to verify the feature end-to-end before sign-off.
+**Goal:** every acceptance case in `<feature>.test.md` passes as an automated e2e test.
+
+1. For each `E2E-n` case in `docs/<feature>/<feature>.test.md`, author an automated e2e test encoding its Given/When/Then.
+2. Run the full e2e suite via the project's `test-runner` agent (`.claude/agents/test-runner.md`).
+3. **Done-when:** every `E2E-n` case is green. This is the feature's final gate — the feature is not complete until this passes.
 
 ---
 

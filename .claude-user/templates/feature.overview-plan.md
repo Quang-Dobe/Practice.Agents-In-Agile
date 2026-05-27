@@ -41,6 +41,7 @@ Bullet list of things explicitly **not** in this iteration.
 ## 8. Next Steps
 
 - [ ] Step 1: Overview plan (this document)
-- [ ] Step 2: Approach analysis and rationale (`<feature>.analyzed.md`)
-- [ ] Step 3: Detailed mechanical implementation plan (`<feature>.plan.md`)
+- [ ] Step 2: E2E / acceptance test spec (`<feature>.test.md`) — authored in parallel with this doc
+- [ ] Step 3: Approach analysis and rationale (`<feature>.analyzed.md`)
+- [ ] Step 4: Detailed mechanical implementation plan (`<feature>.plan.md`)
 - [ ] Implementation

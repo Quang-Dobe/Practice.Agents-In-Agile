@@ -30,10 +30,11 @@ Main Claude passes:
 4. Once the framing is solid, write `docs/<feature>/<feature>.requirement.md` matching the template exactly:
    - `# <Feature title>` extracted from the framing.
    - `## Rules` — copy verbatim from the template.
-   - `## Your Requirements` — the three steps are always (in this order — Architect needs analyzed before SE drafts plan):
+   - `## Your Requirements` — the four steps are always (in this order):
      - `[ ] Step 1: Create docs/<feature>/<feature>.overview-plan.md`
-     - `[ ] Step 2: Create docs/<feature>/<feature>.analyzed.md`
-     - `[ ] Step 3: Create docs/<feature>/<feature>.plan.md`
+     - `[ ] Step 2: Create docs/<feature>/<feature>.test.md` (e2e/acceptance spec; authored in parallel with Step 1)
+     - `[ ] Step 3: Create docs/<feature>/<feature>.analyzed.md`
+     - `[ ] Step 4: Create docs/<feature>/<feature>.plan.md`
      (Implementation steps `A`, `B`, `C`, … live in `overview-plan.md`, not here.)
    - `## Your Tasks` — copy verbatim from the template.
    - `## Original raw requirement` — paste the user's original prose verbatim, so context is not lost.

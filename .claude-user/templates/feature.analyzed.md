@@ -55,13 +55,13 @@ The project's rules-checker agent at `.claude/agents/rules-checker.md` (if it sh
 
 ---
 
-## N+3. Test Strategy
+## N+3. Step Severity
 
-> Per R7: one row per implementation step in `overview-plan.md`. `Test kind` = concrete test instruction OR literal `skip Tester` (never prose). `Owner` = `Tester` or `—`. `Severity` = one of `minor` / `medium` / `major` / `risky` / `irreversible`, declared per step up front; minor/medium auto-approve under `/workflow:step-start --bypass-approval`, major/risky/irreversible hard-stop and wait for a human.
+> Per R7: one row per implementation step in `overview-plan.md`. `Severity` = one of `minor` / `medium` / `major` / `risky` / `irreversible`, declared per step up front; minor/medium auto-approve under `/workflow:step-start --bypass-approval`, major/risky/irreversible hard-stop and wait for a human. E2E/acceptance cases are NOT here — they live in `<feature>.test.md` (Tester); per-step unit tests are authored by the Software Engineer.
 
-| Step ID | Goal | Test kind | Owner | Severity |
-|---|---|---|---|---|
-| A | <goal copied from overview-plan> | <concrete instruction OR `skip Tester`> | <`Tester` or `—`> | <`minor`/`medium`/`major`/`risky`/`irreversible`> |
+| Step ID | Severity |
+|---|---|
+| A | <`minor`/`medium`/`major`/`risky`/`irreversible`> |
 
 ---
 
@@ -70,5 +70,5 @@ The project's rules-checker agent at `.claude/agents/rules-checker.md` (if it sh
 - [ ] All decisions in Section 1 have a recorded rationale.
 - [ ] All risks in the Risks section list a chosen mitigation.
 - [ ] Overrides (if any) are scoped to specific rule sections and justified.
-- [ ] Test Strategy table is the 5-column R7 shape (`Step ID | Goal | Test kind | Owner | Severity`) with one row per implementation step and a justified Severity each.
+- [ ] Step Severity table has one row per implementation step in `overview-plan.md`, each with a justified Severity. (E2E/acceptance cases live in `test.md`, not here.)
 - [ ] Amendments to already-approved planning docs (if any) are listed in a `[Waiting for Approval]` block at the bottom.

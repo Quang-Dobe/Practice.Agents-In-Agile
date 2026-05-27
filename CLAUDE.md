@@ -26,11 +26,11 @@ Five-role crew: Product Owner, Business Analyst, Architect, Software Engineer, T
 1. `/feature:new <NAME>` — Product Owner brainstorms intent (no files written), hands off to BA.
 2. `/feature:structure <NAME>` — four stages with one APPROVE gate per stage:
    - stage-1: Business Analyst authors `<NAME>.requirement.md` (with `Challenges to PO framing` appendix).
-   - stage-2-overview: Architect authors `<NAME>.overview-plan.md` (canonical Step A / B / … list).
-   - stage-2-analyzed: Architect authors `<NAME>.analyzed.md` including the 5-column Test Strategy table per R7 (`Step ID | Goal | Test kind | Owner | Severity`).
-   - stage-2-plan: Software Engineer authors mechanical `<NAME>.plan.md` (no Test Strategy column there).
+   - stage-2-overview: **parallel** — Architect authors `<NAME>.overview-plan.md` (canonical Step A / B / … list) and Tester authors `<NAME>.test.md` (e2e/acceptance spec, Given/When/Then, from the requirement). One combined APPROVE covers both.
+   - stage-2-analyzed: Architect authors `<NAME>.analyzed.md` including the per-step Severity table per R7 (`Step ID | Severity`; reads `test.md`).
+   - stage-2-plan: Software Engineer authors mechanical `<NAME>.plan.md` (no Severity column there); its final step is the E2E validation gate.
    After stage-2-plan APPROVE, `<NAME>.status.md` is initialized mechanically from the template.
-3. `/workflow:step-start <NAME> [Step ID]` — brief for the current open step. If the step's Test Strategy row in `analyzed.md` is not `skip Tester`, spawn Tester (drafts test cases / red phase) then Software Engineer; otherwise Software Engineer only. After every requirement step is `[X]`, offer one end-of-feature Tester acceptance pass.
+3. `/workflow:step-start <NAME> [Step ID]` — brief for the current open step, then spawn the Software Engineer (the Tester has no runtime role). SE writes production code + unit tests per step; the step's Severity in `analyzed.md` drives `--bypass-approval`. The feature's final implementation step is the E2E validation gate: SE authors automated e2e tests from `<NAME>.test.md` and runs them via the project test-runner.
 4. `/workflow:step-approve <NAME>` — flip current step to `[X]` after user types APPROVE.
 5. `/workflow:step-handoff <NAME>` — end-of-session status update.
 
@@ -73,8 +73,8 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 - `.claude-user/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, workflow-step-planner, project-explorer, project-wiki-enhancer, project-overview)
 - `.claude-user/commands/` — slash commands under `feature/`, `project/`, `workflow/`
 - `.claude-user/skills/` — skills (one folder per skill, name matches owning concept)
-- `.claude-user/templates/` — `feature.requirement.md`, `feature.overview-plan.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`, `project-rules.template.md` (copy-me example for a project rule skill)
-- `.claude-user/CONVENTIONS.md` — how a consuming project supplies its own rule skills + optional agents under its `.claude/` tree (the stack-specific seam this kit deliberately omits)
+- `.claude-user/templates/` — `feature.requirement.md`, `feature.overview-plan.md`, `feature.test.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`, `project-rules.template.md` (copy-me example for a project rule skill)
+- `.claude-user/CONVENTIONS.md` — how a consuming project supplies its own rule skills + optional agents under its `.claude/` tree (the stack-specific seam this kit deliberately omits); also holds the per-agent context-access matrix
 - `.claude-user/hooks/` — `session-start-banner.py`
 - `docs/<FEATURE>/` — feature pipeline artifacts: `<FEATURE>.requirement.md`, `.overview-plan.md`, `.plan.md`, `.analyzed.md`, `.status.md`. Raw requirements also start here.
 - `docs/domain/` — domain wiki output owned by the project-explorer / project-wiki-enhancer agents. Bootstrapped once, then diff-updated on every subsequent run.

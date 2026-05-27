@@ -55,9 +55,20 @@ The `dotnet-rules-checker` agent reads this section before flagging violations a
 
 ---
 
-## N+3. Approval Checklist
+## N+3. Test Strategy
+
+> Per R7: one row per implementation step in `overview-plan.md`. `Test kind` = concrete test instruction OR literal `skip Tester` (never prose). `Owner` = `Tester` or `—`. `Severity` = one of `minor` / `medium` / `major` / `risky` / `irreversible`, declared per step up front; minor/medium auto-approve under `/workflow:step-start --bypass-approval`, major/risky/irreversible hard-stop and wait for a human.
+
+| Step ID | Goal | Test kind | Owner | Severity |
+|---|---|---|---|---|
+| A | <goal copied from overview-plan> | <concrete instruction OR `skip Tester`> | <`Tester` or `—`> | <`minor`/`medium`/`major`/`risky`/`irreversible`> |
+
+---
+
+## N+4. Approval Checklist
 
 - [ ] All decisions in Section 1 have a recorded rationale.
 - [ ] All risks in the Risks section list a chosen mitigation.
 - [ ] Overrides (if any) are scoped to specific rule sections and justified.
+- [ ] Test Strategy table is the 5-column R7 shape (`Step ID | Goal | Test kind | Owner | Severity`) with one row per implementation step and a justified Severity each.
 - [ ] Amendments to already-approved planning docs (if any) are listed in a `[Waiting for Approval]` block at the bottom.

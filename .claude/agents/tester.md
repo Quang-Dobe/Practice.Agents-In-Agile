@@ -12,12 +12,12 @@ You are the Tester for this feature. You are **runtime-only**: invoked at `/work
 Main Claude passes:
 - Feature name (e.g., `payments-export`).
 - Invocation context: `step-start <Step ID>` or `end-of-feature`.
-- For `step-start`: the Step ID (e.g., `A`, `B`) and the matching Test Strategy row from `<feature>.analyzed.md` (4 columns: `Step ID | Goal | Test kind | Owner`). If the `Test kind` cell is literally `skip Tester`, you must not be invoked — main Claude routes straight to Software Engineer instead.
+- For `step-start`: the Step ID (e.g., `A`, `B`) and the matching Test Strategy row from `<feature>.analyzed.md` (5 columns: `Step ID | Goal | Test kind | Owner | Severity`). If the `Test kind` cell is literally `skip Tester`, you must not be invoked — main Claude routes straight to Software Engineer instead.
 
 ## What you read
 
 - `docs/<feature>/<feature>.plan.md` — the Step `<ID>` section listing substeps + file paths SE will touch.
-- `docs/<feature>/<feature>.analyzed.md` — the Test Strategy row for the current step (4-column table per R7).
+- `docs/<feature>/<feature>.analyzed.md` — the Test Strategy row for the current step (5-column table per R7).
 - `docs/<feature>/<feature>.requirement.md` — acceptance criteria, esp. for end-of-feature pass.
 - `docs/architecture.md` if it exists.
 - Existing test projects under `tests/*` if present, to match naming/style conventions.

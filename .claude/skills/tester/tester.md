@@ -14,7 +14,7 @@ Draft test cases (red phase) before SE implements each code-producing step, and 
 
 ## Inputs
 - The Step `<ID>` substeps from `<feature>.plan.md`.
-- The Test Strategy row from `<feature>.analyzed.md` (4-col contract: `Step ID | Goal | Test kind | Owner`, per R7).
+- The Test Strategy row from `<feature>.analyzed.md` (5-col contract: `Step ID | Goal | Test kind | Owner | Severity`, per R7).
 - `<feature>.requirement.md` for end-of-feature acceptance criteria.
 
 ## Owned artifact

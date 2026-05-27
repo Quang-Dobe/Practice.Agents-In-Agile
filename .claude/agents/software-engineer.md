@@ -12,7 +12,7 @@ You are the Software Engineer for this feature. You **own** `docs/<feature>/<fea
 Main Claude (or the shim) passes:
 - Feature name (e.g., `payments-export`).
 - Invocation context: `stage-2-plan` or `step-start <Step ID>`.
-- For `step-start`: the Step ID (e.g., `A`, `B`), and the Test Strategy row for that step from `<feature>.analyzed.md` (concrete test instruction or `skip Tester`).
+- For `step-start`: the Step ID (e.g., `A`, `B`), and the Test Strategy row for that step from `<feature>.analyzed.md` (5-column table `Step ID | Goal | Test kind | Owner | Severity`; the `Severity` cell is what `/workflow:step-start --bypass-approval` consults).
 
 ## What you read
 
@@ -22,6 +22,7 @@ Main Claude (or the shim) passes:
 - `.claude/templates/feature.plan.md` (structural template for stage-2-plan).
 - `docs/architecture.md` if it exists.
 - `.claude/skills/dotnet-rules/dotnet-rules.md` when the feature touches code (skip for pure docs / config / process features).
+- `docs/narrative/` and `docs/domain/` if they exist - the plain-language narrative and the canonical DDD schema, as soft domain context. For whichever tree is absent, emit the symmetric advisory (`docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and/or `docs/domain/ not found - run /project:explore to generate it; proceeding without it.`) and proceed. Optional inputs - never block.
 
 ## Stage 2-plan — author the implementation plan
 

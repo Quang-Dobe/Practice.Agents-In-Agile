@@ -19,28 +19,28 @@ Explicit four-stage orchestrator. Main Claude (you) spawns one specialist per st
 ## Stage 1 — Business Analyst authors `<name>.requirement.md`
 
 1. Verify `docs/<name>/<name>.requirement.md` exists (a raw requirement file). If not, error: `raw requirement file docs/<name>/<name>.requirement.md not found — create it (or run /feature:new <name> first)`.
-2. Spawn the `business-analyst` subagent via the `Agent` tool with `description: BA: author <name>.requirement.md` and a `prompt` containing: the feature name, the path to the raw requirement, the PO brainstorm summary if available (passed by the caller), and the instruction to author the structured requirement per the BA agent spec.
+2. Spawn the `business-analyst` subagent via the `Agent` tool with `description: BA: author <name>.requirement.md` and a `prompt` containing: the feature name, the path to the raw requirement, the PO brainstorm summary if available (passed by the caller), and the instruction to author the structured requirement per the BA agent spec, and the directive to read `docs/narrative/` if it exists (optional context; absent → the `/project:overview` advisory `docs/narrative/ not found - run /project:overview to generate it; proceeding without it.`, never blocks).
 3. Relay the BA's draft to the user. Mark it `[Waiting for Approval]` in chat.
 4. Wait for the user to type `APPROVE`. Do not proceed otherwise.
 5. After APPROVE: no checkbox flip (Stage 1 is a pure gate — the requirement file itself is the deliverable).
 
 ## Stage 2-overview — Architect authors `<name>.overview-plan.md`
 
-1. Spawn the `architect` subagent via the `Agent` tool with `description: Architect: author <name>.overview-plan.md` and a `prompt` containing: the feature name and `stage: stage-2-overview`.
+1. Spawn the `architect` subagent via the `Agent` tool with `description: Architect: author <name>.overview-plan.md` and a `prompt` containing: the feature name and `stage: stage-2-overview`, and the directive to read both `docs/narrative/` and `docs/domain/` if they exist (optional context; symmetric advisory for whichever is absent — `docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and/or `docs/domain/ not found - run /project:explore to generate it; proceeding without it.`, never blocks).
 2. Relay the draft. Mark `[Waiting for Approval]`.
 3. Wait for `APPROVE`.
 4. After APPROVE: flip Step 1 in `<name>.requirement.md` from `[ ]` to `[X]`.
 
 ## Stage 2-analyzed — Architect authors `<name>.analyzed.md` (with Test Strategy table per R7)
 
-1. Spawn the `architect` subagent again via the `Agent` tool with `description: Architect: author <name>.analyzed.md` and a `prompt` containing: the feature name and `stage: stage-2-analyzed`.
-2. Relay the draft. Mark `[Waiting for Approval]`. Confirm to the user that the `## N. Test Strategy` section is present and is a 4-column table (`Step ID | Goal | Test kind | Owner`) with one row per implementation step in `overview-plan.md`.
+1. Spawn the `architect` subagent again via the `Agent` tool with `description: Architect: author <name>.analyzed.md` and a `prompt` containing: the feature name and `stage: stage-2-analyzed`, and the directive to read both `docs/narrative/` and `docs/domain/` if they exist (optional context; symmetric advisory for whichever is absent — `docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and/or `docs/domain/ not found - run /project:explore to generate it; proceeding without it.`, never blocks).
+2. Relay the draft. Mark `[Waiting for Approval]`. Confirm to the user that the `## N. Test Strategy` section is present and is a 5-column table (`Step ID | Goal | Test kind | Owner | Severity`) with one row per implementation step in `overview-plan.md`.
 3. Wait for `APPROVE`.
 4. After APPROVE: flip Step 2 in `<name>.requirement.md` to `[X]`.
 
 ## Stage 2-plan — Software Engineer authors `<name>.plan.md` (mechanical, no Test Strategy column)
 
-1. Spawn the `software-engineer` subagent via the `Agent` tool with `description: SE: author <name>.plan.md` and a `prompt` containing: the feature name, `stage: stage-2-plan`, and the R7 reminder (`plan.md` has no Test Strategy column — that lives in `analyzed.md`).
+1. Spawn the `software-engineer` subagent via the `Agent` tool with `description: SE: author <name>.plan.md` and a `prompt` containing: the feature name, `stage: stage-2-plan`, and the R7 reminder (`plan.md` has no Test Strategy column — that lives in `analyzed.md`), and the directive to read both `docs/narrative/` and `docs/domain/` if they exist (optional context; symmetric advisory for whichever is absent — `docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and/or `docs/domain/ not found - run /project:explore to generate it; proceeding without it.`, never blocks).
 2. Relay the draft. Mark `[Waiting for Approval]`. Confirm to the user that `plan.md` contains no Test Strategy column anywhere, and that Step IDs match `overview-plan.md` exactly (no renumbering).
 3. Wait for `APPROVE`.
 4. After APPROVE: flip Step 3 in `<name>.requirement.md` to `[X]`.

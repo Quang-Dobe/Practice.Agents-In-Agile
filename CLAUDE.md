@@ -10,7 +10,7 @@ This scaffold ships two independent workflows:
 2. **Domain wiki pipeline** — two runtime agents that bootstrap and then keep a
    living DDD wiki under `docs/domain/` in sync with the codebase.
 
-The two pipelines are independent but share the same `docs/` root.
+The two pipelines are independent but share the same `docs/` root — with **one documented exception**: `/workflow:step-handoff` invokes `/project:enhance-wiki` at session close to keep the wiki in sync (see the carve-out under *When to use which workflow*).
 
 ## Feature/Workflow Pipeline
 
@@ -20,7 +20,7 @@ Five-role crew: Product Owner, Business Analyst, Architect, Software Engineer, T
 2. `/feature:structure <NAME>` — four stages with one APPROVE gate per stage:
    - stage-1: Business Analyst authors `<NAME>.requirement.md` (with `Challenges to PO framing` appendix).
    - stage-2-overview: Architect authors `<NAME>.overview-plan.md` (canonical Step A / B / … list).
-   - stage-2-analyzed: Architect authors `<NAME>.analyzed.md` including the 4-column Test Strategy table per R7 (`Step ID | Goal | Test kind | Owner`).
+   - stage-2-analyzed: Architect authors `<NAME>.analyzed.md` including the 5-column Test Strategy table per R7 (`Step ID | Goal | Test kind | Owner | Severity`).
    - stage-2-plan: Software Engineer authors mechanical `<NAME>.plan.md` (no Test Strategy column there).
    After stage-2-plan APPROVE, `<NAME>.status.md` is initialized mechanically from the template.
 3. `/workflow:step-start <NAME> [Step ID]` — brief for the current open step. If the step's Test Strategy row in `analyzed.md` is not `skip Tester`, spawn Tester (drafts test cases / red phase) then Software Engineer; otherwise Software Engineer only. After every requirement step is `[X]`, offer one end-of-feature Tester acceptance pass.
@@ -85,6 +85,7 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 - New product feature, need to plan & build it → **Feature pipeline** (`/feature:new` then `/feature:structure`).
 - Onboarding a new repo, want a living domain wiki → **Domain wiki pipeline**. Run `/project:overview` first to produce a plain-language narrative under `docs/narrative/` (skip if you only want the canonical schema). Then run `/project:explore` once to produce the canonical schema under `docs/domain/` (it will read the narrative as soft input when present). Use `/project:enhance-wiki` whenever code changes to refresh both `docs/narrative/` and `docs/domain/` in one command.
 - Both can be used in the same repo. The feature pipeline writes under `docs/<FEATURE>/`; the wiki pipeline writes under `docs/domain/`. They never touch each other's files.
+  - **Carve-out (the single coupling seam).** The feature pipeline does not otherwise write the wiki trees, with exactly one exception: `/workflow:step-handoff` unconditionally invokes `/project:enhance-wiki` at session close (Ask 3 of the `enhance-workflow-step-start` feature). That invocation is subject to `/project:enhance-wiki`'s own missing-both-trees refusal, and it **blocks handoff finalization** if `/project:enhance-wiki` exits 1 or is APPROVE-pending. Outside this one documented seam, the pipelines remain independent and the 'never touch each other's files' invariant holds.
 
 ## Environment
 

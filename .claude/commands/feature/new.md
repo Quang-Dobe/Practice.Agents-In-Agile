@@ -7,13 +7,13 @@ Brainstorm a new feature using the `product-owner` subagent. This command writes
 
 `$ARGUMENTS` is the feature name (kebab-case folder name under `docs/`). If empty, error: `specify a feature name, e.g. /feature:new payments-export`.
 
-1. Verify `docs/<name>/<name>.requirement.md` exists. If missing, error: `raw requirement not found at docs/<name>/<name>.requirement.md - create it before running /feature:new`.
+1. Verify `docs/<name>/<name>.raw-requirement.md` exists. If missing, error: `raw requirement not found at docs/<name>/<name>.raw-requirement.md - create it before running /feature:new`.
 
 2. Spawn the `product-owner` subagent with these inputs:
    - Feature name: `<name>`
-   - Raw requirement path: `docs/<name>/<name>.requirement.md`
+   - Raw requirement path: `docs/<name>/<name>.raw-requirement.md`
 
-   The PO reads only the raw requirement file. Engineering-context reads (`docs/architecture.md`, `.claude/skills/dotnet-rules/`, other features' `status.md`) are intentionally out of scope for the PO - they belong to the downstream Business Analyst / Architect / Software Engineer.
+   The PO reads only the raw requirement file plus `docs/narrative/` if it exists (optional product context; if absent, the PO emits `docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and proceeds — it never blocks). Engineering-context reads (`docs/domain/`, `docs/architecture.md`, `.claude/skills/dotnet-rules/`, other features' `status.md`) are intentionally out of scope for the PO - they belong to the downstream Business Analyst / Architect / Software Engineer.
 
 3. Relay the Product Owner's `[Waiting for Answer]` questions to the user. Continue Q&A rounds with the PO until it returns a final brainstorm summary.
 

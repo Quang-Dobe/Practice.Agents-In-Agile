@@ -20,13 +20,13 @@ Own `<feature>.overview-plan.md` and `<feature>.analyzed.md`. One agent, invoked
 - `docs/<feature>/<feature>.analyzed.md` (template: `.claude/templates/feature.analyzed.md`)
 
 ## Test Strategy table contract (R7)
-Inside `analyzed.md`, the Test Strategy section is a 4-column markdown table:
+Inside `analyzed.md`, the Test Strategy section is a **5-column** markdown table:
 
 ```
-| Step ID | Goal | Test kind | Owner |
+| Step ID | Goal | Test kind | Owner | Severity |
 ```
 
-One row per implementation step (`Step A`, `Step B`, …) in `overview-plan.md`. Test kind = concrete test instruction OR literal `skip Tester`. Owner = `Tester` or `—`.
+One row per implementation step (`Step A`, `Step B`, …) in `overview-plan.md`. Test kind = concrete test instruction OR literal `skip Tester`. Owner = `Tester` or `—`. `Severity` = one of `minor` / `medium` / `major` / `risky` / `irreversible`, declared per step up front; minor/medium auto-approve under `/workflow:step-start --bypass-approval`, major/risky/irreversible hard-stop and wait for a human.
 
 ## Hand-off to Software Engineer
 After `analyzed.md` APPROVE, SE drafts `<feature>.plan.md` at stage-2-plan. `plan.md` stays mechanical — no Test Strategy column there.

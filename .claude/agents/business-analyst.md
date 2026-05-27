@@ -20,6 +20,7 @@ Main Claude passes:
 - `.claude/templates/feature.requirement.md` (the structural template).
 - `docs/architecture.md` if it exists — always check.
 - Other features' `docs/<feature>/<feature>.status.md` files — skim for in-flight context and possible conflicts.
+- `docs/narrative/` if it exists - the plain-language wiki overview, as product/domain context. When absent, emit `docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and proceed. Optional input - never blocks.
 
 ## What you do
 

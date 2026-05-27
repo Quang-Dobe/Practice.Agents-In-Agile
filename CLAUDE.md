@@ -1,7 +1,14 @@
 # Claude Workflow Scaffold
 
-Reusable `.claude/` folder (agents, commands, hooks, skills, templates) intended to be
+Reusable `.claude-user/` folder (agents, commands, hooks, skills, templates) intended to be
 copy-dropped into new projects. **No application source code lives here.**
+
+This repo holds **two sibling kits**:
+
+- `.claude-user/` — the per-project feature + domain-wiki crew documented below.
+- `.claude/` — a separate **root-tier cross-repo LLM-Wiki** kit (`wiki-bootstrapper` + `wiki-router` agents, `/wiki:bootstrap` and `/wiki:ask`); writes only `docs/memory/`. Independent of the crew below; see `.claude/README.md`.
+
+Everything in this file describes the `.claude-user/` crew unless stated otherwise.
 
 This scaffold ships two independent workflows:
 
@@ -63,15 +70,16 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 
 ## Layout
 
-- `.claude/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, workflow-step-planner, dotnet-rules-checker, test-runner, project-explorer, project-wiki-enhancer, project-overview)
-- `.claude/commands/` — slash commands under `dotnet/`, `feature/`, `project/`, `workflow/`
-- `.claude/skills/` — skills (one folder per skill, name matches owning concept)
-- `.claude/templates/` — `feature.requirement.md`, `feature.overview-plan.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`
-- `.claude/hooks/` — `post-cs-edit.py` (PostToolUse for `Edit|Write|MultiEdit`), `session-start-banner.py`
+- `.claude-user/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, workflow-step-planner, dotnet-rules-checker, test-runner, project-explorer, project-wiki-enhancer, project-overview)
+- `.claude-user/commands/` — slash commands under `dotnet/`, `feature/`, `project/`, `workflow/`
+- `.claude-user/skills/` — skills (one folder per skill, name matches owning concept)
+- `.claude-user/templates/` — `feature.requirement.md`, `feature.overview-plan.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`
+- `.claude-user/hooks/` — `post-cs-edit.py` (PostToolUse for `Edit|Write|MultiEdit`), `session-start-banner.py`
 - `docs/<FEATURE>/` — feature pipeline artifacts: `<FEATURE>.requirement.md`, `.overview-plan.md`, `.plan.md`, `.analyzed.md`, `.status.md`. Raw requirements also start here.
 - `docs/domain/` — domain wiki output owned by the project-explorer / project-wiki-enhancer agents. Bootstrapped once, then diff-updated on every subsequent run.
 - `docs/narrative/` — human-readable narrative tree owned by the `project-overview` agent at bootstrap and by `/project:enhance-wiki` on every subsequent code change. One file per bounded context (`<bc>/walkthrough.md`) plus a top-level `architecture.md`.
-- `.claude/agents/project-overview.md` — runtime agent definition for the narrative bootstrap. Mirrors the `project-explorer` / `project-wiki-enhancer` sibling pattern.
+- `.claude-user/agents/project-overview.md` — runtime agent definition for the narrative bootstrap. Mirrors the `project-explorer` / `project-wiki-enhancer` sibling pattern.
+- `.claude/` — the sibling root-tier LLM-Wiki kit (out of scope for this file). Documented in `.claude/README.md`.
 
 ## Conventions
 
@@ -90,4 +98,4 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 ## Environment
 
 - Windows + PowerShell 7+. Use `$env:VAR`, `$null`, backtick line-continuation.
-- Hooks are Python (`python .claude/hooks/*.py`) — Python must be on PATH.
+- Hooks are Python (`python .claude-user/hooks/*.py`) — Python must be on PATH.

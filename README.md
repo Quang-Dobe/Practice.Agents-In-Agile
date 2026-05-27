@@ -1,6 +1,6 @@
 # Practice — Agents In Agile
 
-A reusable "team of AI agents" kit for software projects. Drop the `.claude/`
+A reusable "team of AI agents" kit for software projects. Drop the `.claude-user/`
 folder into any repository and you get a small crew of specialised AI assistants
 that walk a feature from a rough idea, through structured planning, all the way
 to code — and a second pair of agents that build and maintain a living
@@ -83,7 +83,7 @@ Full beginner-friendly walkthrough: [`docs/workflow-domain-wiki.md`](docs/workfl
 
 ## How to use this kit in your own project
 
-1. Copy the `.claude/` folder into the root of your project.
+1. Copy the `.claude-user/` folder into the root of your project.
 2. Make sure you are on Windows + PowerShell 7+ (or adapt the hook scripts).
 3. Make sure Python is on your PATH — two small hook scripts use it.
 4. Open the project in Claude Code.
@@ -98,12 +98,14 @@ and waiting for `APPROVE`.
 
 ## What lives where
 
-- `.claude/agents/` — the AI roles (one Markdown file per role).
-- `.claude/commands/` — the slash commands you type.
-- `.claude/skills/` — the "rules of the trade" each agent reloads at runtime.
-- `.claude/templates/` — the document shapes each feature gets.
-- `.claude/hooks/` — small Python scripts that run on session start and after
+- `.claude-user/agents/` — the AI roles (one Markdown file per role).
+- `.claude-user/commands/` — the slash commands you type.
+- `.claude-user/skills/` — the "rules of the trade" each agent reloads at runtime.
+- `.claude-user/templates/` — the document shapes each feature gets.
+- `.claude-user/hooks/` — small Python scripts that run on session start and after
   certain edits (mostly for downstream .NET projects).
+- `.claude/` — a **separate** root-tier LLM-Wiki kit (works across many repos, not
+  part of the crew above). See `.claude/README.md` and the `/wiki:*` commands.
 - `docs/<feature>/` — everything the feature pipeline produces, one folder
   per feature.
 - `docs/domain/` — the living wiki the domain pipeline produces and updates.

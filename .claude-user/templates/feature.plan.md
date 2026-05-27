@@ -37,13 +37,13 @@
 ```
 <module>/
   <Subfolder>/
-    <Type1>.cs        # one-line description
-    <Type2>.cs        # one-line description
+    <Type1>        # one-line description
+    <Type2>        # one-line description
 ```
 
 ### Rules applied
 
-- Cite `dotnet-rules` Section X.Y when a rule pins a decision.
+- Cite the project's engineering-rules skill (section / rule) when a rule pins a decision.
 
 ---
 
@@ -55,7 +55,7 @@
 
 ## Step F - Tests
 
-**Goal:** unit tests for Domain and Application; coverage targets per `dotnet-rules` Section 9.3.
+**Goal:** unit tests for the core logic; coverage targets per the project's engineering-rules skill (if one defines them).
 
 | Test class | Project | Covers |
 |---|---|---|

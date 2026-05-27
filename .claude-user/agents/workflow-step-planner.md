@@ -20,7 +20,7 @@ If any input is missing, read the files yourself.
 
 1. Read the plan section for the step in `docs/<feature>/<feature>.plan.md`.
 2. Read the prior step's "Resolved questions" entries in `docs/<feature>/<feature>.status.md` - these often constrain the new step's choices.
-3. If the feature is .NET work, skim `.claude-user/skills/dotnet-rules/dotnet-rules.md` for rule sections that govern the kind of work this step involves.
+3. If the project ships an engineering-rules skill under `.claude-user/skills/`, skim it for rule sections that govern the kind of work this step involves.
 4. Read `docs/<feature>/<feature>.analyzed.md` "Project-Specific Overrides" section, if present, before flagging anything as forced by a rule - the override may already supersede the rule for this feature.
 5. Draft a numbered list of open questions (typically 3-5). For each question:
    - State the question concisely.

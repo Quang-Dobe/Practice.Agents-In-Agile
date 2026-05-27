@@ -33,7 +33,7 @@ Main Claude passes:
 
 1. Read `<feature>.requirement.md` (Approval Checklist / Your Requirements) and every Test Strategy row in `<feature>.analyzed.md`.
 2. For each row whose `Test kind` is concrete (not `skip Tester`), verify the corresponding tests exist and the relevant `done-when` substeps in `plan.md` were exercised.
-3. If a C# repo, hand off to the `test-runner` subagent via main Claude for one final `dotnet test --all` execution.
+3. If the project ships a test-runner agent, hand off to it via main Claude for one final full test-suite execution. This scaffold ships none — each project defines its own test runner.
 4. Return a chat summary: per-step pass/fail status + any acceptance gaps. Do not flip checkboxes — main Claude does that.
 
 ## What you do NOT do
@@ -42,7 +42,7 @@ Main Claude passes:
 - You do not author `requirement.md`, `overview-plan.md`, `analyzed.md`, `plan.md`, or `status.md`.
 - You do not modify the Test Strategy table in `analyzed.md` — that is Architect's table, governed by R7.
 - You do not write production / implementation code — that is SE's job at `/workflow:step-start`.
-- You do not execute tests yourself — hand off to `test-runner` for that.
+- You do not execute tests yourself — hand off to the project's test runner (if it ships one) for that.
 - You do not flip `[X]` checkboxes — main Claude does that after APPROVE.
 - You do not modify templates or other features' files.
 - You do not commit anything.

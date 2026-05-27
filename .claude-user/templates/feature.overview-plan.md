@@ -31,7 +31,7 @@ Numbered list of what happens end-to-end on the happy path. One sentence per ste
 | Concern | Decision |
 |---|---|
 | Language / runtime | <choice> |
-| Architecture | <chosen architecture — cite the project's engineering-rules skill if one pins it> |
+| Architecture | <chosen architecture — cite the project's `architecture-rules` skill if one pins it> |
 | <other concern> | <decision> |
 
 ## 7. Out of Scope (MVP)

@@ -45,13 +45,13 @@ Same shape as Section 2.
 
 ## N+2. Project-Specific Rule Overrides
 
-If this feature deviates from a rule in the project's engineering-rules skill (a `<stack>-rules` skill the project defines under `.claude-user/skills/` — this scaffold ships none), list each override here with:
+If this feature deviates from a rule in a project rule skill (`architecture-rules` / `coding-rules` / `test-rules` under `.claude/skills/` — this scaffold ships none; see `.claude-user/CONVENTIONS.md`), list each override here with:
 
-- The rule section being overridden.
+- The rule skill + section being overridden.
 - The override (one line).
 - The justification (why the rule does not apply here).
 
-The project's rules-checker agent (if it ships one) reads this section before flagging violations and will not flag listed overrides.
+The project's rules-checker agent at `.claude/agents/rules-checker.md` (if it ships one) reads this section before flagging violations and will not flag listed overrides.
 
 ---
 

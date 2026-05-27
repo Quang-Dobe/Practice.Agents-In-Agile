@@ -24,4 +24,4 @@ None. Tester authors no planning doc (no `requirement.md` / `overview-plan.md` /
 Test Strategy authoring is Architect's job at stage-2-analyzed (R7). Tester is never invoked during structure.
 
 ## Hand-off
-Back to main Claude to spawn SE for impl. After end-of-feature pass, hand off to the project's test-runner agent (if it ships one) for full test-suite execution.
+Back to main Claude to spawn SE for impl. After end-of-feature pass, hand off to the project's test-runner agent at `.claude/agents/test-runner.md` (if it ships one) for full test-suite execution. See `.claude-user/CONVENTIONS.md`.

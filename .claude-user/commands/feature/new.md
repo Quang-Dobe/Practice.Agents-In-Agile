@@ -13,7 +13,7 @@ Brainstorm a new feature using the `product-owner` subagent. This command writes
    - Feature name: `<name>`
    - Raw requirement path: `docs/<name>/<name>.raw-requirement.md`
 
-   The PO reads only the raw requirement file plus `docs/narrative/` if it exists (optional product context; if absent, the PO emits `docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and proceeds — it never blocks). Engineering-context reads (`docs/domain/`, `docs/architecture.md`, the project's engineering-rules skill, other features' `status.md`) are intentionally out of scope for the PO - they belong to the downstream Business Analyst / Architect / Software Engineer.
+   The PO reads only the raw requirement file plus `docs/narrative/` if it exists (optional product context; if absent, the PO emits `docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and proceeds — it never blocks). Engineering-context reads (`docs/domain/`, `docs/architecture.md`, the project's rule skills under `.claude/skills/`, other features' `status.md`) are intentionally out of scope for the PO - they belong to the downstream Business Analyst / Architect / Software Engineer.
 
 3. Relay the Product Owner's `[Waiting for Answer]` questions to the user. Continue Q&A rounds with the PO until it returns a final brainstorm summary.
 

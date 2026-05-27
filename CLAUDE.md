@@ -73,7 +73,8 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 - `.claude-user/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, workflow-step-planner, project-explorer, project-wiki-enhancer, project-overview)
 - `.claude-user/commands/` — slash commands under `feature/`, `project/`, `workflow/`
 - `.claude-user/skills/` — skills (one folder per skill, name matches owning concept)
-- `.claude-user/templates/` — `feature.requirement.md`, `feature.overview-plan.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`
+- `.claude-user/templates/` — `feature.requirement.md`, `feature.overview-plan.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`, `project-rules.template.md` (copy-me example for a project rule skill)
+- `.claude-user/CONVENTIONS.md` — how a consuming project supplies its own rule skills + optional agents under its `.claude/` tree (the stack-specific seam this kit deliberately omits)
 - `.claude-user/hooks/` — `session-start-banner.py`
 - `docs/<FEATURE>/` — feature pipeline artifacts: `<FEATURE>.requirement.md`, `.overview-plan.md`, `.plan.md`, `.analyzed.md`, `.status.md`. Raw requirements also start here.
 - `docs/domain/` — domain wiki output owned by the project-explorer / project-wiki-enhancer agents. Bootstrapped once, then diff-updated on every subsequent run.
@@ -84,7 +85,11 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 ## Conventions
 
 - Skill folder names mirror their owning agent where applicable (e.g. `project-explorer` skill ↔ `project-explorer` agent; `project-wiki-enhancer` skill ↔ `project-wiki-enhancer` agent; `project-overview` skill ↔ `project-overview` agent).
-- **Stack-agnostic by design.** This scaffold ships **no** stack- or architecture-specific skills (no `.NET` rules, no language-bound test runner, no per-language edit hook). The five-role crew reads two optional seams when a downstream project provides them: `docs/architecture.md` and a project-defined **engineering-rules skill** under `.claude-user/skills/` (e.g. a `<stack>-rules` skill, with an optional matching rules-checker agent and a project test-runner agent). When neither seam exists, the crew proceeds without it — never blocks. Each new project defines its own rules/checker/test-runner in the scope of that project's repo.
+- **Stack-agnostic by design.** This scaffold ships **no** stack- or architecture-specific skills (no `.NET` rules, no language-bound test runner, no per-language edit hook) and is copied into new projects **unchanged**. The consuming project supplies rules in **its own `.claude/` tree** — never inside `.claude-user/`. The crew reads these optional seams (proceeds, never blocks, when absent):
+  - `docs/architecture.md` — free-form architecture notes.
+  - Concern-named rule skills under `.claude/skills/`: `architecture-rules` (architect, step-planner, SE), `coding-rules` (SE), `test-rules` (tester).
+  - Optional project agents `.claude/agents/rules-checker.md` and `.claude/agents/test-runner.md`.
+  - Full convention + agent→skill map: **`.claude-user/CONVENTIONS.md`**. Author a rule skill by copying `.claude-user/templates/project-rules.template.md` into `.claude/skills/<concern>-rules/SKILL.md`.
 - The three domain-wiki agents (`project-explorer`, `project-wiki-enhancer`, `project-overview`) are tooling for downstream repos; they are runtime, never planning, and never emit a `status.md`.
 - Human edits to generated `docs/domain/` and `docs/narrative/` files must live inside `<!-- human:begin --> ... <!-- human:end -->` fences to survive any future regeneration. Fences are load-bearing in BOTH trees: `docs/domain/` fences survive `/project:enhance-wiki`'s domain pass, and `docs/narrative/` fences survive its narrative pass byte-for-byte.
 

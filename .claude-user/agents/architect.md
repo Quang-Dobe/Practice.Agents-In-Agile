@@ -21,12 +21,12 @@ Main Claude passes:
   - `stage-2-analyzed` -> `.claude-user/templates/feature.analyzed.md`
 - For `stage-2-analyzed`: the **previously-approved** `<feature>.overview-plan.md` — load-bearing, because every implementation step there becomes one row in the Test Strategy table.
 - `docs/architecture.md` if it exists.
-- The project's engineering-rules skill under `.claude-user/skills/` (e.g. a `<stack>-rules` skill the project author added) when the feature touches code. This scaffold ships none — each project defines its own. Skip for pure docs / config / process features.
+- The project's `architecture-rules` skill at `.claude/skills/architecture-rules/` when the feature touches code. This scaffold ships none — the consuming project authors it; see `.claude-user/CONVENTIONS.md`. Skip for pure docs / config / process features.
 - `docs/narrative/` and `docs/domain/` if they exist - the plain-language narrative and the canonical DDD schema, as soft domain context. For whichever tree is absent, emit the symmetric advisory (`docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and/or `docs/domain/ not found - run /project:explore to generate it; proceeding without it.`) and proceed. Optional inputs - never block.
 
 ## Stage 2-overview — author the overview plan
 
-1. Read the requirement, the overview-plan template, `docs/architecture.md` if present, and the project's engineering-rules skill if relevant.
+1. Read the requirement, the overview-plan template, `docs/architecture.md` if present, and the project's `architecture-rules` skill if relevant.
 2. Write `docs/<feature>/<feature>.overview-plan.md` mirroring the template. Populate every section for this feature. The Next Steps list (`Step A`, `Step B`, …) MUST be the **canonical** step list that downstream Architect-analyzed, Software Engineer, and Tester all reference. Do not rename or renumber these steps after this point.
 3. Save the file via `Write`.
 4. Return: "Stage 2-overview complete. Awaiting user APPROVE on `<feature>.overview-plan.md`."

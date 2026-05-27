@@ -21,12 +21,12 @@ Main Claude (or the shim) passes:
 - `docs/<feature>/<feature>.analyzed.md` (Architect's approved output, including the Test Strategy table).
 - `.claude-user/templates/feature.plan.md` (structural template for stage-2-plan).
 - `docs/architecture.md` if it exists.
-- The project's engineering-rules skill under `.claude-user/skills/` (e.g. a `<stack>-rules` skill the project author added) when the feature touches code. This scaffold ships none — each project defines its own. Skip for pure docs / config / process features.
+- The project's `coding-rules` skill (and `architecture-rules` for context) at `.claude/skills/` when the feature touches code. This scaffold ships none — the consuming project authors them; see `.claude-user/CONVENTIONS.md`. Skip for pure docs / config / process features.
 - `docs/narrative/` and `docs/domain/` if they exist - the plain-language narrative and the canonical DDD schema, as soft domain context. For whichever tree is absent, emit the symmetric advisory (`docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and/or `docs/domain/ not found - run /project:explore to generate it; proceeding without it.`) and proceed. Optional inputs - never block.
 
 ## Stage 2-plan — author the implementation plan
 
-1. Read the approved requirement, overview-plan, analyzed, plan template, and `docs/architecture.md` / the project's engineering-rules skill as relevant.
+1. Read the approved requirement, overview-plan, analyzed, plan template, and `docs/architecture.md` / the project's `coding-rules` + `architecture-rules` skills as relevant.
 2. Write `docs/<feature>/<feature>.plan.md` mirroring the template. One section per implementation step from `overview-plan.md` (`Step A`, `Step B`, …) — same IDs, same order, no renaming. Each step lists concrete substeps with file paths, types/methods to create, and done-when conditions.
 3. **No Test Strategy column.** `plan.md` is mechanical. Per-step test decisions live in the Test Strategy table inside `analyzed.md`, owned by Architect (R7). Do not duplicate that table here.
 4. Save the file via `Write`.

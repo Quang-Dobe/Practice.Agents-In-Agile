@@ -43,7 +43,7 @@
 
 ### Rules applied
 
-- Cite the project's engineering-rules skill (section / rule) when a rule pins a decision.
+- Cite the project's rule skills (`architecture-rules` / `coding-rules`, section / rule) when a rule pins a decision.
 
 ---
 
@@ -55,7 +55,7 @@
 
 ## Step F - Tests
 
-**Goal:** unit tests for the core logic; coverage targets per the project's engineering-rules skill (if one defines them).
+**Goal:** unit tests for the core logic; coverage targets per the project's `test-rules` skill (if one defines them).
 
 | Test class | Project | Covers |
 |---|---|---|

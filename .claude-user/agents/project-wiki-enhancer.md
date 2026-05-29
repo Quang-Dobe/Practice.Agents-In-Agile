@@ -3,6 +3,8 @@ name: project-wiki-enhancer
 description: Runtime agent that owns all writes to docs/narrative/ (after project-overview bootstraps it) and docs/domain/ (after project-explorer bootstraps it); dual-pass diff-aware, byte-perfect idempotent, fence-preserving.
 tools: Read, Glob, Grep, Write, Edit, Bash
 model: inherit
+skills:
+  - prompt-defense
 ---
 
 ## Role

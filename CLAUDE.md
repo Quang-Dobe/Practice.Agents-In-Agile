@@ -1,7 +1,11 @@
 # Claude Workflow Scaffold
 
-Reusable `.claude-user/` folder (agents, commands, hooks, skills, templates) intended to be
-copy-dropped into new projects. **No application source code lives here.**
+Reusable `.claude-user/` folder (agents, commands, hooks, skills, templates) that is the
+**source-of-truth for the USER tier** — installed to user scope (`~/.claude/`) via `install.ps1`,
+not copied per-project. Agents are **thin**: each declares a `skills:` manifest and the harness
+preloads those concern-named skills; the consuming repo supplies stack-specific rules under its own
+`.claude/`. **No application source code lives here.** (See `docs/enhance-agent-skills/` for the
+design rationale and `.claude-user/CONVENTIONS.md` for the two-tier model.)
 
 This repo holds **two sibling kits**:
 
@@ -70,7 +74,7 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 
 - `.claude-user/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, workflow-step-planner, project-explorer, project-wiki-enhancer, project-overview)
 - `.claude-user/commands/` — slash commands under `feature/`, `project/`, `workflow/`
-- `.claude-user/skills/` — skills (one folder per skill, name matches owning concept)
+- `.claude-user/skills/` — concern-named skills (one folder per skill). Feature-crew **capability** skills (`feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`, `open-question-drafting`) + **cross-cutting** skills (`pipeline-protocol`, `project-seams`, `prompt-defense`) + the three wiki skills (`project-explorer`, `project-overview`, `project-wiki-enhancer`)
 - `.claude-user/templates/` — `feature.requirement.md`, `feature.overview-plan.md`, `feature.test.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`, `project-rules.template.md` (copy-me example for a project rule skill)
 - `.claude-user/CONVENTIONS.md` — how a consuming project supplies its own rule skills + optional agents under its `.claude/` tree (the stack-specific seam this kit deliberately omits); also holds the per-agent context-access matrix
 - `.claude-user/hooks/` — `session-start-banner.py`
@@ -82,8 +86,8 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 
 ## Conventions
 
-- Skill folder names mirror their owning agent where applicable (e.g. `project-explorer` skill ↔ `project-explorer` agent; `project-wiki-enhancer` skill ↔ `project-wiki-enhancer` agent; `project-overview` skill ↔ `project-overview` agent).
-- **Stack-agnostic by design.** This scaffold ships **no** stack- or architecture-specific skills (no `.NET` rules, no language-bound test runner, no per-language edit hook) and is copied into new projects **unchanged**. The consuming project supplies rules in **its own `.claude/` tree** — never inside `.claude-user/`. The crew reads these optional seams (proceeds, never blocks, when absent):
+- **Thin agents + concern-named skills.** Feature-crew agents hold no procedure — only identity, a `skills:` manifest, and an ownership boundary. The *how* lives in concern-named skills (one capability per skill); the *which-agent-at-which-stage* lives in the commands. One agent loads many skills, and a skill may be shared by many agents. (The three **wiki** skills still mirror their owning agent name — `project-explorer` skill ↔ `project-explorer` agent — because each is a single-owner runtime skill.)
+- **Stack-agnostic by design.** This scaffold ships **no** stack- or architecture-specific skills (no `.NET` rules, no language-bound test runner, no per-language edit hook). The generic tier is installed to user scope **unchanged**; the consuming project supplies rules in **its own `.claude/` tree** — never inside `.claude-user/`. Project skills use **reserved** concerns (`architecture-rules`, `coding-rules`, `test-rules`) plus an **open** set (`dotnet-patterns`, `react-patterns`, …); see `.claude-user/CONVENTIONS.md`. The crew reads these optional seams (proceeds, never blocks, when absent):
   - `docs/architecture.md` — free-form architecture notes.
   - Concern-named rule skills under `.claude/skills/`: `architecture-rules` (architect, step-planner, SE), `coding-rules` (SE), `test-rules` (tester).
   - Optional project agents `.claude/agents/rules-checker.md` and `.claude/agents/test-runner.md`.

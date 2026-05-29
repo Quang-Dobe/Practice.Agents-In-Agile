@@ -28,18 +28,42 @@ agent proceeds without it and **never blocks**.
     architecture.md            <- optional free-form architecture seam
 ```
 
-## Rule skills — named by concern
+## Two tiers: generic (USER) vs project (REPO)
 
-Three skills, named for **what they govern** (not for an agent). One rule has exactly one home; an
-agent may read more than one skill. This avoids duplicating a shared rule across files.
+The crew agents are **thin**. Each agent declares a `skills:` manifest in its frontmatter and the
+harness preloads those skills at startup. Two kinds of skill exist:
 
-| Rule skill | Governs | Read by |
+- **Generic capability skills** — stack-agnostic, ship with this scaffold under `.claude-user/skills/`
+  (installed to user scope). They hold the *how* of each artifact (`architecture-planning`,
+  `risk-severity-analysis`, `implementation-planning`, `step-execution`, …) plus cross-cutting
+  process (`pipeline-protocol`, `project-seams`, `prompt-defense`). **Never edited per project.**
+- **Project rule/pattern skills** — stack-specific, authored by the consuming repo under
+  `.claude/skills/`. They hold *your* rules and framework patterns.
+
+A generic agent reaches project skills through its preloaded `project-seams` skill: load if present,
+proceed if absent. Agents reference project skills by **concern name**, never by path or stage.
+
+## Project rule skills — reserved concerns
+
+Named for **what they govern** (not for an agent). One rule has exactly one home; an agent may read
+more than one skill. These three are **reserved** — the crew auto-discovers them by name:
+
+| Rule skill | Governs | Referenced by |
 |---|---|---|
 | `architecture-rules` | layering, boundaries, allowed patterns, dependency direction | architect, workflow-step-planner, software-engineer (as context) |
-| `coding-rules` | language/style conventions, forbidden patterns, naming | software-engineer |
-| `test-rules` | test layout, naming, coverage targets, fixtures | tester |
+| `coding-rules` | language/style conventions, forbidden patterns, naming | software-engineer, workflow-step-planner |
+| `test-rules` | test layout, naming, coverage targets, fixtures | tester, software-engineer (unit/e2e layout) |
 
 All three are optional and independent. Author only the ones your project needs.
+
+## Project skills — open concern set
+
+Beyond the three reserved concerns, a repo may add **any** kebab-case concern skill
+(`dotnet-patterns`, `react-patterns`, `db-rules`, `a11y-rules`, …) under `.claude/skills/<concern>/`.
+The crew honors any concern in an agent's reference list using the same present-or-proceed rule
+(`project-seams`). Because project scope outranks user scope, a same-named project skill **overrides**
+a generic one — useful if a repo wants a stricter `risk-severity-analysis`. Note in your repo's own
+README which agent references each open concern.
 
 ## Optional project agents
 
@@ -53,8 +77,9 @@ If you also want a PostToolUse build/test hook, add it to your project's
 
 ## How to author a rule skill
 
-1. Copy `.claude-user/templates/project-rules.template.md` to
-   `.claude/skills/<concern>-rules/SKILL.md` (use one of the three concern names above).
+1. Copy `~/.claude/templates/project-rules.template.md` to
+   `.claude/skills/<concern>/SKILL.md` — use a reserved concern (`architecture-rules`, `coding-rules`,
+   `test-rules`) or any open kebab-case concern (`dotnet-patterns`, `db-rules`, …).
 2. Fill in numbered sections so planning artifacts can cite them precisely
    (e.g. "per `coding-rules` Section 3.2"). Stable section numbers = stable citations.
 3. For a long ruleset, keep `SKILL.md` as a thin loader and put the full text in a sibling
@@ -62,15 +87,18 @@ If you also want a PostToolUse build/test hook, add it to your project's
 
 ## How the crew consumes them
 
-- **Architect** cites `architecture-rules` in `overview-plan.md` (Architecture row) and
-  `analyzed.md` (decisions + Step Severity).
-- **Software Engineer** reads `coding-rules` (+ `architecture-rules` for context) before writing the
-  mechanical plan and during each impl step.
-- **Tester** reads `test-rules` while authoring the `test.md` e2e/acceptance spec (planning-only —
-  no source, no runtime role). The Software Engineer later runs the e2e gate via the project
-  `test-runner` (final `plan.md` step), and `rules-checker` audits diffs if present.
+- **Architect** (via `architecture-planning` / `risk-severity-analysis`) cites `architecture-rules`
+  in `overview-plan.md` (Architecture row) and `analyzed.md` (decisions + Step Severity).
+- **Software Engineer** (via `implementation-planning` / `step-execution`) reads `coding-rules`
+  (+ `architecture-rules` for context) before writing the mechanical plan and during each impl step.
+- **Tester** (via `acceptance-spec-authoring`) reads `test-rules` while authoring the `test.md`
+  e2e/acceptance spec (planning-only — no source, no runtime role). The Software Engineer later runs
+  the e2e gate (via `e2e-validation`) using the project `test-runner` (final `plan.md` step), and
+  `rules-checker` audits diffs if present.
 - **Per-feature overrides** go in the `Project-Specific Rule Overrides` section of
   `<feature>.analyzed.md`, citing the rule skill + section being overridden.
+- All seam discovery is the job of the generic `project-seams` skill — agents never hardcode a
+  project-skill path.
 
 ## Invariants
 
@@ -80,10 +108,22 @@ If you also want a PostToolUse build/test hook, add it to your project's
 
 ## Agent context-access matrix
 
-Per-agent read/write scope, derived from each agent's `tools:` frontmatter and its "What you read" /
-"What you do NOT do" contract under `.claude-user/agents/`. Two repos are in play: the **working repo**
-(the feature being built — where the planning crew operates) and the **target repo** (the `<path>` a
-wiki agent documents — always read-only to it; its writes land in the working repo's `docs/` trees).
+Per-agent read/write scope, derived from each agent's `tools:` frontmatter and the contract in its
+preloaded skills (`pipeline-protocol` for ownership, `project-seams` for seams, and the agent's
+capability skills for read scope). Two repos are in play: the **working repo** (the feature being
+built — where the planning crew operates) and the **target repo** (the `<path>` a wiki agent
+documents — always read-only to it; its writes land in the working repo's `docs/` trees).
+
+Each agent's `skills:` manifest:
+
+| Agent | Capability skills | Cross-cutting skills |
+|---|---|---|
+| product-owner | `feature-intake` | `pipeline-protocol`, `prompt-defense` |
+| business-analyst | `requirement-authoring` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
+| architect | `architecture-planning`, `risk-severity-analysis` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
+| software-engineer | `implementation-planning`, `step-execution`, `e2e-validation` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
+| tester | `acceptance-spec-authoring` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
+| workflow-step-planner | `open-question-drafting` | `project-seams`, `prompt-defense` |
 
 Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** = optional, never blocks.
 

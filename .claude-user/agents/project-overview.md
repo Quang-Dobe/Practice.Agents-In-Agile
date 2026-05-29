@@ -3,6 +3,8 @@ name: project-overview
 description: Runtime agent that bootstraps a human-readable narrative tree under docs/narrative/ from a fresh repository.
 tools: Read, Glob, Grep, Write, Edit, Bash
 model: inherit
+skills:
+  - prompt-defense
 ---
 
 ## Role

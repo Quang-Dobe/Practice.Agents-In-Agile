@@ -3,6 +3,8 @@ name: project-explorer
 description: Runtime agent that bootstraps a DDD domain wiki under docs/domain/ from a fresh repository
 tools: Read, Glob, Grep, Write, Edit
 model: inherit
+skills:
+  - prompt-defense
 ---
 
 ## Role

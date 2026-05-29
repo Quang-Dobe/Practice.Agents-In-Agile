@@ -14,7 +14,7 @@ If `[step-id]` is provided (e.g., `C`), force that step. Otherwise:
 3. Read `docs/<feature>/<feature>.status.md` for relevant resolved-question history (especially the previous step's "Resolved questions" section, since it often constrains the next step).
 4. Read the Severity row for that step from `docs/<feature>/<feature>.analyzed.md` (2-col contract: `Step ID | Severity`, per R7). If `analyzed.md` is absent (planning steps of `requirement.md`), there is no Severity to consult; continue.
 5. When you spawn `software-engineer` for this step, it reads both `docs/narrative/` and `docs/domain/` if present, as optional soft context — emitting the symmetric advisory for whichever tree is absent and proceeding regardless. The trees never block.
-6. Spawn the `workflow-step-planner` subagent with the feature name + step name, so it can return the open-question punch list.
+6. Spawn the `workflow-step-planner` subagent with the feature name + step name, so it can return the open-question punch list (it follows its `open-question-drafting` skill).
 7. Print a focused brief in this exact shape:
 
    **Step:** `<step-id>` - `<short title>`
@@ -27,7 +27,7 @@ If `[step-id]` is provided (e.g., `C`), force that step. Otherwise:
 
 8. Do **not** write code. Do **not** modify any files. Wait for the user's response.
 
-When the user gives the go-ahead and all `[Waiting for Answer]` items are resolved, main Claude spawns the `software-engineer` subagent with `<feature>` + Step ID. SE executes the step's substeps, writes production code and unit tests, and — for the final step — authors the e2e tests from `test.md` and runs them via the project `test-runner`. The Tester is not spawned at `step-start`.
+When the user gives the go-ahead and all `[Waiting for Answer]` items are resolved, main Claude spawns the `software-engineer` subagent with `<feature>` + Step ID (it follows its `step-execution` skill; the final step also follows `e2e-validation`). SE executes the step's substeps, writes production code and unit tests, and — for the final step — authors the e2e tests from `test.md` and runs them via the project `test-runner`. The Tester is not spawned at `step-start`.
 
 This does not flip `[X]` — the user types `APPROVE` and main Claude flips it via `/workflow:step-approve`.
 

@@ -9,9 +9,10 @@ consumed_by: wiki-router agent, wiki-bootstrapper agent
 
 This skill is the **auditable write manual** for every write into `docs/memory/`. It is
 reloaded at the start of every run by **two** agents before they touch a single byte of
-the wiki: the `wiki-router` (Step C) when source is read at T5 and it hands off to the
-memory-append path, and the `wiki-bootstrapper` (Step B) when it bootstraps/refreshes the
-store. Neither agent inlines these rules — this file is the single source of truth for
+the wiki: the `wiki-router` when source is read at T5 and it hands off to the
+memory-append path, and the `wiki-bootstrapper` when it bootstraps/refreshes the
+store. Both agents reload this skill before writing. Neither agent inlines these rules —
+this file is the single source of truth for
 write confinement, the create-or-append disposition, `source-ref:` provenance, the dedup
 guard, and the ordered write procedure.
 
@@ -36,7 +37,7 @@ exceptions.
 
 Before any write, the agent confirms the target path is under `docs/memory/`. If a
 candidate target resolves anywhere else, the write is refused — there is no fallback that
-writes outside `docs/memory/`. (FR-6, NFR-2.)
+writes outside `docs/memory/`.
 
 ## Create-or-append policy
 
@@ -45,7 +46,7 @@ agent MAY create a new topic file AND/OR append to an existing one, per the rout
 below. All writes are **append-only within any file**: the agent never overwrites,
 reorders, or removes prior content.
 
-### Entry shape (decision 1)
+### Entry shape
 
 An agent-written entry **reuses the fenced-code-block shape** from
 `.claude/templates/memory-topic.md` and carries exactly **two REQUIRED fields** and
@@ -64,11 +65,11 @@ fence pair is a **human-only curation slot**: a human may add one inside an entr
 but the agent never emits, duplicates, or pre-seeds it. The agent also writes **no**
 timestamp and **no** triggering-question field — exactly the two required fields, no more.
 
-### Topic routing — which file (decision 4)
+### Topic routing — which file
 
 The entry appends to the topic **slug that classified the question** — the matched
 `docs/memory/` topic title or `docs/architecture.md` heading from the router's
-classification manifest (the CQ1 scope manifest). Slug derivation mirrors BQ3: the
+classification manifest. Slug derivation: the
 bounded-context / heading name lowercased into a slug (e.g. `Billing` → `billing`).
 
 - If `docs/memory/<slug>.md` **exists** → **append** the new entry (disposition =
@@ -78,7 +79,7 @@ bounded-context / heading name lowercased into a slug (e.g. `Billing` → `billi
   `## Sources` section, and a `## Entries` section), then add the entry into its
   `## Entries` section (disposition = create).
 
-### Append-only enforcement (decision 5)
+### Append-only enforcement
 
 Writes insert **STRICTLY at the END of the `## Entries` section** of the target file, and
 touch **nothing else**. The agent never edits, reorders, or removes a single byte of:
@@ -90,11 +91,11 @@ touch **nothing else**. The agent never edits, reorders, or removes a single byt
   fence-protection rule below).
 
 A T5 source-read append is an **`## Entries`-only** operation. It **never** adds, removes,
-or refreshes a `## Sources` link — maintaining `## Sources` is the bootstrapper's job
-(BQ2), not the write path's. Provenance for a source-read finding lives in the entry's
+or refreshes a `## Sources` link — maintaining `## Sources` is the bootstrapper's job,
+not the write path's. Provenance for a source-read finding lives in the entry's
 `source-ref:` field, not in `## Sources`.
 
-### Gate posture — ungated T5 write-back vs gated bootstrap (decision 7)
+### Gate posture — ungated T5 write-back vs gated bootstrap
 
 The two consuming agents enter this manual under **different** gate postures, and this
 manual does **not** reconcile them into one:
@@ -106,29 +107,22 @@ manual does **not** reconcile them into one:
   not operator-invoked and presents no `APPROVE` gate. Its safety net is **append-only +
   same-ref dedup + fence-protection** — not a gate.
 - **`wiki-bootstrapper` bulk bootstrap is operator-invoked and `APPROVE`-gated.** The
-  Step B bootstrap path presents the exact-case `APPROVE` gate before its bulk write
+  bootstrap path presents the exact-case `APPROVE` gate before its bulk write
   (per the README convention). That gate governs the **bulk** bootstrap write, **NOT**
   the router's incidental T5 write-back.
-
-These do not contradict: bootstrap = deliberate, bulk, operator-driven, gated; router
-T5 write-back = incidental, single-entry, automatic, ungated. Both still obey the same
-append-only / dedup / confinement / fence rules in this manual.
 
 ### Fence protection (inline)
 
 Never write **inside** a `<!-- human:begin --> ... <!-- human:end -->` region, and never
 alter the bytes of any fenced region. Agent entries always land **after** the last
 existing content of `## Entries`; an append never splits, wraps, relocates, or re-indents
-a human fence. (Soft pointer — Step E: the asymmetric co-ownership rationale and the
-ownership table are authored as `## Co-ownership contract` and `## Fence convention` in
-**this same file** by Step E. Those two sections do not exist yet at end of Step D, and
-their absence does **not** make this skill malformed-for-write — see `## Well-formedness`.
-Do not author them here.)
+a human fence. The asymmetric co-ownership rationale and the
+ownership table live in `## Co-ownership contract` and `## Fence convention` below.
 
 ## Provenance ref
 
 Every appended entry records a single `source-ref:` line. It is the **diff-ready**
-provenance shape a future staleness feature (F4) can compare against HEAD. **v1 stores
+provenance shape a future staleness feature can compare against HEAD. **v1 stores
 the ref only and does not diff it.**
 
 Serialization (matches `.claude/templates/memory-topic.md`):
@@ -158,7 +152,7 @@ tuple; whatever the surface layout, the normalized tuple is what dedup keys on.
 **same normalized key**. If found, **skip** the append and **report the skip**. The guard
 is a cheap exact-key match, not semantic dedup.
 
-### Normalized key (decision 2)
+### Normalized key
 
 The dedup key is the tuple:
 
@@ -184,7 +178,7 @@ equal.
   against a missing-line entry, and vice versa.
 
 Dedup suppresses **only the write**. The question is still answered to the user even when
-the append is skipped. (FR-7.)
+the append is skipped.
 
 ## Procedure
 
@@ -198,7 +192,7 @@ The ordered write algorithm. Both consuming agents follow it for every candidate
    to get the tuple `(<repo>, <repo-relative-path>, <line>)`; a missing `:<line>`
    normalizes to `(…, ∅)`.
 3. **Resolve the target topic.** Derive the slug from the classifying BC / heading
-   (lowercased), giving `docs/memory/<slug>.md` (decision 4). Confirm the target path is
+   (lowercased), giving `docs/memory/<slug>.md`. Confirm the target path is
    under `docs/memory/` (`## Write confinement`).
 4. **Scan for a duplicate.** Read the target topic's `## Entries` (if the file exists) and
    compute the normalized key of each existing entry. If any equals the candidate key →
@@ -219,7 +213,7 @@ The ordered write algorithm. Both consuming agents follow it for every candidate
 
 ## Well-formedness
 
-This section makes the **malformed** stop-condition concrete and testable (decision 3),
+This section makes the **malformed** stop-condition concrete and testable,
 so the `wiki-router` and `wiki-bootstrapper` stop-before-write conditions ("cannot be
 read, YAML frontmatter does not parse, or required body sections absent") have a precise
 schema to check.
@@ -248,11 +242,9 @@ A skill is **malformed** (and the consuming agent MUST **stop before any write**
 - its frontmatter is missing any of `name: wiki-memory` / `version` / `consumed_by`, OR
 - its body is missing ANY of the 5 required sections above.
 
-**Not in the required-for-write set.** Step E's `## Co-ownership contract` and
-`## Fence convention` are **NOT** required for the write path. A skill missing **only**
-those two is **well-formed for write** — the write proceeds normally. At end of Step D
-this skill legitimately lacks both (they are authored in Step E); that is the expected
-negative-control state, not a malformed skill.
+**Not in the required-for-write set.** The `## Co-ownership contract` and
+`## Fence convention` sections are **NOT** required for the write path. A skill missing
+**only** those two is **well-formed for write** — the write proceeds normally.
 
 ## Co-ownership contract
 

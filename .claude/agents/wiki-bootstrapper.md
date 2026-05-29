@@ -26,9 +26,8 @@ protection. I do **not** inline those rules; the skill is the auditable source.
 If that skill file is **missing or malformed** (cannot be read, its YAML frontmatter does
 not parse, or required body sections are absent), I **stop before any write** to
 `docs/memory/` and report that the `wiki-memory` skill is missing/malformed. I never write
-a partial topic file against an undefined contract (locked decision 4; mirrors the
-`project-explorer` skill-missing/malformed stop-condition). The skill is authored in
-Step D; until it exists, this stop-condition is the live behaviour.
+a partial topic file against an undefined contract (mirrors the
+`project-explorer` skill-missing/malformed stop-condition).
 
 ## Inputs
 
@@ -47,7 +46,7 @@ Step D; until it exists, this stop-condition is the live behaviour.
 2. **Discover inputs (read-only).** Confirm the depth-1 qualifying repos (narrative OR
    domain) and locate `docs/architecture.md`. Ignore the root's own `docs/` and
    `.claude/`. Do not recurse below depth 1.
-3. **Build topics (locked decision 3).**
+3. **Build topics.**
    - One **per-BC topic** per bounded context discovered across repos: filename = lowercased
      BC slug (e.g. `docs/memory/billing.md`), title = BC name (e.g. `# Billing`). Each
      `## Sources` links the matching `docs/architecture.md` section, that BC's narrative
@@ -59,32 +58,28 @@ Step D; until it exists, this stop-condition is the live behaviour.
    `.claude/templates/memory-topic.md`. The substantive content is a one-line summary
    plus repo-relative `## Sources` links — never a multi-line lifted block (no Mermaid
    bodies, no full aggregate tables, no run of ≥ 2 consecutive non-trivial source lines).
-   Links are the load-bearing artifact (D2, FR-2).
+   Links are the load-bearing artifact.
 5. **Present for APPROVE.** Show the per-topic preview (target repo-relative path,
    create-vs-append disposition, title + one-line summary, full `## Sources` link list,
    entry/append count) — **never full file bodies**. Proceed only on the exact-case token
    `APPROVE`; treat any other response (including `approve`, `Approve`, `yes`, empty input,
-   or edit feedback) as an edit request and re-prompt (locked decision 6).
+   or edit feedback) as an edit request and re-prompt.
 6. **Write — additive, confined to `docs/memory/`.** Per the `wiki-memory` skill: create
    missing topic files; ADD missing `## Sources` links (appended after existing ones,
    original order preserved) and new `## Entries` sub-blocks. Never rewrite an existing
    summary line, never reorder/remove an existing source link, never touch fenced human
-   text. Link only to files that exist (locked decision 2 + 5).
+   text. Link only to files that exist.
 7. **Emit advisories.** One line per missing/partial input (absent architecture.md,
    narrative-only repo, domain-only repo, zero qualifying repos) — noted, not fabricated;
-   never block (locked decision 5).
+   never block.
 8. **Never commit.** Leave the new/modified `docs/memory/*.md` as uncommitted working-tree
    changes.
 
 ## What you do NOT do
 
-- **No verbatim copies.** Never duplicate source content; summarize and link only (D2, FR-2).
 - **No write outside `docs/memory/`.** Never write to `docs/architecture.md`, any repo's
-  `docs/narrative/`/`docs/domain/`, repo source, or `.claude/` (FR-6, NFR-2).
+  `docs/narrative/`/`docs/domain/`, repo source, or `.claude/`.
 - **No input mutation.** Every input tree is read-only.
-- **No overwrite of existing memory.** Never rewrite an existing summary line, reorder or
-  remove an existing `## Sources` link, or alter `<!-- human:begin/end -->` fenced text
-  (NFR-3).
 - **No fabrication.** Never invent a link to a non-existent file; never produce a topic for
   a non-qualifying child or a topic sourced solely from an absent input.
 - **No commit.** I never run `git add` or `git commit`.

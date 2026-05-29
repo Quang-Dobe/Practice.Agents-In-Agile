@@ -8,7 +8,7 @@ sub-agent, which classifies it in-domain vs out-of-domain and — when in-domain
 answers from the wiki using the fixed retrieval order (`docs/memory/*` →
 `docs/architecture.md` → repos' `docs/narrative/` → repos' `docs/domain/` → repo source,
 last resort), stopping at the first tier that answers. The router reads the wiki first
-and repo source last; in Step C it never writes on a pure read/answer path.
+and repo source last; it never writes on a pure read/answer path.
 
 `<question>` is the natural-language question to answer. This command takes a **question**,
 not a path — there is no remote-URL guard.
@@ -30,7 +30,7 @@ not a path — there is no remote-URL guard.
    - the operator's `<question>`;
    - the instruction that the agent must **reload both skills before acting**, in this
      order: `.claude/skills/wiki-router/SKILL.md` first (classification + fixed
-     retrieval order), then `.claude/skills/wiki-memory/SKILL.md` (the Step-D write
+     retrieval order), then `.claude/skills/wiki-memory/SKILL.md` (the write
      manual, used only on a source-read hand-off; if it is missing/malformed the agent
      still answers but stops before any write and reports the missing skill).
 
@@ -38,9 +38,6 @@ not a path — there is no remote-URL guard.
    out-of-domain), emits its one-line `wiki-trace:` line, and — only if it had to read
    repo source — names the memory-append hand-off by path. This mirrors the
    `/wiki:bootstrap` → `wiki-bootstrapper` and `/project:explore` → `project-explorer`
-   spawn patterns.
-
-4. **No write on a read/answer path.** A question answered from the wiki (no source read)
-   produces zero writes and presents no `APPROVE` prompt — there is no write to gate in
-   Step C. The router only ever writes via the Step-D `wiki-memory` write path, after a
-   source read, with that skill loaded and valid.
+   spawn patterns. A question answered from the wiki (no source read) produces zero
+   writes and presents no `APPROVE` prompt; the router only ever writes via the
+   `wiki-memory` write path, after a source read, with that skill loaded and valid.

@@ -9,7 +9,7 @@ Bootstrap the DDD domain wiki under `docs/domain/` of the working directory by e
 
 1. Parse `<path>` (required) and `[branch-name]` (optional) from the slash-command args. If `<path>` is empty, error: `specify a local filesystem path, e.g. /project:explore C:\src\my-repo`.
 
-2. If `<path>` matches `^https?://` or `^git@`, refuse with the literal one-line message `Remote URLs are not supported in v1. Pass a local filesystem path.` and stop — do not spawn the agent. (Remote URL support is deferred per project-explorer requirement.md and analyzed.md F3.)
+2. If `<path>` matches `^https?://` or `^git@`, refuse with the literal one-line message `Remote URLs are not supported in v1. Pass a local filesystem path.` and stop — do not spawn the agent.
 
 3. Resolve `<path>` to an absolute filesystem path before spawning.
 

@@ -1,10 +1,10 @@
 <!-- TEMPLATE — this is the shape of a docs/memory/<topic>.md file, NOT live memory.
-     Steps B (bootstrap) and D (memory-append) both write against this contract.
+     The bootstrap and memory-append paths both write against this contract.
      Copy the shape, fill in real content, and delete every line marked EXAMPLE. -->
 
 # <Topic title>
 
-One-line summary of what this topic covers. Summarize and link — never paste large verbatim copies of the source (D2, FR-2).
+One-line summary of what this topic covers. Summarize and link — never paste large verbatim copies of the source.
 
 ## Sources
 
@@ -33,4 +33,4 @@ fence and never alters fenced text byte-for-byte.
 
 ---
 
-**Append rule.** Agent appends land **only** in `## Entries`. The agent never overwrites the `## Sources` section and never alters any `<!-- human:begin --> ... <!-- human:end -->` fenced text. (Forward-reference: the create-or-append / dedup / fence rules are authored in Steps D and E in `skills/wiki-memory/SKILL.md`.)
+**Append rule.** Agent appends land **only** in `## Entries`. The agent never overwrites the `## Sources` section and never alters any `<!-- human:begin --> ... <!-- human:end -->` fenced text. (The create-or-append / dedup / fence rules live in `skills/wiki-memory/SKILL.md`.)

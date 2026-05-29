@@ -43,12 +43,12 @@ All three are optional and independent. Author only the ones your project needs.
 
 ## Optional project agents
 
-| Agent (`.claude/agents/`) | Job | Replaces the old scaffold's |
-|---|---|---|
-| `rules-checker.md` | Read-only audit of a diff against the rule skills; returns a punch list, never auto-fixes. Honors the `Project-Specific Rule Overrides` block in `<feature>.analyzed.md`. | `dotnet-rules-checker` |
-| `test-runner.md` | Runs the project's test command, returns ONLY failures + build errors (keeps raw output out of the main thread). | `test-runner` |
+| Agent (`.claude/agents/`) | Job |
+|---|---|
+| `rules-checker.md` | Read-only audit of a diff against the rule skills; returns a punch list, never auto-fixes. Honors the `Project-Specific Rule Overrides` block in `<feature>.analyzed.md`. |
+| `test-runner.md` | Runs the project's test command, returns ONLY failures + build errors (keeps raw output out of the main thread). |
 
-If you also want a PostToolUse build/test hook (the old `post-cs-edit.py`), add it to your project's
+If you also want a PostToolUse build/test hook, add it to your project's
 `.claude/settings.json` — the scaffold no longer ships one.
 
 ## How to author a rule skill

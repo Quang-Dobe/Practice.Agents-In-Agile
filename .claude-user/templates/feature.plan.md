@@ -9,7 +9,7 @@
 - Runtime / SDK requirements.
 - NuGet (or other) packages.
 - Any seed data, environment variables, or external services.
-- Explicit *exclusions* (e.g., "no MediatR per `<feature>.analyzed.md` Resolved Decision X").
+- Explicit *exclusions* (e.g., "no MediatR per `<feature>.analyzed.md` Resolved Decisions row #N").
 
 ---
 

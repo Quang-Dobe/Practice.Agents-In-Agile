@@ -41,7 +41,7 @@ I reload `.claude-user/skills/project-overview/SKILL.md` at the start of every r
 - Do not mutate the target repo (read-only access).
 - Do not write outside `docs/narrative/` of the working directory.
 - Do not emit a status file. The runtime agent is not a planning role; this feature's own `status.md` is owned by the scaffold workflow, not by this agent.
-- Do not re-run, diff, or merge against an existing `docs/narrative/` tree. Subsequent refreshes of `docs/narrative/` are owned by `/project:enhance-wiki` (the dual-pass enhancer command); this agent is bootstrap-only.
+- Do not re-run, diff, or merge against an existing `docs/narrative/` tree.
 - Do not write to `docs/domain/`. That output tree is owned by `project-explorer` and `project-wiki-enhancer`; this agent reads neither.
 - Do not attempt to verify the `[branch-name]` arg against the target repo's actual git state (recording-only, same convention as `project-explorer`).
 - Do not invent participant names, message arrows, or `file:line` citations in Mermaid diagrams. See `SKILL.md` `## Mermaid sourcing rules`.

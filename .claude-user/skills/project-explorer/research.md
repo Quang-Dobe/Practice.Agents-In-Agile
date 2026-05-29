@@ -8,7 +8,7 @@ These notes are the auditable source for the heuristics used by the `project-exp
 The "Blue Book". Canonical source for the tactical vocabulary the agent emits (aggregate, repository, domain event, domain service, value object, bounded context, ubiquitous language, context map). The locked `docs/domain/` output shape mirrors Evans' tactical-pattern catalogue and the context-map idea. Cited here because every category the agent writes traces back to a chapter in this book.
 
 **Vernon, Vaughn — _Implementing Domain-Driven Design_ (Addison-Wesley, 2013).**
-The "IDDD" book. Operational follow-up to Evans, with concrete tactical patterns (aggregate design rules, small aggregates, eventual consistency between aggregates, references by identity). Cited here for the BC-discovery treatment as a sociotechnical activity (not pure code inference) — directly motivates the human-in-the-loop APPROVE gate the agent enforces.
+The "IDDD" book. Operational follow-up to Evans, with concrete tactical patterns (aggregate design rules, small aggregates, eventual consistency between aggregates, references by identity). Cited here for the BC-discovery treatment as a sociotechnical activity (not pure code inference) — directly motivates printing the bounded-context decisions in the candidate report for the audit trail before auto-writing.
 
 **Jimmy Bogard — jimmybogard.com (MediatR / vertical slice writings).**
 Current .NET ecosystem source. Author of MediatR and the vertical-slice architecture style widely adopted in modern .NET codebases. Cited here for two reasons: (a) MediatR's `IRequest` / `IRequestHandler` / `INotification` shapes are the single most reliable command / event signals in .NET; (b) Bogard's commentary on the anemic domain model and on "favouring behaviour over data" feeds directly into the failure-mode catalogue below.
@@ -74,14 +74,14 @@ Step-by-step recipe:
 6. **Bucket by reach.** Terms appearing in `>= 2` distinct projects / namespaces go into the repo-wide `glossary.md`. Terms appearing in only one project go into that BC's local `glossary.md`.
 7. **Stub definitions from context.** For each candidate term, pull the XML doc-comment if present; otherwise pull the first sentence of the containing class's doc-comment; otherwise leave the definition as `TODO: define (seen in <project>/<file>)`. The agent must not fabricate definitions — empty / TODO is preferable to hallucinated meaning.
 
-The output of this recipe is a candidate glossary term list, ready to be written into `glossary.md` files by the writer in Step D.
+The output of this recipe is a candidate glossary term list, ready to be written into `glossary.md` files by the writer.
 
 ## Known failure modes
 
 Four documented failure modes the agent must watch for. Each lists name, observable symptom, and recommended treatment.
 
 - **Anemic domain model.**
-  Symptom: aggregate / entity classes hold only public getter/setter properties and no behaviour methods; all logic lives in a sibling `*Service` class that mutates the entity directly. Treatment: still emit the aggregate doc, but include a top-of-file note flagging "behaviour-free aggregate — invariants likely live in <ServiceName>". Add an entry in the BC candidate report so the human gate is aware before APPROVE.
+  Symptom: aggregate / entity classes hold only public getter/setter properties and no behaviour methods; all logic lives in a sibling `*Service` class that mutates the entity directly. Treatment: still emit the aggregate doc, but include a top-of-file note flagging "behaviour-free aggregate — invariants likely live in <ServiceName>". Add an entry in the BC candidate report so the human reviewer can see it in the audit trail.
 
 - **Generic repository everywhere.**
   Symptom: a single `IRepository<T>` / `IGenericRepository<T>` interface is used for every aggregate; no per-aggregate repository interfaces exist. Treatment: do not emit one `repositories.md` row per `T` discovered (that would be misleading); instead, emit a single `repositories.md` entry naming the generic interface and listing the `T` parameters observed, with a note that per-aggregate intent must be confirmed by the human. Cross-reference this failure mode in the candidate report.
@@ -94,11 +94,11 @@ Four documented failure modes the agent must watch for. Each lists name, observa
 
 ## What to do when code-as-source-of-truth conflicts with itself
 
-**Rule.** When two parts of the codebase disagree on the same invariant or the same calculation, the writer must (a) prefer the side with stricter invariants enforced in the constructor / domain method, and (b) surface the conflict in the BC candidate report so the human-in-the-loop gate can adjudicate before any file is written under `docs/domain/`.
+**Rule.** When two parts of the codebase disagree on the same invariant or the same calculation, the writer must (a) prefer the side with stricter invariants enforced in the constructor / domain method, and (b) surface the conflict in the BC candidate report so the human reviewer can see it in the audit trail; then files are written.
 
 **Hypothetical .NET example.** Suppose `Order.Total` is computed two ways in the same repo: once as a method on the `Order` aggregate that sums `_lines.Sum(l => l.UnitPrice * l.Quantity)` and applies a discount via a `Discount` value object, and again as a column projection on `OrderListDto` that recomputes the total as `Lines.Sum(l => l.UnitPrice * l.Quantity)` and forgets the discount. The aggregate side is stricter (it includes the discount invariant); the projection side is laxer (it silently drops the discount). The writer prefers the aggregate's definition for the `Order.Total` invariant in `aggregates/Order.md`, and adds a candidate-report entry "Conflict: `OrderListDto.Total` projection drops the `Discount` rule enforced in `Order.RecalculateTotal()`".
 
-**Surface, do not silently pick.** The writer MUST NOT pick one side without recording the conflict. If the writer detects two divergent definitions and emits only one of them with no note in the candidate report, the human reviewer has no way to spot the bug — and code-as-source-of-truth has just become code-as-source-of-bug-disguised-as-truth. The minimum acceptable behaviour is: pick the stricter side for the canonical doc, AND emit a "Conflicts detected" subsection in the BC candidate report listing every divergence with both `file:line` anchors so the human gate can override or accept the choice.
+**Surface, do not silently pick.** The writer MUST NOT pick one side without recording the conflict. If the writer detects two divergent definitions and emits only one of them with no note in the candidate report, the human reviewer has no way to spot the bug — and code-as-source-of-truth has just become code-as-source-of-bug-disguised-as-truth. The minimum acceptable behaviour is: pick the stricter side for the canonical doc, AND emit a "Conflicts detected" subsection in the BC candidate report listing every divergence with both `file:line` anchors for the audit trail.
 
 ## Soft input from `docs/narrative/`
 

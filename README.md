@@ -64,13 +64,14 @@ Think of the narrative as a friendly tour with diagrams and plain-words intros, 
 
 There are only two commands:
 
-- `/project:overview <path>` — used **once** when you first arrive at a repo, **before** `/project:explore`. The agent reads the code, suggests "areas of the business" (bounded contexts) just like `/project:explore` does, asks you to APPROVE the groupings, then writes a plain-language tour at `docs/narrative/` — one short `architecture.md` for the whole repo, one `walkthrough.md` per area with a diagram, a 3-paragraph intro, and a per-endpoint / per-worker drill-down. Optional but recommended for non-technical readers.
+- `/project:overview <path>` — used **once** when you first arrive at a repo, **before** `/project:explore`. The agent reads the code, detects the "areas of the business" (bounded contexts) just like `/project:explore` does, prints them for the audit trail, then writes a plain-language tour at `docs/narrative/` automatically (no APPROVE gate) — one short `architecture.md` for the whole repo, one `walkthrough.md` per area with a diagram, a 3-paragraph intro, and a per-endpoint / per-worker drill-down. Optional but recommended for non-technical readers.
 - `/project:explore <path>` — used **once** when you first arrive at a repo.
   The agent reads the code, suggests groupings (called "bounded contexts" —
-  basically "areas of the business this code is about"), asks you to APPROVE
-  the groupings, then writes the wiki. If you ran `/project:overview` first, it also reads that narrative as a hint to better order and describe the areas; without it, `/project:explore` works exactly as before.
+  basically "areas of the business this code is about"), prints the groupings
+  for the audit trail, then writes the wiki automatically (no APPROVE gate). If you ran `/project:overview` first, it also reads that narrative as a hint to better order and describe the areas; without it, `/project:explore` works exactly as before.
 - `/project:enhance-wiki [path]` — run this whenever the code has changed.
-  The agent figures out **what** changed, asks before adding any new area,
+  The agent figures out **what** changed and auto-creates any new area after
+  printing the candidate report (no APPROVE gate),
   preserves anything you wrote by hand (as long as it's wrapped in special
   marker comments), and only re-writes pages that actually differ. If
   nothing changed, it says so and exits cleanly.
@@ -91,8 +92,9 @@ Full beginner-friendly walkthrough: [`docs/workflow-domain-wiki.md`](docs/workfl
    - To plan and build a new feature: run `/feature:new my-feature-name`.
    - To create a wiki of an existing codebase: run `/project:overview <path-to-that-codebase>` first (optional but recommended — gives you a plain-language tour at `docs/narrative/`), then `/project:explore <path-to-that-codebase>` to produce the canonical schema at `docs/domain/`.
 
-That's the whole setup. Everything else is the agents asking you questions
-and waiting for `APPROVE`.
+That's the whole setup. In the feature pipeline, the rest is the agents asking
+you questions and waiting for `APPROVE`; the domain-wiki agents run on their own
+and write automatically.
 
 ---
 
@@ -102,8 +104,9 @@ and waiting for `APPROVE`.
 - `.claude-user/commands/` — the slash commands you type.
 - `.claude-user/skills/` — the "rules of the trade" each agent reloads at runtime.
 - `.claude-user/templates/` — the document shapes each feature gets.
-- `.claude-user/hooks/` — small Python scripts that run on session start and after
-  certain edits (mostly for downstream .NET projects).
+- `.claude-user/hooks/` — a small Python script that runs on session start (the
+  scaffold is stack-agnostic; downstream projects add their own hooks via
+  `.claude/settings.json`).
 - `.claude/` — a **separate** root-tier LLM-Wiki kit (works across many repos, not
   part of the crew above). See `.claude/README.md` and the `/wiki:*` commands.
 - `docs/<feature>/` — everything the feature pipeline produces, one folder
@@ -115,8 +118,9 @@ and waiting for `APPROVE`.
 
 ## Two simple rules you should know
 
-1. **Nothing is done until you type `APPROVE`.** Every step has a gate.
-   Until you approve, no checkbox flips and no next step starts.
+1. **In the feature pipeline, nothing is done until you type `APPROVE`** — every
+   planning stage and step has a gate. Until you approve, no checkbox flips and no
+   next step starts. (The domain-wiki agents are fully agent-driven and do not gate.)
 2. **Hand-written edits inside `docs/domain/` and `docs/narrative/` need fences.** If you personally edit a generated wiki page (either tree), wrap your edits like this so they survive the next update:
 
    ```

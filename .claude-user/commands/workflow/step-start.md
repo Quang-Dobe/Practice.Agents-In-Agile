@@ -5,7 +5,7 @@ argument-hint: <feature> [step-id] [--bypass-approval]
 
 Begin work on the current open requirement step of a feature.
 
-`$ARGUMENTS` is `<feature>` followed optionally by `[step-id]`. The optional `--bypass-approval` flag (named to match the already-shipped `/project:enhance-wiki` flag) is a boolean: **absent = false = today's behavior** (the normal per-step APPROVE gate, no auto-advance); it is order-independent and may appear before or after `[step-id]`. If `<feature>` is missing, error: `specify a feature, e.g. /workflow:step-start payments-export`.
+`$ARGUMENTS` is `<feature>` followed optionally by `[step-id]`. The optional `--bypass-approval` flag is a boolean: **absent = false = today's behavior** (the normal per-step APPROVE gate, no auto-advance); it is order-independent and may appear before or after `[step-id]`. If `<feature>` is missing, error: `specify a feature, e.g. /workflow:step-start payments-export`.
 
 If `[step-id]` is provided (e.g., `C`), force that step. Otherwise:
 
@@ -33,7 +33,7 @@ This does not flip `[X]` — the user types `APPROVE` and main Claude flips it v
 
 ## Bypass mode (`--bypass-approval`)
 
-**Trigger.** This mode is active only when `--bypass-approval` is passed. Without the flag, behavior is exactly as documented above — the normal per-step APPROVE gate, no auto-advance.
+**Trigger.** This mode is active only when `--bypass-approval` is passed.
 
 **Severity source.** For each step it lands on, the loop reads that step's `Severity` cell from the 2-column R7 Step Severity table in `docs/<feature>/<feature>.analyzed.md` (`Step ID | Severity`). If `analyzed.md` is absent (planning steps, before the analyzed doc is authored), the flag has nothing to consult — treat as a normal gate (no auto-advance).
 

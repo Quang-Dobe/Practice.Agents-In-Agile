@@ -3,10 +3,8 @@
 This document explains how a new feature travels from a rough sentence in your
 head all the way to working code, using the five AI "roles" this kit provides.
 
-It is written for someone who has heard of Agile, sprints, and user stories
-but is not an engineer. There are zero technical pre-requisites — just the
-willingness to read what each role produced and type `APPROVE` when you are
-happy with it.
+It is written for a non-engineer: read what each role produces and type
+`APPROVE` when you are happy with it.
 
 ---
 
@@ -20,9 +18,9 @@ no role steps on another role's toes.
 | 1     | **Product Owner**     | Framing the idea: what & why, in/out of scope, assumptions.  | No.           |
 | 2     | **Business Analyst**  | Turning the framing into a structured requirement document.  | Yes.          |
 | 3     | **Architect (round 1)** | The high-level plan — what steps will get us there.        | Yes.          |
-| 4     | **Architect (round 2)** | The analysis: why this approach, plus a Test Strategy table. | Yes.          |
-| 5     | **Software Engineer** | The detailed step-by-step plan, then the actual code.        | Yes.          |
-| 6     | **Tester**            | Drafts the test cases before code, verifies at the end.      | Yes (tests).  |
+| 4     | **Architect (round 2)** | The analysis: why this approach, plus a per-step Severity table. | Yes.          |
+| 5     | **Software Engineer** | The detailed step-by-step plan, then the actual code; also owns test execution and the final E2E validation gate. | Yes.          |
+| 6     | **Tester**            | Authors `<feature>.test.md` at stage-2-overview (planning only, no runtime role). | Yes (`test.md`). |
 
 The same agent plays Architect twice — once for the high-level plan and once
 for the deeper analysis. This is intentional: the high-level plan is approved
@@ -34,10 +32,10 @@ first, so the analysis can lean on a stable set of steps.
 
 ```
 You jot a rough idea  →  PO frames it   →  BA writes requirement  →
-   Architect writes plan  →  Architect writes analysis  →
+   Architect writes plan + Tester writes test.md  →  Architect writes analysis  →
       Engineer writes detailed plan  →
-         [for each step: Tester drafts tests → Engineer writes code → you APPROVE]
-            →  Tester does final acceptance pass
+         [for each step: Engineer writes code + unit tests → you APPROVE]
+            →  final step: Engineer authors e2e tests from test.md and runs them
 ```
 
 Between every arrow there is a moment where you read what was produced and
@@ -104,14 +102,19 @@ rough file with a structured one. The new file contains:
 
 You review it, type `APPROVE`, and move on.
 
-### Stage 2 (overview) — Architect writes the high-level plan
+### Stage 2 (overview) — Architect writes the high-level plan, Tester writes the test spec
 
-The **Architect** agent writes `<feature>.overview-plan.md`. This is the
-"big steps" document. It defines `Step A`, `Step B`, `Step C`, etc. — the
-canonical list of implementation steps. From this point on, those step IDs
-do not change.
+This stage runs in parallel. The **Architect** agent writes
+`<feature>.overview-plan.md` — the "big steps" document. It defines `Step A`,
+`Step B`, `Step C`, etc. — the canonical list of implementation steps. From
+this point on, those step IDs do not change.
 
-Read it, sanity-check that the steps cover the requirement, type `APPROVE`.
+In parallel, the **Tester** agent writes `<feature>.test.md` — a black-box,
+requirement-keyed acceptance spec (Given/When/Then) derived from the
+requirement. The Tester has no runtime role; this file is its only output.
+
+One combined `APPROVE` covers both. Read them, sanity-check that the steps
+cover the requirement, type `APPROVE`.
 
 ### Stage 2 (analysis) — Architect writes the analysis
 
@@ -120,17 +123,16 @@ The same Architect agent is invoked again. It writes
 trade-offs, the risks, the decisions, and any project-specific overrides to
 the default engineering rules.
 
-This file also carries a **Test Strategy table** with one row per step from
-the overview plan:
+This file also carries a per-step **Severity table** (rule R7) with one row
+per step from the overview plan:
 
-| Step ID | Goal | Test kind | Owner |
-| ------- | ---- | --------- | ----- |
-| A       | …    | …         | …     |
+| Step ID | Severity |
+| ------- | -------- |
+| A       | …        |
 
-For each step, the table says either a concrete test instruction
-(meaning the Tester will draft tests for that step) or the literal phrase
-`skip Tester` (meaning no test agent is needed for that step). This table
-is the contract that decides whether the Tester gets invoked later.
+Each step's severity is what later drives `/workflow:step-start
+--bypass-approval`: low-severity steps can be auto-approved, higher-severity
+steps still require your explicit sign-off.
 
 Read it, type `APPROVE`.
 
@@ -141,8 +143,9 @@ mechanical, file-by-file, function-by-function blueprint. One section per
 step from the overview plan, listing the files to create or change and the
 "done-when" conditions.
 
-The detailed plan has **no Test Strategy column** — testing decisions
-already live in the analysis file from the previous stage.
+The detailed plan has **no Severity column** — per-step severity already
+lives in the analysis file from the previous stage. Its final step is the
+E2E validation gate.
 
 Read it, type `APPROVE`.
 
@@ -176,29 +179,21 @@ The kit:
 
 1. Finds the first un-approved step.
 2. Reads the requirement, the detailed plan, the status file, and the
-   Test Strategy row for that step.
+   step's Severity row from the analysis file.
 3. Briefs you with: the step goal, the open questions you must answer
-   before coding, the inputs from previous steps, the test strategy, and
+   before coding, the inputs from previous steps, and
    what will happen as soon as you give the go-ahead.
 
 You answer the open questions in chat.
 
-### 2. Tester drafts tests (if needed)
+### 2. Engineer writes the code
 
-If the Test Strategy row is **not** `skip Tester`, the **Tester** agent goes
-first. It writes failing test cases that describe what the code must do.
-This follows the classic "red phase" of test-driven development — the tests
-exist before the code does, and they fail because the code does not exist yet.
+At runtime only the **Software Engineer** runs. It implements the substeps
+from the detailed plan, editing only the files listed there, and writes unit
+tests for that step. When it finishes, it hands you a short summary of what
+changed and what to verify.
 
-If the row is `skip Tester`, this step is, well, skipped.
-
-### 3. Engineer writes the code
-
-The **Software Engineer** agent then implements the substeps from the
-detailed plan, editing only the files listed there. When it finishes, it
-hands you a short summary of what changed and what to verify.
-
-### 4. You approve
+### 3. You approve
 
 Read the changes (and the tests if there were any). When you are happy:
 
@@ -212,13 +207,14 @@ commit. **The kit never commits for you — you commit explicitly.**
 
 Repeat for every step.
 
-### 5. End-of-feature Tester pass
+### 4. Final step — E2E validation gate
 
-When every step is approved, the kit offers one final acceptance pass: the
-**Tester** agent re-reads the original requirement and every Test Strategy
-row, and verifies that everything was actually exercised. For .NET projects,
-it can hand off to a `test-runner` helper agent which runs the test suite
-and returns only the failures.
+The feature's final implementation step is the E2E validation gate. The
+**Software Engineer** authors automated e2e tests from `<feature>.test.md`
+and runs them; the step is done when they all pass green. When present, the
+SE hands off to the project's optional test-runner agent
+(`.claude/agents/test-runner.md`), which runs the suite and returns only the
+failures.
 
 ---
 

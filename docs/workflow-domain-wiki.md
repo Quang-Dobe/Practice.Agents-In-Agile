@@ -1,6 +1,6 @@
 # Domain Wiki Pipeline — Build and maintain a living map of your codebase
 
-This document explains the second workflow this kit ships: two AI agents that
+This document explains the second workflow this kit ships: three AI agents that
 build, and then keep up-to-date, a friendly map of a codebase under
 `docs/domain/`. The map is written in business language — "Order",
 "Customer", "Payment" — not engineering jargon, and it stays in sync with
@@ -43,18 +43,20 @@ in the agent's questions.
 
 ---
 
-## The two agents
+## The three agents
 
-| Agent                    | Job                                                      | When to run                          |
-| ------------------------ | -------------------------------------------------------- | ------------------------------------ |
-| **project-explorer**     | Bootstrap the wiki from scratch.                         | **Once**, when starting on a repo.   |
-| **project-wiki-enhancer** | Update the wiki to reflect new code changes.            | Whenever the code has changed.       |
+| Agent                     | Job                                                          | When to run                          |
+| ------------------------- | ----------------------------------------------------------- | ------------------------------------ |
+| **project-explorer**      | Bootstrap `docs/domain/` once.                              | **Once**, when starting on a repo.   |
+| **project-overview**      | Bootstrap `docs/narrative/` once.                           | **Once**, when starting on a repo.   |
+| **project-wiki-enhancer** | Dual-pass update of **both** trees on every code change.    | Whenever the code has changed.       |
 
-They are siblings: one builds the wiki for the first time, the other keeps
-it in sync. They politely refuse to do each other's job:
+They are siblings: two build the wiki for the first time, the third keeps
+both trees in sync. They politely refuse to do each other's job:
 
 - `project-explorer` refuses if `docs/domain/` already has content.
-- `project-wiki-enhancer` refuses to bootstrap; when both `docs/narrative/` and `docs/domain/` are missing, the command layer refuses before the agent is spawned (see `## Step 2` sub-section 1). When exactly one tree is missing, the present-tree pass still runs and a one-line advisory points at the bootstrap command for the missing tree.
+- `project-overview` refuses if `docs/narrative/` already has content.
+- `project-wiki-enhancer` refuses to bootstrap; when **both** `docs/narrative/` and `docs/domain/` are missing, the command layer refuses before the agent is spawned (see `## Step 2` sub-section 1). When exactly one tree is missing, the present-tree pass still runs and a one-line advisory points at the bootstrap command for the missing tree.
 
 ---
 
@@ -108,30 +110,11 @@ If the codebase is very small, the agent automatically falls back to a
 single area called `module-map` instead of forcing made-up subdivisions.
 It tells you when this fallback is active.
 
-### 4. APPROVE gate (this is the important one)
+### 4. Write the wiki
 
-Nothing is written yet. The agent prints exactly this prompt:
-
-```
-Type APPROVE to write docs/domain/, or describe edits.
-```
-
-You have three sensible responses:
-
-- **Type `APPROVE`** (capital letters, exactly) — the agent writes the wiki.
-- **Type edit instructions** — e.g. "rename `Billing` to `Payments`",
-  "merge `Orders` and `Cart`", "drop `Legacy`". The agent re-prints the
-  candidate list with your edits applied, then re-asks for APPROVE.
-- **Anything else** (lowercase `approve`, `ok`, `yes`, etc.) — treated as
-  "please clarify", and the agent re-asks. This is on purpose — the agent
-  is very strict to prevent accidental approvals.
-
-The edit loop has no round limit. You can iterate as many times as you want.
-
-### 5. Write the wiki
-
-After APPROVE, the agent writes the full tree under `docs/domain/`. Every
-page is stamped at the top with a small block of metadata: where the
+The agent prints the bounded-context candidates for the audit trail, then
+writes the full tree under `docs/domain/` automatically (no APPROVE gate).
+Every page is stamped at the top with a small block of metadata: where the
 codebase was, which branch, the timestamp, and which version of the
 agent's rule-book produced the file. This metadata is what makes the next
 workflow possible.
@@ -180,11 +163,8 @@ single command invocation**, in a fixed order:
 2. The **domain pass** refreshes `docs/domain/` second.
 
 The order is intentional and is not configurable — there are no
-`--narrative-only` or `--domain-only` flags. The reason for narrative-first
-is that the domain pass reads `docs/narrative/<bc>/walkthrough.md` as soft
-input via the `project-explorer` skill's existing contract; running domain
-first would force a second invocation to pick up any cross-tree fix-ups,
-defeating the point of a single-command refresh.
+`--narrative-only` or `--domain-only` flags. Narrative goes first because the
+domain pass reads `docs/narrative/<bc>/walkthrough.md` as soft input.
 
 ### 3. Pick a smart vs safe strategy (per pass)
 
@@ -218,84 +198,25 @@ pass's own tree.
 
 ### 5. Skip business areas that did not actually change (per pass)
 
-This is where the workflow stops re-doing work it doesn't need to do.
-
 When a business area's underlying code has **not** changed since its pages
-were last written, the agent now **skips that area entirely** — it does not
-even regenerate the pages in memory. (This is stronger than the byte-for-byte
-write check in the next steps: that check still rewrites the pages in memory
-and only suppresses the *write*; here, the work never starts.) In a repo with
-many areas where only one of them changed, the agent does the expensive work
-for that one area, not for all of them. Big repos with lots of areas get the
-biggest win.
+were last written, the agent skips that area entirely — it does not even
+regenerate the pages in memory. Each page is stamped with the code version it
+was built from; the agent compares that stamp against the current code for
+just that area's slice. If a page is missing its stamp or the stamp can no
+longer be found (for example after a force-push), the agent does not skip — it
+falls back to fully refreshing that area. The two passes (narrative and
+domain) make this skip decision independently and may legitimately disagree
+about whether a given area needs work. (See `## Things worth knowing` for the
+canonical fence rule — it is not restated here.)
 
-**How it decides, in plain words.** Every page is stamped with the code
-version it was built from (the metadata block from Step 1 sub-section 5). The
-agent compares that stamp against the current code for **just that area's slice**
-of the codebase. If nothing in that slice changed, it skips the area. To stay
-safe, if any page in an area is missing its stamp, or the stamp can no longer
-be found (for example after a force-push rewrote history), the agent does
-**not** skip — it falls back to fully refreshing that area. The rule of thumb
-is: better to over-work than to leave a page stale.
+### 6. New business areas are auto-created (per pass)
 
-**Each pass decides on its own.** The two passes (narrative and domain) make
-this skip decision **independently**. In a single run, the narrative side may
-skip an area while the domain side refreshes that same area — or the other way
-round. This is **expected and fine, not a bug**: each tree tracks its own code
-version and its own slice of the code, so they can legitimately disagree about
-whether a given area needs work.
+If — and only if — a pass's `new-namespace` bucket has any files, the agent
+prints the candidate new areas for that tree and then creates the new folders
+automatically (no gate). If no new areas are needed in a pass, nothing is
+printed.
 
-**What this changes for your hand-written notes.** Because an unchanged area is
-now skipped, a note you wrote **outside** the fence markers will **survive
-across runs for as long as that area's code does not change**. The next time
-that area's code *does* change and its pages are refreshed, that unfenced note
-is **overwritten — exactly as before**. The load-bearing rule from
-`## Things worth knowing` is unchanged: **fences are still the only way to make
-an edit durable across a code change.** Wrapping your edits in fences is the
-only thing that guarantees they survive a refresh; the skip just buys unfenced
-notes a reprieve while the area sits still. (See `## Things worth knowing` for
-the canonical fence rule — it is not restated here.)
-
-**No new output on a normal run.** This skip does not add anything to what a
-normal run prints. A zero-write run still prints exactly the locked
-`No changes detected. 0 files written.` line and nothing else (see
-sub-section 10). The per-area skip signal is a verbose/debug-only diagnostic
-for troubleshooting — it is not part of normal output, so you will not see a
-new "skipped area X" line on an ordinary run.
-
-### 6. APPROVE gates — up to two per run
-
-Each pass has its **own auto-skipping APPROVE gate**. If — and only if —
-that pass's third bucket has any files, the agent prints the candidate new
-areas for that tree and asks you to APPROVE before creating any new
-folders. The check is strict and exact-case, just like the bootstrap.
-
-If no new areas are needed in a pass, that pass's gate is skipped silently.
-Both buckets empty → zero prompts.
-
-### 7. `--bypass-approval` for low-friction runs
-
-For unattended scenarios (CI, post-merge hooks, batch refresh), you can
-opt into `--bypass-approval`:
-
-```
-/project:enhance-wiki [path] --bypass-approval
-```
-
-This flag auto-approves non-critical changes so the run does not pause for
-interactive input. **Four critical categories always escalate** even with
-the flag set (named, not restated here — see the `project-wiki-enhancer`
-skill's `## --bypass-approval semantics` for the canonical list): new BC,
-BC renamed, BC removed, and any write that would land inside a fenced
-human-edit block.
-
-When a critical category fires under `--bypass-approval`, the run **exits 1
-(not pause) with a locked diagnostic message**. The diagnostic itself lives
-verbatim in the skill file; the walkthrough does not restate it. The
-operator's remediation is to re-invoke `/project:enhance-wiki` *without*
-the flag, which gives you the normal interactive APPROVE gate.
-
-### 8. Note any disappeared areas (per pass, log-only)
+### 7. Note any disappeared areas (per pass, log-only)
 
 If a business area used to exist but the underlying code has been removed
 or renamed away, neither pass **deletes** the existing folder. Your notes
@@ -309,7 +230,7 @@ its own context file:
 
 You decide later whether to clean either side up by hand.
 
-### 9. Regenerate, then preserve your hand-written notes (per pass)
+### 8. Regenerate, then preserve your hand-written notes (per pass)
 
 Each pass regenerates its affected pages in memory. Before writing, the
 agent looks at the existing file on disk for any "fenced human-edit zone" —
@@ -323,12 +244,9 @@ content you wrote yourself between two special marker comments:
 
 Anything between those markers is preserved **byte-for-byte** when the page
 is rewritten. Anything outside the markers is replaced by the freshly
-regenerated content. Without fences, your edits will be overwritten — that
-is the rule. The fence convention is now active in **both trees**: it has
-always been load-bearing in `docs/domain/`, and as of this command it is
-load-bearing in `docs/narrative/` too.
+regenerated content. The fence convention is active in **both trees**.
 
-### 10. Write only what actually changed (per pass + cross-pass exit)
+### 9. Write only what actually changed (per pass + cross-pass exit)
 
 This is the nice part. In each pass, the agent compares the freshly
 generated content (with your fenced edits spliced back in) against what is
@@ -351,14 +269,6 @@ Otherwise, it prints a small summary: how many pages were written across
 both passes, how many new areas were created, how many disappeared areas
 were logged, and which strategy (fast vs safe) each pass used.
 
-### 11. Reserved doctor coupling
-
-**Reserved coupling — /project:doctor.** Once `/project:doctor` (the
-cross-tree invariant checker) ships, `/project:enhance-wiki` will invoke it
-as a default last step whenever any mismatch / conflict / out-of-date
-signal is detected during the enhance run. No-op today; the future doctor
-feature inherits this contract.
-
 ---
 
 ## A typical day with the wiki
@@ -366,10 +276,8 @@ feature inherits this contract.
 ```
 Monday morning, fresh clone of a repo:
     /project:explore C:\src\my-company-repo
-        → review the suggested business areas
-        → describe a few edits ("merge X and Y", "rename Z")
-        → type APPROVE
-        → wiki appears under docs/domain/
+        → agent prints the suggested business areas for the audit trail
+        → wiki is written automatically under docs/domain/
 
 Wednesday afternoon, after some feature work:
     /project:enhance-wiki
@@ -377,8 +285,7 @@ Wednesday afternoon, after some feature work:
 
 Friday, after a teammate added a whole new business area:
     /project:enhance-wiki
-        → agent surfaces the new area, asks for APPROVE
-        → type APPROVE
+        → agent surfaces the new area, then creates it automatically
         → new folder appears with all its pages
 
 Tuesday next week, you re-run on an unchanged codebase:
@@ -401,10 +308,6 @@ Tuesday next week, you re-run on an unchanged codebase:
 - **No status files.** Unlike the feature pipeline, the domain-wiki agents
   do not produce a `status.md`. They are runtime tools, not planning
   artefacts.
-- **APPROVE is exact-case.** Everywhere this kit asks for `APPROVE`, the
-  match is strict and case-sensitive. `approve`, `Approve`, `ok`, `yes`,
-  `sure` — none of these count. This is deliberate — it prevents
-  accidental approvals when you're skimming.
 - **Wrap your edits in fences.** If you personally improve a generated
   page (in either `docs/domain/` or `docs/narrative/`), wrap your
   improvements in `<!-- human:begin -->` / `<!-- human:end -->`. Unfenced
@@ -421,8 +324,8 @@ Tuesday next week, you re-run on an unchanged codebase:
 | Output location     | `docs/<feature>/`                         | `docs/domain/`                            |
 | Cadence             | Once per feature.                         | Bootstrap once, then on every code change. |
 | Produces a `status.md`? | Yes.                                  | No.                                       |
-| Number of roles     | Five (PO, BA, Architect, SE, Tester).     | Two (project-explorer, project-wiki-enhancer). |
-| APPROVE gates       | Many — one per planning stage and per step. | Up to one per run (only if new areas are detected). |
+| Number of roles     | Five (PO, BA, Architect, SE, Tester).     | Three (project-explorer, project-overview, project-wiki-enhancer). |
+| APPROVE gates       | Many — one per planning stage and per step. | None — fully agent-driven.                |
 
 The two pipelines can absolutely live side-by-side in the same repository.
 They never touch each other's folders.

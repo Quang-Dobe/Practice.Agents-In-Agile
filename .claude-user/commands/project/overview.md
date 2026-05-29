@@ -9,7 +9,7 @@ Bootstrap the human-readable narrative tree under `docs/narrative/` of the worki
 
 1. Parse `<path>` (required) and `[branch-name]` (optional) from the slash-command args. If `<path>` is empty, error: `specify a local filesystem path, e.g. /project:overview C:\src\my-repo`.
 
-2. If `<path>` matches `^https?://` or `^git@`, refuse with the literal one-line message `Remote URLs are not supported in v1. Pass a local filesystem path.` and stop — do not spawn the agent. (Remote URL support is deferred per analyze-workflow-project-explore.analyzed.md § 8 F3.)
+2. If `<path>` matches `^https?://` or `^git@`, refuse with the literal one-line message `Remote URLs are not supported in v1. Pass a local filesystem path.` and stop — do not spawn the agent.
 
 3. Resolve `<path>` to an absolute filesystem path before spawning.
 

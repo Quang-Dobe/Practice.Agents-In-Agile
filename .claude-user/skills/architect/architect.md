@@ -26,7 +26,7 @@ Inside `analyzed.md`, the Step Severity section is a **2-column** markdown table
 | Step ID | Severity |
 ```
 
-One row per implementation step (`Step A`, `Step B`, …) in `overview-plan.md`. `Severity` = one of `minor` / `medium` / `major` / `risky` / `irreversible`, declared per step up front; minor/medium auto-approve under `/workflow:step-start --bypass-approval`, major/risky/irreversible hard-stop and wait for a human. E2E/acceptance cases live in `<feature>.test.md` (Tester), not here.
+One row per implementation step (`Step A`, `Step B`, …) in `overview-plan.md`. `Severity` (one of `minor` / `medium` / `major` / `risky` / `irreversible`) drives `/workflow:step-start --bypass-approval` per R7 above. E2E/acceptance cases live in `<feature>.test.md` (Tester), not here.
 
 ## Hand-off to Software Engineer
 After `analyzed.md` APPROVE, SE drafts `<feature>.plan.md` at stage-2-plan. `plan.md` stays mechanical — no Severity column there. Its final step is the E2E validation gate (SE runs `test.md` cases).

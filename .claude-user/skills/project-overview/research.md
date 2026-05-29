@@ -10,7 +10,7 @@ The "Blue Book". Canonical source for the bounded-context concept and the tactic
 **Vernon, Vaughn — _Implementing Domain-Driven Design_ (Addison-Wesley, 2013).**
 The "IDDD" book. Operational follow-up to Evans, with concrete tactical patterns (aggregate design rules, small aggregates, eventual consistency between aggregates, references by identity). Cited here for two reasons specific to narrative authoring: (a) Vernon treats BC discovery as a sociotechnical activity, not pure code inference — which is why this skill prints its BC decisions in the candidate report for the audit trail before auto-writing (see `SKILL.md` `## Auto-write`), so a human can review and correct after the fact; (b) Vernon's emphasis on the "domain expert's voice" maps cleanly onto the human-edit fence convention this skill carries forward from `docs/domain/` — fenced zones are where a human reader's plain-language commentary survives the next regeneration.
 
-No new external sources are introduced for v1. The narrative file shape itself (3-paragraph intro + Mermaid sequence diagram + drill-down section per endpoint / handler / worker) is derived from the locked decisions in `analyze-workflow-project-explore.requirement.md` `## Resolved framing decisions` row #4 and is therefore agent-internal, not external. For the MediatR / vertical-slice .NET ecosystem citations (Bogard, `IRequest` / `IRequestHandler` / `INotification` shapes, anemic-domain-model commentary) that this skill's BC detection and stub-fallback heuristics reuse by reference, see the full `## Sources` block in `.claude-user/skills/project-explorer/research.md`. The narrative skill does not duplicate those citations — it consumes them on every reload via the sibling skill.
+No new external sources are introduced for v1. The narrative file shape is agent-internal, specified in `SKILL.md` `## Output schema`. For the MediatR / vertical-slice .NET ecosystem citations (Bogard, `IRequest` / `IRequestHandler` / `INotification` shapes, anemic-domain-model commentary) that this skill's BC detection and stub-fallback heuristics reuse by reference, see the full `## Sources` block in `.claude-user/skills/project-explorer/research.md`. The narrative skill does not duplicate those citations — it consumes them on every reload via the sibling skill.
 
 ## Mermaid extraction heuristics
 
@@ -38,7 +38,7 @@ Every node carries `file:line`. Same all-or-nothing rule applies — a missing l
 
 ### Stub fallback
 
-When any traceable link in the above patterns is missing, the agent emits a `TODO: ` stub block per `SKILL.md` `## Mermaid sourcing rules`. The agent does not partially derive — it is all-or-nothing per diagram. The stub block carries the literal `sequenceDiagram` keyword as its first line inside the fence so Mermaid renderers parse the block (per the Q10 amendment in the plan); the stub then names the section in the `## Stubs` H2 summary at the top of the file so the operator sees the gap.
+When any traceable link in the above patterns is missing, the agent emits a `TODO: ` stub block per `SKILL.md` `## Mermaid sourcing rules`. The agent does not partially derive — it is all-or-nothing per diagram. The stub block carries the literal `sequenceDiagram` keyword as its first line inside the fence so Mermaid renderers parse the block; the stub then names the section in the `## Stubs` H2 summary at the top of the file so the operator sees the gap.
 
 ## BC detection citations
 
@@ -141,7 +141,7 @@ These templates are starting points. The agent must fill every placeholder from 
 
 ## Stub-summary contract
 
-Every `TODO: ` stub block in any `walkthrough.md` file MUST be summarised in that file's `## Stubs` H2 section. A stub that is not summarised is a contract violation. This is the operator-visible flag that prevents stubs from shipping unnoticed in a long walkthrough. The `## Stubs` section is **always emitted on every `walkthrough.md`** — its body is `(none)` when no stubs were emitted, but the heading is always present. The `## Stubs` section is **not emitted in `architecture.md`** (no Mermaid blocks appear there). This contract restates the `analyze-workflow-project-explore.analyzed.md` § 7 row 5 mitigation; the skill's `## Mermaid sourcing rules` and `## Output schema` `### Stubs summary contract` enforce it at runtime.
+Every `TODO: ` stub block in any `walkthrough.md` file MUST be summarised in that file's `## Stubs` H2 section. A stub that is not summarised is a contract violation. This is the operator-visible flag that prevents stubs from shipping unnoticed in a long walkthrough. For the always-emit / never-in-`architecture.md` rule, see `SKILL.md` `## Output schema` `### Stubs summary contract` (the canonical statement); the skill's `## Mermaid sourcing rules` and `### Stubs summary contract` enforce it at runtime.
 
 ## Known coupling
 

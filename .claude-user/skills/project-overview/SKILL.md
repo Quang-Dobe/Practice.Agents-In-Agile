@@ -56,7 +56,7 @@ The reuse is by reference, not by copy. Any edit to grouping rules, candidate re
 
 ## Output schema
 
-The agent emits a human-readable narrative tree under `docs/narrative/` of the working directory. The three subsections below define exactly which files are written, what content each file carries, and the always-emit `## Stubs` summary contract per `analyze-workflow-project-explore.analyzed.md` § 7 row 5. Frontmatter contract for every emitted file is defined in `## Frontmatter contract`; every file under `docs/narrative/` carries the five-field YAML block as its first content.
+The agent emits a human-readable narrative tree under `docs/narrative/` of the working directory. The three subsections below define exactly which files are written, what content each file carries, and the always-emit `## Stubs` summary contract. Frontmatter contract for every emitted file is defined in `## Frontmatter contract`; every file under `docs/narrative/` carries the five-field YAML block as its first content.
 
 ### Files written
 
@@ -79,7 +79,7 @@ All `file:line` citations in the output tree use paths relative to the `<path>` 
 
 ### Stubs summary contract
 
-Every `walkthrough.md` file carries a `## Stubs` H2 section near the top of the file (immediately after the frontmatter and before the first content section) summarising every `TODO: ` stub block elsewhere in the file. The section renders as `(none)` when no stubs were emitted. See `## Mermaid sourcing rules` below for the per-stub format. The `## Stubs` section is **always emitted on every `walkthrough.md`** — its body is `(none)` when no stubs were emitted, but the heading is always present. The `## Stubs` section is **not emitted in `architecture.md`** (no Mermaid blocks appear there). This is the contract called out in `analyze-workflow-project-explore.analyzed.md` § 7 row 5.
+Every `walkthrough.md` file carries a `## Stubs` H2 section near the top of the file (immediately after the frontmatter and before the first content section) summarising every `TODO: ` stub block elsewhere in the file. See `## Mermaid sourcing rules` below for the per-stub format. The `## Stubs` section is **always emitted on every `walkthrough.md`** — its body is `(none)` when no stubs were emitted, but the heading is always present. The `## Stubs` section is **not emitted in `architecture.md`** (no Mermaid blocks appear there).
 
 ## Frontmatter contract
 
@@ -116,7 +116,7 @@ Every file the agent emits under `docs/narrative/` carries `<!-- human:begin -->
 
 The narrative-side diff-aware updater is now active and preserves the fenced content byte-for-byte per `## Fenced human-edit zone splice (narrative)` below, which cite-by-references `.claude-user/skills/project-wiki-enhancer/SKILL.md` `### Fenced human-edit zone splice`. The fences are no longer inert.
 
-**Migration shift on the narrative side (identical contract to the domain side).** With the narrative per-BC pre-check (`## Per-BC SHA pre-check (narrative)` below) in place, regen never fires for a BC whose narrative source slice is unchanged — so an outside-fence human edit in a `walkthrough.md` or `architecture.md` now **survives until that BC's narrative source slice changes**, at which point regen fires and overwrites it exactly as before. Fences (`<!-- human:begin --> ... <!-- human:end -->`) remain the **only** way to make an edit durable **across a source change** on the narrative side too — an outside-fence edit gains a reprieve only while the BC's narrative slice is unchanged, not durability in general. This is the **identical contract** to the domain side; see `.claude-user/skills/project-wiki-enhancer/SKILL.md` `## Migration caveat` for the canonical statement, and `analyzed.md` D5 for the contract choice.
+**Migration shift on the narrative side (identical contract to the domain side).** With the narrative per-BC pre-check (`## Per-BC SHA pre-check (narrative)` below) in place, regen never fires for a BC whose narrative source slice is unchanged — so an outside-fence human edit in a `walkthrough.md` or `architecture.md` now **survives until that BC's narrative source slice changes**, at which point regen fires and overwrites it exactly as before. Fences (`<!-- human:begin --> ... <!-- human:end -->`) remain the **only** way to make an edit durable **across a source change** on the narrative side too — an outside-fence edit gains a reprieve only while the BC's narrative slice is unchanged, not durability in general. This is the **identical contract** to the domain side; see `.claude-user/skills/project-wiki-enhancer/SKILL.md` `## Migration caveat` for the canonical statement.
 
 ## Diff-aware update mode
 
@@ -144,9 +144,9 @@ See `.claude-user/skills/project-wiki-enhancer/SKILL.md` `## Path -> BC classifi
 
 See `.claude-user/skills/project-wiki-enhancer/SKILL.md` `## Per-BC SHA pre-check` for the full per-BC pre-check contract (per-BC source-path resolution via the reverse mapping, per-BC SHA gather, conservative any-missing/any-unreachable/unresolvable -> no-skip gates, oldest-wins `min(reachable)` base, empty->SKIP / non-empty->fall-through). The narrative pass uses the **identical algorithm** — same gates, same oldest-wins base; only the inputs differ, not the logic. It does **not** fork or restate the gate logic, the SHA-gather loop, the reachability test, or the diff command — the enhancer section owns those literals and the narrative pass borrows them by reference.
 
-**Narrative-side source slice.** The narrative pass resolves the **narrative** source slice for a BC — the endpoints / handlers / workers its `walkthrough.md` drills into — which is **distinct** from the domain slice (the aggregates / events / commands / repositories / services its schema rows cite). Same algorithm, different inputs. The narrative pass gathers per-file `last_generated_sha` from the BC's narrative output under `docs/narrative/<bc>/` (the narrative tree's **own** frontmatter), **not** from `docs/domain/<bc>/`. `architecture.md` is the repo-wide narrative roll-up and is **out of per-BC scope**, mirroring how `context-map.md` / `glossary.md` are roll-ups on the domain side (per D6). For which narrative files carry `last_generated_sha` and how the narrative pass samples them, see `## Hybrid diff strategy (narrative)` above (the sampled file is `architecture.md` or any `<bc>/walkthrough.md`) — that fact is not redefined here.
+**Narrative-side source slice.** The narrative pass resolves the **narrative** source slice for a BC — the endpoints / handlers / workers its `walkthrough.md` drills into — which is **distinct** from the domain slice (the aggregates / events / commands / repositories / services its schema rows cite). Same algorithm, different inputs. The narrative pass gathers per-file `last_generated_sha` from the BC's narrative output under `docs/narrative/<bc>/` (the narrative tree's **own** frontmatter), **not** from `docs/domain/<bc>/`. `architecture.md` is the repo-wide narrative roll-up and is **out of per-BC scope**, mirroring how `context-map.md` / `glossary.md` are roll-ups on the domain side. For which narrative files carry `last_generated_sha` and how the narrative pass samples them, see `## Hybrid diff strategy (narrative)` above (the sampled file is `architecture.md` or any `<bc>/walkthrough.md`) — that fact is not redefined here.
 
-**Per-pass independence (the D4 assertion).** The narrative pass and the domain pass each own their **own** pre-check decision — independent decisions, not coupled. In a **single run** the narrative pass MAY **SKIP** a BC while the domain pass **REGENERATES** the same BC, **or vice versa** (the domain pass SKIPs a BC the narrative pass regenerates). This divergence is **expected and correct, NOT a bug**, and MUST NOT be "fixed" by coupling the two decisions — coupling would force regen of a tree whose own slice is unchanged, re-introducing the exact waste this feature removes. The two trees carry **independent** `last_generated_sha` values and **independent** source slices, which is the structural reason the decisions diverge. See `analyzed.md` D4.
+**Per-pass independence.** The narrative pass and the domain pass each own their **own** pre-check decision — independent decisions, not coupled. In a **single run** the narrative pass MAY **SKIP** a BC while the domain pass **REGENERATES** the same BC, **or vice versa** (the domain pass SKIPs a BC the narrative pass regenerates). This divergence is **expected and correct, NOT a bug**, and MUST NOT be "fixed" by coupling the two decisions — coupling would force regen of a tree whose own slice is unchanged, re-introducing the exact waste this feature removes. The two trees carry **independent** `last_generated_sha` values and **independent** source slices, which is the structural reason the decisions diverge.
 
 **Reuse the skip line with `pass=narrative`.** The narrative SKIP reuses the **same** skip-line literal defined in `.claude-user/skills/project-wiki-enhancer/SKILL.md` `### Skip log line (verbose/debug only)` (cited by exact heading name); it does **not** redefine the parameterized literal. The narrative-side application emits the concrete instance:
 
@@ -158,7 +158,7 @@ The **same** verbose/debug-only emission condition applies: the line is emitted 
 
 ## Fenced human-edit zone splice (narrative)
 
-See `.claude-user/skills/project-wiki-enhancer/SKILL.md` `### Fenced human-edit zone splice` for the per-file algorithm, never-touch invariant, and anchor-drift limitation. The narrative pass uses the identical algorithm. Per D8, the narrative fences have two canonical placements per `## Human-edit fences` above (one fence pair after each `## Intro` H2 in `walkthrough.md`; one fence pair after the `## Overview` H2 in `architecture.md`); both placements survive the splice unchanged because the algorithm is anchor-position based, not section-name based.
+See `.claude-user/skills/project-wiki-enhancer/SKILL.md` `### Fenced human-edit zone splice` for the per-file algorithm, never-touch invariant, and anchor-drift limitation. The narrative pass uses the identical algorithm. The narrative fences have the two canonical placements defined in `## Human-edit fences` above; both placements survive the splice unchanged because the algorithm is anchor-position based, not section-name based.
 
 ## Removed-BC logging (narrative)
 
@@ -170,7 +170,7 @@ The narrative-side equivalent of `.claude-user/skills/project-wiki-enhancer/SKIL
 - **Idempotency of the log.** Before appending, the enhancer reads the body of the `## Skipped candidates` section and checks for an existing matching line. The duplicate check is **exact-line match** (the full literal line including the leading `- ` bullet prefix), **case-sensitive**, scoped between the `## Skipped candidates` H2 and the next H2 (or EOF). Verbatim per `.claude-user/skills/project-wiki-enhancer/SKILL.md` `### Idempotency of the log`. Note: in `docs/narrative/architecture.md`, `## Skipped candidates` IS the final H2 (it is inserted after `## Logic overview` per `### Per-file content contract` above), so the EOF clause of the scope rule is the one that fires for this file in practice.
 - **`(none)` placeholder handling.** If the body of `## Skipped candidates` is the literal single line `(none)` (the bootstrap placeholder when no skips were detected), the enhancer replaces that line **in place** with the first bullet on first append. Identical replacement-in-place rule per `.claude-user/skills/project-wiki-enhancer/SKILL.md` `` ### `(none)` placeholder handling ``.
 - **Strict no-delete contract.** Never delete `<bc>/walkthrough.md`. Never delete the `<bc>/` folder. Never rewrite any file inside a removed-BC folder beyond the single `architecture.md` append. The folder is frozen until the human author decides to remove it manually.
-- **Tolerate-missing on first run.** If `## Skipped candidates` is absent from a pre-feature `docs/narrative/architecture.md` (bootstrapped before this feature shipped), the updater emits the section with the first bullet (or with `(none)` if no removed BCs were detected this run). Cross-reference accepted risk row 4 in `analyzed.md` Section 9.
+- **Tolerate-missing on first run.** If `## Skipped candidates` is absent from a pre-feature `docs/narrative/architecture.md` (bootstrapped before this feature shipped), the updater emits the section with the first bullet (or with `(none)` if no removed BCs were detected this run).
 
 ## Byte-compare + selective write + frontmatter refresh (narrative)
 
@@ -182,8 +182,7 @@ See `.claude-user/skills/project-wiki-enhancer/SKILL.md` `## Idempotency exit` f
 
 ## Known coupling
 
-- **Doctor-coupling marker (D6).** Once `/project:doctor` ships, `/project:enhance-wiki` will invoke `/project:doctor` as a default last step on mismatch / conflict / out-of-date signals. No code, no detection logic in v1 — this bullet records the contract so the future doctor implementer knows the enhancer is meant to be its caller.
-- **Soft-input cite-back (D7).** `.claude-user/skills/project-explorer/SKILL.md` already documents the soft-input read of `docs/narrative/<bc>/walkthrough.md`. That soft-input contract is now fully active (it was inert when narrative was bootstrap-only and the diff path didn't exist; with the narrative diff-aware updater in this skill, the soft input is always available across runs).
+- **Soft-input cite-back.** `.claude-user/skills/project-explorer/SKILL.md` already documents the soft-input read of `docs/narrative/<bc>/walkthrough.md`. That soft-input contract is fully active: `project-explorer` reads the narrative as soft input.
 
 ## Mermaid sourcing rules
 
@@ -201,7 +200,7 @@ participant TODO
 
 **No-hallucination guard.** The agent MUST NOT invent participant names, message arrows, or `file:line` citations. This stance mirrors `.claude-user/skills/project-explorer/SKILL.md` `### Hallucination guard` for narrative output.
 
-**Top-of-file `## Stubs` summary requirement.** Every `walkthrough.md` file MUST carry a `## Stubs` H2 section immediately after the frontmatter and before the first content section. The section lists every stub in the file as a bulleted line `- <section name>: <reason>` (e.g., `- Drill-down: PlaceOrderEndpoint: could not trace 4 step(s) to file:line`). Files with zero stubs render `## Stubs` with body `(none)` — the section is **always present** on every `walkthrough.md`, even when empty. The `## Stubs` section is **not emitted in `architecture.md`** (no Mermaid blocks appear there). This is the operator-visible flag referenced in `analyze-workflow-project-explore.analyzed.md` § 7 row 5.
+**Top-of-file `## Stubs` summary requirement.** Every `walkthrough.md` file MUST carry a `## Stubs` H2 section immediately after the frontmatter and before the first content section, per the always-emit contract in `## Output schema` `### Stubs summary contract`. The section lists every stub in the file as a bulleted line `- <section name>: <reason>` (e.g., `- Drill-down: PlaceOrderEndpoint: could not trace 4 step(s) to file:line`). This is the operator-visible flag for stubs.
 
 ## Auto-write
 

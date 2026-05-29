@@ -17,12 +17,12 @@ emits.
 This skill performs **no writes** itself. It is read + classify + retrieve + answer +
 name-the-hand-off only. The write RULES (create-or-append, dedup, `source-ref:`
 provenance, `<!-- human:begin/end -->` fence protection) live in a **separate** skill,
-`.claude/skills/wiki-memory/SKILL.md` (authored in Step D). When source is read at
+`.claude/skills/wiki-memory/SKILL.md`. When source is read at
 T5 the router hands off to that skill **by path** — it never inlines write rules here.
 
 ## Classification
 
-Classification runs **before any tier retrieval** (FR-3). The router decides
+Classification runs **before any tier retrieval**. The router decides
 in-domain vs out-of-domain from a **cheap scope manifest** built from
 **titles and headings only** — never from full file bodies:
 
@@ -44,10 +44,9 @@ classify step.
   (e.g. "How do I center a div in CSS?", "What is the boiling point of water?").
   The absence of a manifest match IS the out-of-domain condition.
 
-**Error weighting (NFR-5, Q3).** v1 weights false-positives and false-negatives
+**Error weighting.** v1 weights false-positives and false-negatives
 **equally** — no asymmetric tuning. There is no bias toward "search anyway when unsure"
-nor toward "decline when unsure". Borderline-question calibration is out of scope for
-v1 (deferred); v1 uses the manifest-anchor test as the deterministic call.
+nor toward "decline when unsure". v1 uses the manifest-anchor test as the deterministic call.
 
 ## Fixed retrieval order
 
@@ -102,11 +101,10 @@ for every routing outcome.
 ## Source-last contract
 
 Repo source (T5) is read **only** when every wiki tier above (T1–T4) was insufficient.
-T5 is never reached before T1–T4 have each been checked and found insufficient
-(source-last, FR-4).
+T5 is never reached before T1–T4 have each been checked and found insufficient.
 
 When T5 source **is actually read to answer**, that read triggers the **memory-append
-hand-off**. The router does **not** write here. It references the Step-D write manual
+hand-off**. The router does **not** write here. It references the write manual
 **by its literal path**:
 
 ```
@@ -114,7 +112,7 @@ hand-off**. The router does **not** write here. It references the Step-D write m
 ```
 
 All write RULES (create-or-append, same-`source-ref:` dedup, provenance, fence
-protection) live in that skill and are authored in Step D. This skill never inlines
+protection) live in that skill. This skill never inlines
 them and never writes a topic file. If that skill is **missing or malformed** at runtime
 (cannot be read, YAML frontmatter does not parse, or required body sections absent), the
 router **stops before any write** to `docs/memory/`, **still answers** the question from
@@ -125,7 +123,7 @@ missing/malformed (mirrors the `wiki-bootstrapper` / `/wiki:bootstrap` stop-cond
 
 An **out-of-domain** question is declined **without searching any tier** — no
 `docs/memory/` body, no `docs/architecture.md` body, no `repo-*/docs/**`, no source is
-opened (success criterion 3). The classification (manifest titles/headings) already
+opened. The classification (manifest titles/headings) already
 determined there is no corpus anchor, so no retrieval is performed.
 
 The router responds with this **exact-case verbatim literal** (reproduce byte-for-byte):

@@ -26,13 +26,12 @@ filesystem paths are accepted.
    Remote URLs are not supported in v1. Pass a local filesystem path.
    ```
 
-   (NFR-6, mirroring `.claude-user/commands/project/explore.md`.)
+   (mirroring `.claude-user/commands/project/explore.md`.)
 
 3. **Resolve to absolute.** Resolve `[root-path]` to an absolute filesystem path. In
    PowerShell: `Resolve-Path $rootPath`.
 
-4. **Input discovery (read-only).** All discovery is structure-based, not name-prefix-based
-   (locked decision 1):
+4. **Input discovery (read-only).** All discovery is structure-based, not name-prefix-based:
    - **Repos:** enumerate the **depth-1 child directories** of `[root-path]` only (do not
      recurse into nested sub-repos). A child **qualifies as a repo iff** it contains
      `docs/narrative/` **OR** `docs/domain/`. A child with neither tree does **not**
@@ -55,12 +54,12 @@ filesystem paths are accepted.
 
 5. **Forward-dependency stop-condition (write-discipline manual).** The write rules
    (summarize-and-link, additive create-or-append, provenance, fence protection) are
-   **not** inlined here. They live in `.claude/skills/wiki-memory/SKILL.md` (authored
-   in Step D). Reload that skill **before any write**. If it is **missing or malformed**
+   **not** inlined here. They live in `.claude/skills/wiki-memory/SKILL.md`.
+   Reload that skill **before any write**. If it is **missing or malformed**
    (cannot be read, YAML frontmatter does not parse, or required body sections are absent),
    **stop before writing anything** to `docs/memory/` and report that the `wiki-memory`
    skill is missing/malformed. Do not write a partial topic file against an undefined
-   contract (locked decision 4, mirroring the `project-explorer` stop-conditions).
+   contract (mirroring the `project-explorer` stop-conditions).
 
 6. **Spawn the worker (primary shape).** Spawn the `wiki-bootstrapper` subagent via the
    `Agent` tool with `description: "wiki-bootstrapper: bootstrap docs/memory/"` and a
@@ -69,15 +68,13 @@ filesystem paths are accepted.
    must reload `.claude/skills/wiki-memory/SKILL.md` before any other action. This
    mirrors the `explore.md` → `project-explorer` pattern.
 
-   **Inline fallback.** If the worker agent is unavailable, the command may perform the
-   work itself: reload `.claude/skills/wiki-memory/SKILL.md` first (honoring step 5's
-   stop-condition), then build the topics and perform the additive write directly. The
-   behaviour and guarantees are identical either way.
+   **Inline fallback.** If the worker agent is unavailable, the command performs the work
+   itself with identical behaviour and guarantees: reload the skill first (honoring step 5),
+   then build the topics and write directly.
 
 7. **Build topics — summarize-and-link (no verbatim copies).** Shape every topic against
    `.claude/templates/memory-topic.md`: one `# <Topic title>` heading, exactly one
-   one-line summary, a `## Sources` section, and a `## Entries` section. Produce
-   (locked decision 3):
+   one-line summary, a `## Sources` section, and a `## Entries` section. Produce:
    - **One per-BC topic per bounded context** discovered across the repos. Filename is the
      lowercased BC slug (e.g. `docs/memory/billing.md`, `docs/memory/catalog.md`); the
      topic title is the BC name (e.g. `# Billing`). For each BC, `## Sources` links the
@@ -87,16 +84,17 @@ filesystem paths are accepted.
      `docs/memory/architecture.md`), summarizing the cross-repo relationships (e.g.
      Catalog → Billing) and linking the `docs/architecture.md` section(s). Produce this
      topic **only when `docs/architecture.md` exists** — never fabricate it from an absent
-     source (locked decision 5).
+     source.
 
    The summary is a paraphrase, never a lifted multi-line block. Do not paste the Mermaid
-   diagram, full aggregate tables, or any run of ≥ 2 consecutive non-trivial source lines
-   (D2, FR-2). Links use stable repo-relative paths under the shared root (e.g. from
+   diagram, full aggregate tables, or any run of ≥ 2 consecutive non-trivial source lines.
+   Links use stable repo-relative paths under the shared root (e.g. from
    `docs/memory/billing.md` the narrative link is
-   `../../repo-a/docs/narrative/architecture.md`).
+   `../../repo-a/docs/narrative/architecture.md`). Link only to source files that exist;
+   never invent a link to a non-existent file.
 
 8. **APPROVE preview (before any write).** Present a preview that lists, **per proposed
-   topic file** (locked decision 6):
+   topic file**:
    1. the target **repo-relative path** (e.g. `docs/memory/billing.md`);
    2. the **create-vs-append disposition** (`create` if the file is absent, `append` if it
       already exists);
@@ -112,26 +110,24 @@ filesystem paths are accepted.
    including `approve`, `Approve`, `yes`, `ok`, empty input, or edit feedback such as
    "link catalog to repo-b only" — is treated as an **edit request**: write nothing,
    incorporate the feedback, and **re-prompt**. Never silently exit, never write on a
-   non-`APPROVE` response (success criterion 2, NFR-1, locked decision 6).
+   non-`APPROVE` response.
 
 9. **Write — additive, confined to `docs/memory/`.** On exact-case `APPROVE`, the write is
-   **create-or-additive only** (locked decision 2):
+   **create-or-additive only**:
    - **Create** missing topic files from the template shape.
    - For an **existing** topic file: **ADD** missing `## Sources` links (appended after the
      existing links, preserving their original order) and **ADD** new `## Entries`
      sub-blocks. **Never** rewrite an existing summary line, **never** reorder or remove an
      existing `## Sources` link, and **never** touch text inside a
-     `<!-- human:begin --> ... <!-- human:end -->` fence (it survives byte-for-byte —
-     NFR-3, success criterion 6).
+     `<!-- human:begin --> ... <!-- human:end -->` fence (it survives byte-for-byte).
    - Every write lands **only** under `docs/memory/`. The command **never** writes to
      `docs/architecture.md`, any repo's `docs/narrative/` or `docs/domain/`, repo source,
-     or `.claude/` (FR-6, NFR-2). Link only to source files that exist; never invent a
-     link to a non-existent file (locked decision 5).
+     or `.claude/`.
 
 10. **Missing-input advisories (noted, not fabricated).** Each input is independent; a repo
     is included on narrative **OR** domain. Emit a **one-line** advisory per missing/partial
-    input and **continue** — never block, never fabricate a link to a missing tree
-    (locked decision 5). Use these stable phrasings:
+    input and **continue** — never block, never fabricate a link to a missing tree.
+    Use these stable phrasings:
     - **Absent `docs/architecture.md`:** `Advisory: docs/architecture.md not found at the root — noted, not fabricated; continuing with the repo inputs that exist.`
     - **Narrative-only repo `<repo>`:** `Advisory: <repo> has no docs/domain/ — noted, not fabricated; linking its narrative only.`
     - **Domain-only repo `<repo>`:** `Advisory: <repo> has no docs/narrative/ — noted, not fabricated; linking its domain only.`
@@ -139,4 +135,4 @@ filesystem paths are accepted.
 
 11. **No auto-commit.** After the write, do **not** run `git add` or `git commit`. The new
     or modified `docs/memory/*.md` files are left as uncommitted working-tree changes for
-    the operator to review and commit (NFR-1).
+    the operator to review and commit.

@@ -7,12 +7,13 @@ description: Operating manual for the project-wiki-enhancer runtime agent that o
 
 ## Purpose
 
-`project-wiki-enhancer` owns every write to `docs/domain/` after `project-explorer` bootstraps it. The enhancer reloads `project-explorer`'s `SKILL.md` verbatim at runtime to inherit the output schema, frontmatter contract, BC discovery heuristics, and exclusion globs — there is no fork and no copy. This file owns the enhancer-specific behaviour that is not in the sibling skill: the hybrid diff strategy, the path -> BC classifier, the fenced human-edit zone splice rule, the byte-perfect idempotency contract with its canonical exit message, the new-BC discovery APPROVE gate (reused verbatim), the removed-BC log-only rule, and the load-bearing `## Known coupling` and `## Migration caveat` sections.
+`project-wiki-enhancer` owns every write to `docs/domain/` after `project-explorer` bootstraps it. The enhancer reloads `project-explorer`'s `SKILL.md` verbatim at runtime to inherit the output schema, frontmatter contract, BC discovery heuristics, and exclusion globs — there is no fork and no copy. This file owns the enhancer-specific behaviour that is not in the sibling skill: the hybrid diff strategy, the path -> BC classifier, the fenced human-edit zone splice rule, the byte-perfect idempotency contract with its canonical exit message, the fully agent-driven auto-write of newly discovered BCs (no approval gate), the removed-BC log-only rule, and the load-bearing `## Known coupling` and `## Migration caveat` sections.
 
 ## Inputs
 
 - `[path]` (optional) — local filesystem path to the target repository. Defaults to the current working directory when omitted. Local path only; no remote URLs, no clone, no git checkout side-effect. Same semantics as `/project:explore`.
-- `--bypass-approval` (optional flag) — opt-in for low-friction / CI runs. Auto-approves non-critical changes; always escalates on the four critical categories (see `## --bypass-approval semantics` below). When a critical category fires, the run exits nonzero (exit 1) per D2; no interactive pause.
+
+The enhancer is fully agent-driven: every change — including a newly discovered bounded context — is written automatically with no approval gate and no interactive pause. There is no `--bypass-approval` flag (it was removed when the gate was removed); the only thing that stops a run is the `## Pre-flight refuse condition` below.
 
 ## Pre-flight refuse condition
 
@@ -24,32 +25,13 @@ docs/domain/ is missing or empty. Run /project:explore first to bootstrap, then 
 
 and exits before the skill-load step. This mirrors `project-explorer`'s refusal-points-at-sibling pattern in reverse: `project-explorer` refuses when `docs/domain/` is non-empty (pointing at this enhancer); this enhancer refuses when `docs/domain/` is missing/empty (pointing back at `project-explorer`).
 
-## --bypass-approval semantics
-
-- **Flag scope.** Opt-in only. Default behaviour (flag absent) is identical to today's interactive APPROVE-gate semantics — no behavioural change for human-at-terminal users who never pass the flag.
-- **Auto-approve bucket.** Pure description rewrites outside fences, infra-only churn surfaced as a frontmatter-only diff (rare; the byte-compare contract suppresses most of these), doc reformatting that survives byte-compare, removed-BC bullet appends to `## Skipped candidates`. Anything in this bucket bypasses the APPROVE gate when the flag is set.
-- **Critical-category list (locked at four).** Verbatim:
-  1. **New BC introduced** in either tree (narrative or domain) -> critical, always requires human APPROVE.
-  2. **BC renamed** in either tree -> critical, always requires human APPROVE.
-  3. **BC removed** in either tree -> critical, always requires human APPROVE.
-  4. **Any write that would land inside a `<!-- human:begin --> ... <!-- human:end -->` block** -> critical, always requires human APPROVE.
-- **Escalation behaviour on critical category (D2 — nonzero exit).** When any critical category fires AND `--bypass-approval` is set, the agent prints the candidate report (so the operator sees what would have been gated), then prints the locked literal diagnostic message verbatim, then exits 1. **No interactive pause, no env-var hybrid.**
-- **Locked literal diagnostic message** (byte-for-byte; do not alter, do not localize):
-
-  ```
-  Critical change detected; --bypass-approval cannot self-approve. Re-run without --bypass-approval to inspect and APPROVE interactively.
-  ```
-
-- **Exit code.** `1`. Same exit code the agent uses for any other non-zero exit per the no-partial-exit rule in `## Idempotency exit`. NOT 2 (usage error), NOT 130 (SIGINT-equivalent).
-- **Per-pass scope.** The critical-category check fires **per pass**. A narrative-pass critical escalation halts the run before the domain pass starts (intentional per accepted risk row 3 of `analyze-workflow-enhance-wiki.analyzed.md` — the domain pass reads narrative as soft input; if narrative is gated, domain must wait).
-
 ## Tree-presence advisories
 
 Four-way tree-presence matrix (mirroring `analyze-workflow-enhance-wiki.analyzed.md` Section 8):
 
 | Narrative present? | Domain present? | Behaviour |
 |---|---|---|
-| yes | yes | Both passes run. Two APPROVE gates (each auto-skipping when its `new-namespace` bucket is empty). Happy path. |
+| yes | yes | Both passes run. Each pass auto-writes its tree with no approval gate. Happy path. |
 | yes | no | Domain-absent advisory fires. Narrative pass runs. Domain pass is skipped. |
 | no | yes | Narrative-absent advisory fires. Narrative pass is skipped. Domain pass runs. |
 | no | no | Refused at the command layer (no agent spawn). See `## Pre-flight refuse condition` for the agent-level contract; the command-level refusal is the authoritative one. |
@@ -73,15 +55,15 @@ Four-way tree-presence matrix (mirroring `analyze-workflow-enhance-wiki.analyzed
 ## Dual-pass orchestration
 
 - **Fixed order.** Narrative pass first, then domain pass. No `--reverse-order`, no `--narrative-only`, no `--domain-only` flag exists in v1.
-- **Rationale.** The domain pass reads `docs/narrative/<bc>/walkthrough.md` as soft input via `.claude-user/skills/project-explorer/SKILL.md` `## Soft input: docs/narrative/`. If the narrative tree is stale at domain-pass time, the soft input is stale and the operator would need a second invocation to converge. Fixed order makes the single invocation converge.
-- **Per-pass cross-tree side effects.** When the narrative pass critical-escalates (D2 nonzero exit), the domain pass never runs in that invocation. The operator must re-invoke after the narrative gate is resolved interactively (see accepted risk row 3 of `analyze-workflow-enhance-wiki.analyzed.md`).
+- **Rationale.** The domain pass reads `docs/narrative/<bc>/walkthrough.md` as soft input via `.claude-user/skills/project-explorer/SKILL.md` `## Soft input: docs/narrative/`. If the narrative tree is stale at domain-pass time, the soft input is stale and the operator would need a second invocation to converge. Fixed order makes the single invocation converge — and because the narrative pass auto-writes (no gate), the domain pass always reads a fresh narrative within the same invocation.
+- **Both passes always run.** Neither pass can halt or escalate; both auto-write their tree. Whichever trees are present (per `## Tree-presence advisories`) are both refreshed in one invocation with no interactive pause.
 - **Shared run-summary.** Per `## Idempotency exit`, the non-zero-write exit summary aggregates per-pass counts (files written, new BCs created, removed BCs logged) into a single block. The zero-write exit message (`No changes detected. 0 files written.`) is emitted **once per run** when both passes together wrote zero files (cross-pass aggregation rule, mirroring the narrative-side rule in `.claude-user/skills/project-overview/SKILL.md` `## Idempotency exit (narrative)`).
 
 ## Operating procedure
 
 Numbered steps 0-12. The agent must execute these in order. Each step mirrors `project-wiki-enhancer.overview-plan.md` Section 5 (Core Behaviour); later sections in this skill fill in the precise contract per step.
 
-0. **Run-mode dispatch.** Read the `--bypass-approval` flag from the spawn-prompt inputs (default false). Read the four-way tree-presence matrix from `## Tree-presence advisories`. Plan the run order: narrative pass first (when `docs/narrative/` is present), domain pass second (when `docs/domain/` is present). When both trees are missing, the command-layer refusal already fired before this agent was spawned — see `## Pre-flight refuse condition` for the agent-level documentation of that contract.
+0. **Run-mode dispatch.** Read the four-way tree-presence matrix from `## Tree-presence advisories`. Plan the run order: narrative pass first (when `docs/narrative/` is present), domain pass second (when `docs/domain/` is present). Both passes auto-write with no approval gate. When both trees are missing, the command-layer refusal already fired before this agent was spawned — see `## Pre-flight refuse condition` for the agent-level documentation of that contract.
 1. **Resolve target.** Resolve `[path]` (defaults to the current working directory). Locate the current working directory's `docs/domain/`. If `docs/domain/` is missing or empty, refuse with the message pointing the user at `/project:explore` (see `## Pre-flight refuse condition` above) — bootstrap first, then enhance.
 2. **Skill load (all three).** The subagent loads its own `.claude-user/skills/project-wiki-enhancer/SKILL.md` first, then reloads `.claude-user/skills/project-overview/SKILL.md` second, then reloads `.claude-user/skills/project-explorer/SKILL.md` third — verbatim, in that locked order. All three are treated as authoritative for the run; enhancer-specific behaviour (diff strategy, fence handling, idempotency exit message) lives in this skill, narrative-side output schema + frontmatter + diff-aware update mode live in the project-overview skill, and domain-side output schema + frontmatter + BC heuristics live in the project-explorer skill. See `## Skill reload contract` for the explicit reload targets.
 3. **Diff strategy selection (hybrid).** Read `last_generated_sha` from frontmatter (sample one file under `docs/domain/`; all frontmatter is treated as consistent — every file's `last_generated_sha` advances together on a successful run).
@@ -90,10 +72,10 @@ Numbered steps 0-12. The agent must execute these in order. Each step mirrors `p
 
    See `## Hybrid diff strategy` for the full contract and the auditability lines surfaced in run output.
 4. **Classify changed files.** Bucket the diff output into exactly one of three classes per `## Path -> BC classifier`: (a) `BC-affecting` — survives the exclusion globs AND lives under a known BC folder/namespace; (b) `infra — no BC impact` — excluded by globs OR survives globs but is not under any known BC; (c) `new-namespace` — survives exclusion globs AND lives under a folder/namespace not mapped to any existing BC.
-5. **New-BC discovery APPROVE gate.** If bucket (c) is non-empty, print the candidate new-BC list (rationale + aggregates detected, formatted per `project-explorer`'s `### Candidate report format`) and halt on the literal `APPROVE` token using `project-explorer`'s `### APPROVE gate contract` verbatim. No new `<bounded-context>/` folder is created until APPROVE is received. See `## New-BC discovery APPROVE gate`.
+5. **New-BC discovery (auto-write).** If bucket (c) is non-empty, print the candidate new-BC list (rationale + aggregates detected, formatted per `project-explorer`'s `### Candidate report format`) for the audit trail, then proceed directly to create the new `<bounded-context>/` folder(s) — no approval gate, no halt. See `## New-BC discovery (auto-write)`.
 6. **Removed-BC logging.** For each existing `<bounded-context>/` folder under `docs/domain/` whose namespace is no longer present in source, append a bullet to `context-map.md`'s `## Skipped candidates` H2 section as `<bc-name>: namespace no longer present`. **Never delete** the folder. **Never delete** any file inside the folder. See `## Removed-BC logging`.
-7. **Per-BC SHA pre-check (domain).** For each BC in the `BC-affecting` bucket from step 4, run the per-BC SHA pre-check per `## Per-BC SHA pre-check`: resolve the BC's source paths via the Step A reverse mapping (`.claude-user/skills/project-explorer/SKILL.md` `## BC candidate surfacing` `### Reverse mapping (BC -> source paths)`), gather **every** file's `last_generated_sha` under `docs/domain/<bc>/`, apply the conservative any-missing / any-unreachable / unresolvable-path-set -> no-skip gates, else diff `git -C <path> diff <base>..HEAD -- <bc-source-paths>` where `<base> = min(reachable)` (oldest-wins). Empty diff -> **SKIP** the BC (no regen, no fence-splice, no byte-compare, no write; emit the verbose skip line under verbose/debug mode per `### Skip log line (verbose/debug only)`); non-empty diff -> fall through to step 8 (regen). New-namespace, removed-BC, and the repo-wide roll-ups (`context-map.md`, `glossary.md`) are out of scope and unaffected. **Renumbering audit note (load-bearing):** inserting this step shifted the trailing steps; downstream cross-references to the old "step 7/8/9" numbering must trace to the renumbered values below (regen is now step 8, fence-splice step 9, byte-compare/selective-write step 10, `last_generated_sha` advancement step 11, idempotency exit step 12). References that use a **named section anchor** (e.g. `## Regenerate -> fence-splice -> byte-compare -> selective write`, `### Selective write + frontmatter refresh`) are left unchanged — anchors do not drift; only bare in-procedure ordinal references are renumbered. The mentions of **"Step E"** in `### last_generated_sha tolerate-missing` and in `### Post-APPROVE behaviour` are **predecessor-feature plan-step labels**, NOT this procedure's ordinals, and MUST NOT be renumbered.
-8. **Regeneration in memory.** For every BC in bucket (a) **that the step 7 pre-check did not SKIP** and the user-APPROVED subset of bucket (c), regenerate the per-file content per `project-explorer`'s `## Output schema` `### Per-file content contract`, scoped to that BC's slice of the tree. Generation is in-memory only at this point — no writes.
+7. **Per-BC SHA pre-check (domain).** For each BC in the `BC-affecting` bucket from step 4, run the per-BC SHA pre-check per `## Per-BC SHA pre-check`: resolve the BC's source paths via the Step A reverse mapping (`.claude-user/skills/project-explorer/SKILL.md` `## BC candidate surfacing` `### Reverse mapping (BC -> source paths)`), gather **every** file's `last_generated_sha` under `docs/domain/<bc>/`, apply the conservative any-missing / any-unreachable / unresolvable-path-set -> no-skip gates, else diff `git -C <path> diff <base>..HEAD -- <bc-source-paths>` where `<base> = min(reachable)` (oldest-wins). Empty diff -> **SKIP** the BC (no regen, no fence-splice, no byte-compare, no write; emit the verbose skip line under verbose/debug mode per `### Skip log line (verbose/debug only)`); non-empty diff -> fall through to step 8 (regen). New-namespace, removed-BC, and the repo-wide roll-ups (`context-map.md`, `glossary.md`) are out of scope and unaffected. **Renumbering audit note (load-bearing):** inserting this step shifted the trailing steps; downstream cross-references to the old "step 7/8/9" numbering must trace to the renumbered values below (regen is now step 8, fence-splice step 9, byte-compare/selective-write step 10, `last_generated_sha` advancement step 11, idempotency exit step 12). References that use a **named section anchor** (e.g. `## Regenerate -> fence-splice -> byte-compare -> selective write`, `### Selective write + frontmatter refresh`) are left unchanged — anchors do not drift; only bare in-procedure ordinal references are renumbered. The mentions of **"Step E"** in `### last_generated_sha tolerate-missing` and in `### Auto-write behaviour` are **predecessor-feature plan-step labels**, NOT this procedure's ordinals, and MUST NOT be renumbered.
+8. **Regeneration in memory.** For every BC in bucket (a) **that the step 7 pre-check did not SKIP** and every candidate in bucket (c) (all auto-created — no approval subset), regenerate the per-file content per `project-explorer`'s `## Output schema` `### Per-file content contract`, scoped to that BC's slice of the tree. Generation is in-memory only at this point — no writes.
 9. **Fenced human-edit zone preservation.** For each regenerated file, read the on-disk file. If it contains a `<!-- human:begin --> ... <!-- human:end -->` block, splice the on-disk fenced block (the lines from `<!-- human:begin -->` through `<!-- human:end -->` inclusive, content verbatim) into the regenerated content at the same anchor position; everything outside the fence is replaced with the regenerated agent-owned content. If no fence exists on disk, the regenerated content fully replaces the on-disk content (see `## Migration caveat`).
 10. **Byte-perfect compare + selective write.** For each candidate file: serialize the regenerated content (post-fence-splice) and compare to the on-disk bytes. **Write only when bytes differ.** On a real content change, refresh the frontmatter per `## Frontmatter refresh rules` (`generated_at` to a new ISO-8601 UTC second-precision `Z`-suffixed timestamp, `skill_version` to the current `project-explorer` skill version, `branch_name` to the current arg or bare `null`, preserve `source_repo`, stamp `last_generated_sha` to current HEAD on the git path). Files whose content has not changed retain their prior `generated_at` even after a successful run.
 11. **`last_generated_sha` advancement.** Regardless of whether any content changed, stamp `last_generated_sha` on every file the enhancer touches in step 10. On the full-walk fallback path with no git, `last_generated_sha` is omitted from frontmatter (next run will re-fallback). On the git path, `last_generated_sha` advances to current HEAD on every successful run, so subsequent runs take the fast path.
@@ -105,7 +87,7 @@ The enhancer agent reloads three skills in this order, at the start of every run
 
 1. `.claude-user/skills/project-wiki-enhancer/SKILL.md` — this file. Loaded first.
 2. `.claude-user/skills/project-overview/SKILL.md` — loaded **second**. Treated as authoritative for the narrative-side output schema, frontmatter contract, fence convention, and the seven new `## Diff-aware update mode` sub-sections.
-3. `.claude-user/skills/project-explorer/SKILL.md` — loaded **third**. Treated as authoritative for everything both passes regenerate against (BC heuristics, exclusion globs, candidate report format, APPROVE gate contract).
+3. `.claude-user/skills/project-explorer/SKILL.md` — loaded **third**. Treated as authoritative for everything both passes regenerate against (BC heuristics, exclusion globs, candidate report format, auto-write contract).
 
 The enhancer treats `project-explorer`'s skill as authoritative for:
 
@@ -113,7 +95,7 @@ The enhancer treats `project-explorer`'s skill as authoritative for:
 - The frontmatter contract — `project-explorer`'s `## Frontmatter contract` (the four-field YAML block — `source_repo`, `branch_name`, `generated_at`, `skill_version`). This feature adds `last_generated_sha` on top per `## Frontmatter refresh rules` below.
 - BC discovery heuristics — `project-explorer`'s `## BC candidate surfacing` (including `### Grouping rule`, which is the namespace -> folder mapping the classifier reuses).
 - Exclusion globs — the eight globs enumerated under `project-explorer`'s `### Small-repo fallback detection`. Reused verbatim by `### Exclusion globs (verbatim)` below.
-- The APPROVE gate format — `project-explorer`'s `### Candidate report format` and `### APPROVE gate contract`. Reused verbatim by the new-BC discovery gate.
+- The candidate report format — `project-explorer`'s `### Candidate report format`. Reused verbatim to print the new-BC audit trail before auto-writing (no gate).
 
 The enhancer treats `project-overview`'s skill as authoritative for the narrative-side equivalents of the same contracts: the narrative output schema, the narrative frontmatter contract, the fence convention used inside `docs/narrative/` files, and the six cite-by-reference sub-sections under `## Diff-aware update mode` (`## Hybrid diff strategy (narrative)`, `## Path -> BC classifier (narrative)`, `## Fenced human-edit zone splice (narrative)`, `## Removed-BC logging (narrative)`, `## Byte-compare + selective write + frontmatter refresh (narrative)`, and `## Idempotency exit (narrative)`). The narrative pass uses these sections; the domain pass does not.
 
@@ -225,7 +207,7 @@ Every file in the diff output is bucketed into exactly one of three classes:
 |---|---|---|
 | `BC-affecting` | Survives the exclusion globs AND lives under a known BC folder/namespace. | Add the owning BC to the re-walk set. |
 | `infra — no BC impact` | Excluded by the globs OR survives the globs but is not under any known BC. | No re-walk; logged for auditability. |
-| `new-namespace` | Survives the exclusion globs AND lives under a folder/namespace not mapped to any existing BC. | Fires the new-BC discovery APPROVE gate (see `## New-BC discovery APPROVE gate`). |
+| `new-namespace` | Survives the exclusion globs AND lives under a folder/namespace not mapped to any existing BC. | Auto-creates the new BC after printing the candidate report (see `## New-BC discovery (auto-write)`). |
 
 **Per-bucket count summary (auditability).** Immediately after the `Diff strategy:` audit line and before any subsequent step output, the agent prints the literal line:
 
@@ -254,7 +236,7 @@ The per-BC SHA pre-check is a per-BC speedup that sits **in front of** regen, on
 
 **Conservative gate 1 — any-missing / any-unreachable -> no skip.** If **any** file in the BC has a **missing** `last_generated_sha` (legacy bootstrap, manually wiped) **OR** an **unreachable** one (force-push / rebase orphaned the commit), the pre-check does **NOT** skip — the BC falls through to today's regen path. Reachability is evaluated with the **same** test the hybrid strategy already uses: `git -C <path> merge-base --is-ancestor <sha> HEAD` (success = reachable). See `## Hybrid diff strategy` `### Git fast path` precondition 3 and `### Full-walk fallback` for the reachability semantics; the pre-check invents **no** new reachability test.
 
-**Conservative gate 2 — empty/unresolvable path set -> no skip.** If the Step A inversion returned an **empty or unresolvable** `<bc-source-paths>` set (the folder name does not trace back to any current namespace/folder; the BC was renamed/merged/split at the APPROVE gate; the name is ambiguously spread across folders; or the `module-map` fallback token), the pre-check does **NOT** skip — full regen. This is the same conservative posture a missing SHA forces in gate 1. See the empty/unresolvable rule in `.claude-user/skills/project-explorer/SKILL.md` `## BC candidate surfacing` `### Reverse mapping (BC -> source paths)` and `analyzed.md` Risk row 1: ambiguity degrades to over-regen, never to under-skip; a false SKIP is impossible by construction.
+**Conservative gate 2 — empty/unresolvable path set -> no skip.** If the Step A inversion returned an **empty or unresolvable** `<bc-source-paths>` set (the folder name does not trace back to any current namespace/folder; the BC was renamed/merged/split since bootstrap; the name is ambiguously spread across folders; or the `module-map` fallback token), the pre-check does **NOT** skip — full regen. This is the same conservative posture a missing SHA forces in gate 1. See the empty/unresolvable rule in `.claude-user/skills/project-explorer/SKILL.md` `## BC candidate surfacing` `### Reverse mapping (BC -> source paths)` and `analyzed.md` Risk row 1: ambiguity degrades to over-regen, never to under-skip; a false SKIP is impossible by construction.
 
 **Base selection — oldest-wins.** When every file's `last_generated_sha` is **present and reachable**, the base is `min(reachable SHAs)` across the BC's files — **oldest-wins**, the most pessimistic reachable point. Rationale (one line): a partial prior run leaves divergent per-file SHAs within one BC, and oldest-wins anchors the diff window to the most-stale file so any source change since the earliest write across the BC's files is caught — sample-one or newest-wins could pick a freshly-advanced SHA and miss a change the stale-SHA files would have caught. See `analyzed.md` D2.
 
@@ -291,46 +273,23 @@ No new normal-run output line is introduced; on a zero-write run the only line r
 
 **Not a stable contract.** The skip line is a **test-fixture aid** — explicitly non-default (verbose/debug only) and deliberately **not** a stable public/automation contract. This parallels how `Diff strategy:` / `Classified:` **are** the stable always-on audit lines and this line deliberately is **not** (promoting it to an always-on audit line would add output to the zero-write run and break the silent-on-zero-write contract). See `analyzed.md` D3 / Risk row 4. A structured machine-readable per-BC run report (JSON) is deferred follow-up F3 (`analyzed.md`), to be picked up if/when a CI consumer needs telemetry beyond this greppable line.
 
-## New-BC discovery APPROVE gate
+## New-BC discovery (auto-write)
 
-The enhancer reuses `project-explorer`'s candidate-report + APPROVE-gate contract **verbatim**, unmodified. See:
-
-- `.claude-user/skills/project-explorer/SKILL.md` `### Candidate report format` — for the markdown layout of the candidate list (rationale, aggregates detected, conflicts detected, fallback flag).
-- `.claude-user/skills/project-explorer/SKILL.md` `### APPROVE gate contract` — for the literal prompt `Type APPROVE to write docs/domain/, or describe edits.`, the exact-case `APPROVE` token check (after trimming leading/trailing whitespace), and the edit-revision loop.
-
-The enhancer adds nothing to the contract: same report format, same literal prompt, same exact-case `APPROVE` token check, same edit-revision loop with no round cap. No new `<bounded-context>/` folder is created under `docs/domain/` until the user types the literal `APPROVE`. Case variants (`approve`, `Approve`) and yes-equivalents (`ok`, `yes`, `sure`) are treated as edit instructions — never approval. v1 is TTY-only by design; no `--yes` flag exists or is planned for v1.
+The enhancer is fully agent-driven: when a new bounded context is discovered, it prints the candidate report for the audit trail and then creates the new `<bounded-context>/` folder(s) automatically. There is **no APPROVE gate, no halt, and no edit-revision loop**. The enhancer reuses only `project-explorer`'s `### Candidate report format` (for the printed audit trail); it no longer reuses any approval-gate contract (that contract was removed from the sibling skill — see `### Auto-write contract`).
 
 ### Trigger
 
-Fires when the `new-namespace` bucket from `### Classification buckets` is non-empty. If the `new-namespace` bucket is empty, this gate does not fire and the run proceeds to step 6 of `## Operating procedure` (removed-BC logging) without any candidate-report print or APPROVE prompt.
+Fires when the `new-namespace` bucket from `### Classification buckets` is non-empty. If the `new-namespace` bucket is empty, no candidate report is printed and the run proceeds to step 6 of `## Operating procedure` (removed-BC logging).
 
 ### Reused contract (verbatim)
 
-The enhancer prints the candidate report using `.claude-user/skills/project-explorer/SKILL.md` `### Candidate report format` verbatim — same numbered `### BC candidates` list with per-candidate nested bullets for `Rationale` (folders / namespaces that contributed) and `Aggregates detected` (aggregate root + `file:line` citation as an inline-code span), same `### Fallback flag` line, same `### Conflicts detected` subsection (rendered as `(none)` when empty per the sibling skill).
+The enhancer prints the candidate report using `.claude-user/skills/project-explorer/SKILL.md` `### Candidate report format` verbatim — same numbered `### BC candidates` list with per-candidate nested bullets for `Rationale` (folders / namespaces that contributed) and `Aggregates detected` (aggregate root + `file:line` citation as an inline-code span), same `### Fallback flag` line, same `### Conflicts detected` subsection (rendered as `(none)` when empty per the sibling skill). The report is informational only — the agent does not prompt and does not wait.
 
 The `### Fallback flag` line on an enhancer run is **always** the literal token `false`. The small-repo fallback is a `project-explorer` bootstrap-only signal; it never fires from the enhancer.
 
-After the candidate report, the agent prints `.claude-user/skills/project-explorer/SKILL.md` `### APPROVE gate contract`'s literal prompt verbatim, byte-for-byte:
+### Auto-write behaviour
 
-```
-Type APPROVE to write docs/domain/, or describe edits.
-```
-
-### Acceptance check
-
-The agent MUST NOT create any new `<bounded-context>/` folder under `docs/domain/` until the user's response, after trimming leading and trailing whitespace (trim is exact-case-preserving), matches the literal token `APPROVE` **exact-case**. Case variants (`approve`, `Approve`, `approve!`, `APPROVE!`), yes-equivalents (`ok`, `yes`, `sure`), and any other text are treated as edit instructions per the loop below — never as approval. This is the same exact-case check defined in `.claude-user/skills/project-explorer/SKILL.md` `### APPROVE gate contract`; the enhancer does not relax or rewrite it.
-
-### Edit-revision loop
-
-Any response that is not the literal exact-case `APPROVE` (after trim) is treated as a free-text edit instruction. The agent interprets the instruction (rename a candidate, merge two candidates, split one, drop or add a candidate), regenerates the candidate report with the change applied, prefixes with the `Applied edits:` preamble defined in `.claude-user/skills/project-explorer/SKILL.md` `### APPROVE gate contract` (including the canonical no-actionable-change preamble for case-variant / yes-equivalent responses — see the sibling skill for the literal preamble string; do not duplicate it here), then re-prints the literal APPROVE prompt. The loop has no round cap and iterates until the user types exact-case `APPROVE` or aborts the session.
-
-### Post-APPROVE behaviour
-
-Only after the trimmed response matches exact-case `APPROVE` does the enhancer create new `<bounded-context>/` folders under `docs/domain/` for the approved subset of the `new-namespace` bucket. The new folders are populated by the Step E writer (`## Regenerate -> fence-splice -> byte-compare -> selective write` and its `### Selective write + frontmatter refresh` subsection) per `.claude-user/skills/project-explorer/SKILL.md` `## Output schema` `### Per-file content contract` and `### Write order`. Every newly written file under a freshly created `<bounded-context>/` folder carries all five frontmatter fields stamped **fresh** per `## Frontmatter refresh rules`: `source_repo` (preserved from `<path>`), `branch_name` (current invocation's arg or bare `null`), `generated_at` (new ISO-8601 UTC second-precision `Z`-suffixed timestamp), `skill_version` (current integer of `.claude-user/skills/project-explorer/SKILL.md`'s `version` field), and `last_generated_sha` (current HEAD SHA on the git path; omitted on the full-walk fallback path with no git).
-
-### Out-of-scope reminder
-
-v1 is TTY-only by design. There is no `--yes` flag in v1 and none is planned for v1. The deferred git-hook follow-up (F1 / F2 in `docs/project-wiki-enhancer/project-wiki-enhancer.analyzed.md` Section 10) is the only known consumer of a non-interactive gate; shipping it has a hard prerequisite to design and ship `--yes` (or equivalent non-interactive gate) first. None of that machinery is in scope for v1.
+After printing the candidate report, the enhancer immediately creates new `<bounded-context>/` folders under `docs/domain/` for **every** candidate in the `new-namespace` bucket — no approval, no subset selection, no halt. The new folders are populated by the Step E writer (`## Regenerate -> fence-splice -> byte-compare -> selective write` and its `### Selective write + frontmatter refresh` subsection) per `.claude-user/skills/project-explorer/SKILL.md` `## Output schema` `### Per-file content contract` and `### Write order`. Every newly written file under a freshly created `<bounded-context>/` folder carries all five frontmatter fields stamped **fresh** per `## Frontmatter refresh rules`: `source_repo` (preserved from `<path>`), `branch_name` (current invocation's arg or bare `null`), `generated_at` (new ISO-8601 UTC second-precision `Z`-suffixed timestamp), `skill_version` (current integer of `.claude-user/skills/project-explorer/SKILL.md`'s `version` field), and `last_generated_sha` (current HEAD SHA on the git path; omitted on the full-walk fallback path with no git).
 
 ## Removed-BC logging
 
@@ -399,9 +358,9 @@ The reason text is exactly `namespace no longer present` — verbatim. No varian
 
 ### Regenerate in memory
 
-For every BC in the `BC-affecting` bucket plus the user-APPROVED subset of the `new-namespace` bucket, the enhancer regenerates the per-file content per `project-explorer`'s `## Output schema` `### Per-file content contract`, scoped to that BC's slice of the tree. Generation is **in-memory only** at this point — no writes have happened yet.
+For every BC in the `BC-affecting` bucket plus every candidate in the `new-namespace` bucket (all auto-created — no approval subset), the enhancer regenerates the per-file content per `project-explorer`'s `## Output schema` `### Per-file content contract`, scoped to that BC's slice of the tree. Generation is **in-memory only** at this point — no writes have happened yet.
 
-**Scope.** Regenerate per-file content for every BC in the `BC-affecting` bucket plus the user-APPROVED subset of the `new-namespace` bucket. BCs in the `infra — no BC impact` bucket are **not** re-walked. BCs that were detected as **removed** (no longer in source) are excluded from the regenerate set per `## Removed-BC logging`'s strict no-delete contract — the enhancer logs them and moves on; their `<bounded-context>/` folder is frozen.
+**Scope.** Regenerate per-file content for every BC in the `BC-affecting` bucket plus every candidate in the `new-namespace` bucket. BCs in the `infra — no BC impact` bucket are **not** re-walked. BCs that were detected as **removed** (no longer in source) are excluded from the regenerate set per `## Removed-BC logging`'s strict no-delete contract — the enhancer logs them and moves on; their `<bounded-context>/` folder is frozen.
 
 **Output contract.** Each regenerated file's content is produced per `.claude-user/skills/project-explorer/SKILL.md` `## Output schema` `### Per-file content contract`, scoped to that BC. The exact set of files regenerated per BC is:
 
@@ -422,7 +381,7 @@ In addition, the two repo-wide roll-up files `docs/domain/context-map.md` and `d
 
 **Per-file algorithm.** For each `(path, regenerated-content)` pair produced by `### Regenerate in memory`:
 
-1. Read the on-disk file at `path`. If the file is missing (new file — e.g., a file under a freshly APPROVED new BC), **skip the splice**; the regenerated content is used as-is and proceeds straight to `### Byte-compare`.
+1. Read the on-disk file at `path`. If the file is missing (new file — e.g., a file under a freshly auto-created new BC), **skip the splice**; the regenerated content is used as-is and proceeds straight to `### Byte-compare`.
 2. Scan the on-disk content for the fence markers. **Zero fences** -> regenerated content used as-is (see `## Migration caveat`). **One fence pair** -> proceed to step 3 to splice. **Multiple fence pairs** -> loop step 3 for each pair, preserving all of them at their respective anchor positions.
 3. For each fence pair found on-disk: locate the same anchor position in the regenerated content (the anchor is the line index of `<!-- human:begin -->` within the agent-owned content; if the regenerated content has no matching anchor at the expected position, splice the fenced block at the same line-index offset measured from the top of the regenerated content). Replace the lines from `<!-- human:begin -->` through `<!-- human:end -->` (inclusive) in the regenerated content with the verbatim on-disk fenced block (markers + content + any whitespace within, byte-for-byte).
 4. The post-splice content string is the byte-compare candidate consumed by `### Byte-compare`.
@@ -467,7 +426,7 @@ The enhancer serializes the post-fence-splice regenerated content to a string, r
 
 **`last_generated_sha` omission (per-file, no-git only).** On the full-walk fallback path **with no git** (reason token `missing-git`), `last_generated_sha` is **omitted from the frontmatter** of every written file — the YAML key does not appear in the block at all. The next run re-evaluates the precondition, fails the git-tree check again, and re-falls-back. Critical distinction: reasons `missing-sha` and `unreachable-sha` are **git-available** paths, so the writer **still stamps HEAD** on those paths (recovery is automatic; the next run takes the fast path). Only `missing-git` causes the writer to **omit the field entirely** — and only on every subsequent no-git run.
 
-**New-file case.** For files in a freshly APPROVED new BC, there is no on-disk content to read; the splice and byte-compare steps are skipped (per `### Fenced human-edit zone splice` step 1's missing-file rule and `### Byte-compare`'s differ-by-default semantics). The write proceeds with a fresh frontmatter — all five fields stamped per the git-path rule above (`source_repo` derived from `<path>`; `branch_name` per the current invocation arg or bare `null`; `generated_at` fresh; `skill_version` fresh; `last_generated_sha` to HEAD on the git path, omitted on the no-git path) — and the regenerated content as-is (no fence to splice on a new file).
+**New-file case.** For files in a freshly auto-created new BC, there is no on-disk content to read; the splice and byte-compare steps are skipped (per `### Fenced human-edit zone splice` step 1's missing-file rule and `### Byte-compare`'s differ-by-default semantics). The write proceeds with a fresh frontmatter — all five fields stamped per the git-path rule above (`source_repo` derived from `<path>`; `branch_name` per the current invocation arg or bare `null`; `generated_at` fresh; `skill_version` fresh; `last_generated_sha` to HEAD on the git path, omitted on the no-git path) — and the regenerated content as-is (no fence to splice on a new file).
 
 ## Frontmatter refresh rules
 
@@ -513,7 +472,7 @@ The enhancer reloads, by name, the following contracts (five from `.claude-user/
 - `## BC candidate surfacing` `### Grouping rule` — the namespace -> BC mapping the path classifier reuses (see `### Namespace -> BC mapping` above).
 - `## BC candidate surfacing` `### Reverse mapping (BC -> source paths)` — the BC-name -> source-path inversion the per-BC pre-check consumes (see `## Per-BC SHA pre-check` above). It is the **strict inverse** of `### Grouping rule` and **shares its single source of truth** — the same namespace/folder correspondence read backwards, never a forked copy. An edit to `### Grouping rule` silently changes the inverted path set and therefore the `<bc-source-paths>` fed to `git diff` and the pre-check's SKIP/regen decision; re-audit and re-derive the reverse mapping on any `### Grouping rule` edit.
 - `### Small-repo fallback detection` — the eight exclusion globs enumerated there are the verbatim source for `### Exclusion globs (verbatim)` above.
-- `### Candidate report format` and `### APPROVE gate contract` — reused verbatim by `## New-BC discovery APPROVE gate` for the candidate report layout, the literal `Type APPROVE to write docs/domain/, or describe edits.` prompt, the exact-case `APPROVE` token check, and the edit-revision loop.
+- `### Candidate report format` — reused verbatim by `## New-BC discovery (auto-write)` for the printed candidate-report audit trail. (The sibling's former `### APPROVE gate contract` was removed when the gate was removed; the enhancer no longer reuses any approval-gate contract.)
 - `.claude-user/skills/project-overview/SKILL.md` `## Diff-aware update mode` (and its six cite-by-reference sub-sections: `## Hybrid diff strategy (narrative)`, `## Path -> BC classifier (narrative)`, `## Fenced human-edit zone splice (narrative)`, `## Removed-BC logging (narrative)`, `## Byte-compare + selective write + frontmatter refresh (narrative)`, `## Idempotency exit (narrative)`) — reloaded by the enhancer agent as the second of three skills per `## Skill reload contract` above. The narrative pass uses these sections; the domain pass does not.
 
 Any edit to those sections in either `.claude-user/skills/project-explorer/SKILL.md` or `.claude-user/skills/project-overview/SKILL.md` `## Diff-aware update mode` silently changes enhancer behaviour. The editor is obligated to (a) re-read this skill end-to-end, (b) re-read `project-wiki-enhancer.analyzed.md` Section 3 for the coupling rationale, and (c) re-run the Step F acceptance pass against a known fixture before considering the edit complete.

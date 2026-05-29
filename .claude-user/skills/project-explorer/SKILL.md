@@ -38,8 +38,8 @@ Numbered steps 1-7. Mirror the Core Behaviour list in the feature's overview pla
 2. **Skill load.** The agent reloads this `SKILL.md` and treats it as the operating manual for the rest of the run. The agent must not proceed past this step if the skill file is missing or malformed.
 3. **Repo walk.** The agent scans `<path>` for the code signals enumerated in `## Code signals` below — aggregates, repositories, events, services, value objects, and ubiquitous-language tokens. .NET signals are first-class; other stacks are best-effort. Excludes test projects, generated files, `bin/`, `obj/`, `node_modules/`, `dist/`.
 4. **BC candidate surfacing.** The agent groups the signals into bounded-context candidates using repo namespacing / top-level project boundaries / folder structure. Names must trace to a real namespace or folder path; no invented taxonomy. See `## BC candidate surfacing` below.
-5. **Human-in-the-loop APPROVE gate.** The agent prints the candidate BC list (with rationale, detected aggregates, and the small-repo-fallback flag if triggered) to the user and halts. No file is written under `docs/domain/` until the user types the literal token `APPROVE`. See `## BC candidate surfacing` below.
-6. **Output generation.** Once APPROVE is received, the agent writes the full Evans-canonical tree under `docs/domain/`. _The full per-file content contract (which fields each file carries, the `file:line` invariant back-reference rule, the small-repo-fallback variant, the write order) is filled in by Step D._
+5. **Print candidate report (non-blocking).** The agent prints the candidate BC list (with rationale, detected aggregates, and the small-repo-fallback flag if triggered) to the user for the audit trail, then proceeds directly to output generation. No human approval is required; the agent does not halt. See `## BC candidate surfacing` below.
+6. **Output generation.** After printing the candidate report, the agent writes the full Evans-canonical tree under `docs/domain/`. _The full per-file content contract (which fields each file carries, the `file:line` invariant back-reference rule, the small-repo-fallback variant, the write order) is filled in by Step D._
 7. **Frontmatter recording.** Every generated file under `docs/domain/` carries a four-field YAML frontmatter block (`source_repo`, `branch_name`, `generated_at`, `skill_version`) as the very first content in the file, before any heading. See `## Frontmatter contract` below.
 
 ## BC candidate surfacing
@@ -60,13 +60,13 @@ When namespace and folder structure disagree, the agent prefers the namespace as
 
 **Output shape.** The result is the set of source paths (directories and/or files) for that one BC, expressed as the `<bc-source-paths>` argument list: space-separated, repo-root-relative POSIX pathspecs (forward slashes, matching the `source_repo` slash-normalization in `## Frontmatter contract`), passed after `--` to `git diff <base>..HEAD -- <bc-source-paths>` — the command the Step B / Step D per-BC pre-check consumes. Because the inversion is taken against the working tree and the resulting pathspecs are handed to a commit-range diff, a pathspec that no longer exists at HEAD simply contributes no diff for that path (git resolves it against the range; an absent path yields an empty diff for that pathspec, never an error).
 
-**The conservative empty/unresolvable rule (the false-SKIP safety valve).** If the inversion resolves to an **empty or unresolvable path set** — the folder name does not trace back to any current namespace/folder; the BC was renamed, merged, or split at the APPROVE gate; or the name is ambiguously spread across multiple folders — the result is treated as **"cannot determine slice" -> no skip -> full regen**, the same conservative posture a missing SHA forces in the Step B pre-check. As a named special case, the `module-map` fallback token (the small-repo single-BC name from `### Small-repo fallback detection`) is **always** treated as unresolvable -> no skip -> full regen: `module-map` is an explicit fallback-mode token, not a discovered BC, so it has no clean source-path inversion and there is nothing to optimize in single-BC fallback mode. Ambiguity therefore degrades to **over-regen, never to under-skip**; a false SKIP is **impossible by construction** (see `analyzed.md` Risk row 1).
+**The conservative empty/unresolvable rule (the false-SKIP safety valve).** If the inversion resolves to an **empty or unresolvable path set** — the folder name does not trace back to any current namespace/folder; the BC was renamed, merged, or split since bootstrap; or the name is ambiguously spread across multiple folders — the result is treated as **"cannot determine slice" -> no skip -> full regen**, the same conservative posture a missing SHA forces in the Step B pre-check. As a named special case, the `module-map` fallback token (the small-repo single-BC name from `### Small-repo fallback detection`) is **always** treated as unresolvable -> no skip -> full regen: `module-map` is an explicit fallback-mode token, not a discovered BC, so it has no clean source-path inversion and there is nothing to optimize in single-BC fallback mode. Ambiguity therefore degrades to **over-regen, never to under-skip**; a false SKIP is **impossible by construction** (see `analyzed.md` Risk row 1).
 
 **No-cache note.** The path set is **re-derived every run** from the working tree and is **never** persisted to frontmatter — caching it would add a new frontmatter field (the requirement freezes the frontmatter surface beyond `last_generated_sha`) and the cached field would itself drift from the forward `### Grouping rule`. See `analyzed.md` Risk row 1 / F2 for the rejected cache-in-frontmatter alternative.
 
 ### Candidate report format
 
-The candidate report is a markdown block the agent prints to the user, ending in the literal APPROVE prompt. Format:
+The candidate report is a markdown block the agent prints to the user for the audit trail before writing. Format:
 
 1. `### BC candidates` — numbered list. One numbered item per candidate BC. Per-candidate nested bullets:
    - **Rationale** — one line naming the folders / namespaces that contributed (e.g., `folder: src/Ordering`, `namespace: eShop.Ordering`).
@@ -84,19 +84,11 @@ The fallback fires when at least one of these three triggers holds. Triggers are
 
 The fallback flag is reported as a single boolean (`true` / `false`) accompanied by an explanation that enumerates which of the three triggers fired. Example explanation when triggers (i) and (iii) both fire: `triggers fired: (i) total source files = 7 < 20; (iii) BC candidate count = 1`.
 
-When the flag is `true`, the candidate report includes the literal token `FALLBACK: single-BC module-map` on its own line above the APPROVE prompt. The gate still requires APPROVE — the fallback path does not skip the human gate.
+When the flag is `true`, the candidate report includes the literal token `FALLBACK: single-BC module-map` on its own line. The fallback path writes automatically like any other run — no human approval is required.
 
-### APPROVE gate contract
+### Auto-write contract
 
-After printing the candidate report, the agent halts and prints the literal prompt:
-
-```
-Type APPROVE to write docs/domain/, or describe edits.
-```
-
-The agent MUST NOT write any file under `docs/domain/` until the user's response, after trimming leading and trailing whitespace (trim is exact-case-preserving), matches the literal token `APPROVE` exact-case. Case variants (`approve`, `Approve`, `approve!`), yes-equivalents (`ok`, `yes`, `sure`), and any other text are treated as edit instructions per the loop below — never as approval.
-
-**Edit-revision loop.** Any response that is not the literal exact-case `APPROVE` is treated as a free-text edit instruction. The agent interprets it (typical edits: rename a BC, merge two BCs, split one BC into two, flip the fallback flag, drop or add a candidate). The agent then regenerates the candidate report with the change applied, prefixed by an `Applied edits:` preamble that summarises what changed, then re-prints the literal APPROVE prompt. If the response has no actionable change (e.g., the user typed `approve` lowercase), the preamble is `Applied edits: (no actionable change interpreted from your response; if you intended approval, please type the literal token APPROVE in exact case.)`. After the preamble + revised report, the agent re-prints the literal APPROVE prompt. The loop has **no round cap** — it iterates until the user types exact-case `APPROVE` or aborts the session.
+This agent is **fully agent-driven**: after printing the candidate report (`### Candidate report format`), the agent proceeds directly to output generation under `docs/domain/`. There is **no APPROVE gate, no halt, and no edit-revision loop** — the agent surfaces its BC decisions in the printed report for the audit trail, then writes immediately. The only thing that stops a run is the `## Idempotency guard` (refuses when `docs/domain/` is already non-empty); that guard is a re-run safety check, not an approval gate.
 
 ## Code signals
 
@@ -114,7 +106,7 @@ After the repo walk completes (operating procedure step 3) and before BC candida
 
 ### Backward-compat invariant
 
-When `docs/narrative/` is absent or empty, the agent's behaviour is **byte-identical** to runs before this section was added. The output schema, frontmatter contract, write order, hallucination guard, and APPROVE gate contract all run unchanged. Specifically: a downstream repo that has never invoked `/project:overview` MUST produce the same `docs/domain/` tree (modulo `generated_at` timestamp and `last_generated_sha` when HEAD has moved) as it produced before this hook landed. Any divergence is a regression.
+When `docs/narrative/` is absent or empty, the agent's behaviour is **byte-identical** to runs before this section was added. The output schema, frontmatter contract, write order, hallucination guard, and auto-write contract all run unchanged. Specifically: a downstream repo that has never invoked `/project:overview` MUST produce the same `docs/domain/` tree (modulo `generated_at` timestamp and `last_generated_sha` when HEAD has moved) as it produced before this hook landed. Any divergence is a regression.
 
 ### How narrative augments BC candidate surfacing
 

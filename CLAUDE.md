@@ -38,26 +38,26 @@ Five-role crew: Product Owner, Business Analyst, Architect, Software Engineer, T
 
 Three runtime agents own everything under `docs/domain/` and `docs/narrative/`. The DDD canonical schema (bounded contexts, aggregates, events, commands, repositories, services, glossary, context map) lives under `docs/domain/` — owned by the `project-explorer` and `project-wiki-enhancer` pair. The human-readable narrative tree (one-page repo overview + one walkthrough per bounded context) lives under `docs/narrative/` — owned by the new `project-overview` agent. All three are runtime-only and never produce planning artifacts. The pipeline runs in two passes: narrative first (so a non-tech reader can follow the business flow), then schema (with narrative as soft input where present).
 
+All three domain-wiki agents are **fully agent-driven**: they print their bounded-context decisions for the audit trail and then write automatically — no APPROVE gate, no halt, no interactive pause anywhere in this pipeline. The only thing that stops a run is the idempotency / pre-flight refusal (bootstrap refuses on a non-empty tree; enhance-wiki refuses when both trees are missing).
+
 1. `/project:explore <path> [branch]` — one-shot bootstrap. Spawns the
-   `project-explorer` agent which walks the target repo, surfaces bounded-context
-   candidates for human APPROVE, then writes the full Evans-canonical tree under
-   `docs/domain/` of the working directory. Refuses if `docs/domain/` already has
+   `project-explorer` agent which walks the target repo, prints bounded-context
+   candidates for the audit trail, then writes the full Evans-canonical tree under
+   `docs/domain/` of the working directory (no APPROVE gate). Refuses if `docs/domain/` already has
    content (it is not a re-runner). Reads `docs/narrative/architecture.md` and `docs/narrative/<bc>/walkthrough.md` as **soft input** when present, augmenting BC candidate ordering and per-aggregate description seeds; behaviour is byte-identical to today when `docs/narrative/` is absent.
-2. `/project:overview <path> [branch]` — one-shot narrative bootstrap. Spawns the `project-overview` agent which walks the target repo, surfaces bounded-context candidates for human APPROVE, then writes `docs/narrative/architecture.md` (one-page repo overview) plus `docs/narrative/<bc>/walkthrough.md` per detected BC (Mermaid sequence diagram + 3-paragraph intro + per-endpoint / handler / worker drill-down) under `docs/narrative/` of the working directory. Refuses if `docs/narrative/` already has content (it is not a re-runner; subsequent narrative refreshes are owned by `/project:enhance-wiki`).
-3. `/project:enhance-wiki [path] [--bypass-approval]` — **dual-pass**
+2. `/project:overview <path> [branch]` — one-shot narrative bootstrap. Spawns the `project-overview` agent which walks the target repo, prints bounded-context candidates for the audit trail, then writes `docs/narrative/architecture.md` (one-page repo overview) plus `docs/narrative/<bc>/walkthrough.md` per detected BC (Mermaid sequence diagram + 3-paragraph intro + per-endpoint / handler / worker drill-down) under `docs/narrative/` of the working directory (no APPROVE gate). Refuses if `docs/narrative/` already has content (it is not a re-runner; subsequent narrative refreshes are owned by `/project:enhance-wiki`).
+3. `/project:enhance-wiki [path]` — **dual-pass**
    diff-aware update. Spawns the `project-wiki-enhancer` agent which reloads
    its own skill, then the `project-overview` skill, then the
    `project-explorer` skill (three skills, locked order), picks a per-pass
    git fast-path or full-walk fallback, refreshes `docs/narrative/` first
    then `docs/domain/`, classifies changed files
-   (`BC-affecting` / `infra — no BC impact` / `new-namespace`), gates any
-   new BC on APPROVE (per pass, auto-skipping when empty), preserves
+   (`BC-affecting` / `infra — no BC impact` / `new-namespace`), auto-creates any
+   new BC after printing the candidate report (no APPROVE gate), preserves
    `<!-- human:begin -->`/`<!-- human:end -->` fenced edits byte-for-byte
    in **both** trees, and writes only files whose bytes actually changed.
-   `--bypass-approval` is an opt-in flag that auto-approves non-critical
-   changes for low-friction / CI runs and exits 1 with a locked diagnostic
-   when any of the four critical categories fires (new BC, BC renamed, BC
-   removed, write inside a fenced block). Refuses at the command layer
+   Both passes auto-write with no approval gate and no interactive pause; there is
+   no `--bypass-approval` flag (it was removed when the gate was removed). Refuses at the command layer
    when **both** `docs/narrative/` and `docs/domain/` are missing; prints
    a one-line symmetric advisory when exactly one is missing and proceeds
    with the present-tree pass. F1 (the deferred narrative diff-aware
@@ -98,7 +98,7 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 - New product feature, need to plan & build it → **Feature pipeline** (`/feature:new` then `/feature:structure`).
 - Onboarding a new repo, want a living domain wiki → **Domain wiki pipeline**. Run `/project:overview` first to produce a plain-language narrative under `docs/narrative/` (skip if you only want the canonical schema). Then run `/project:explore` once to produce the canonical schema under `docs/domain/` (it will read the narrative as soft input when present). Use `/project:enhance-wiki` whenever code changes to refresh both `docs/narrative/` and `docs/domain/` in one command.
 - Both can be used in the same repo. The feature pipeline writes under `docs/<FEATURE>/`; the wiki pipeline writes under `docs/domain/`. They never touch each other's files.
-  - **Carve-out (the single coupling seam).** The feature pipeline does not otherwise write the wiki trees, with exactly one exception: `/workflow:step-handoff` unconditionally invokes `/project:enhance-wiki` at session close (Ask 3 of the `enhance-workflow-step-start` feature). That invocation is subject to `/project:enhance-wiki`'s own missing-both-trees refusal, and it **blocks handoff finalization** if `/project:enhance-wiki` exits 1 or is APPROVE-pending. Outside this one documented seam, the pipelines remain independent and the 'never touch each other's files' invariant holds.
+  - **Carve-out (the single coupling seam).** The feature pipeline does not otherwise write the wiki trees, with exactly one exception: `/workflow:step-handoff` unconditionally invokes `/project:enhance-wiki` at session close (Ask 3 of the `enhance-workflow-step-start` feature). That invocation is subject to `/project:enhance-wiki`'s own missing-both-trees refusal. Because `/project:enhance-wiki` is now fully agent-driven (no APPROVE gate, never exits 1 for a critical category, never pends), it no longer blocks handoff finalization on a gate; it either succeeds (writes / clean no-op) or refuses for missing-both-trees (noted, handoff continues). Only an unexpected error blocks finalization. Outside this one documented seam, the pipelines remain independent and the 'never touch each other's files' invariant holds.
 
 ## Environment
 

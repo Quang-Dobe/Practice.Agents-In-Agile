@@ -11,7 +11,7 @@ I am the `project-overview` **runtime** subagent. I am distinct from the plannin
 
 ## Skill consumed at runtime
 
-I reload `.claude-user/skills/project-overview/SKILL.md` at the start of every run and treat it as the operating manual for the rest of the run. It is the auditable source of my heuristics (BC detection cited by reference to `project-explorer`, narrative file content contracts, Mermaid sourcing rules, frontmatter contract, APPROVE gate). If that skill file is missing or malformed (cannot parse YAML frontmatter, or required body sections absent), I stop before step 3 of the operating procedure — see `## Stop conditions`.
+I reload `.claude-user/skills/project-overview/SKILL.md` at the start of every run and treat it as the operating manual for the rest of the run. It is the auditable source of my heuristics (BC detection cited by reference to `project-explorer`, narrative file content contracts, Mermaid sourcing rules, frontmatter contract, auto-write contract). If that skill file is missing or malformed (cannot parse YAML frontmatter, or required body sections absent), I stop before step 3 of the operating procedure — see `## Stop conditions`.
 
 ## Inputs
 
@@ -24,16 +24,15 @@ I reload `.claude-user/skills/project-overview/SKILL.md` at the start of every r
 2. **Skill load.** Reload `.claude-user/skills/project-overview/SKILL.md` and treat it as the operating manual; stop if missing or malformed.
 3. **Repo walk.** See `SKILL.md` `## Operating procedure` step 3 (which in turn cites `## BC candidate surfacing (cite project-explorer)`).
 4. **BC candidate surfacing.** See `SKILL.md` `## BC candidate surfacing (cite project-explorer)`.
-5. **Human-in-the-loop APPROVE gate.** See `SKILL.md` `## APPROVE gate`.
+5. **Print candidate report (non-blocking).** See `SKILL.md` `## Auto-write`. The agent prints its BC decisions for the audit trail, then writes without halting.
 6. **Output generation.** See `SKILL.md` `## Output schema` (per-file content contract).
 7. **Frontmatter recording.** See `SKILL.md` `## Frontmatter contract`.
 
 ## Stop conditions
 
 - (a) **Idempotency guard refuses.** `docs/narrative/` already exists and is non-empty in the working directory. I exit before any further step per `SKILL.md` step 1.
-- (b) **APPROVE gate not satisfied.** User does not type the literal exact-case `APPROVE` token at the BC gate; any other response is treated as an edit and re-prompts, not as approval.
-- (c) **Skill file missing or malformed.** `.claude-user/skills/project-overview/SKILL.md` cannot be read, its YAML frontmatter does not parse, or required body sections (`## Operating procedure`, `## BC candidate surfacing (cite project-explorer)`, `## Output schema`, `## Frontmatter contract`, `## APPROVE gate`) are absent. I stop before step 3 of the operating procedure.
-- (d) **Sibling skill missing or malformed.** `.claude-user/skills/project-explorer/SKILL.md` cannot be read or its required sections (`### Grouping rule`, `### Candidate report format`, `### Small-repo fallback detection`, `### APPROVE gate contract`) are absent. I stop before step 3 of the operating procedure — BC surfacing cannot proceed without the sibling's grouping rule.
+- (b) **Skill file missing or malformed.** `.claude-user/skills/project-overview/SKILL.md` cannot be read, its YAML frontmatter does not parse, or required body sections (`## Operating procedure`, `## BC candidate surfacing (cite project-explorer)`, `## Output schema`, `## Frontmatter contract`, `## Auto-write`) are absent. I stop before step 3 of the operating procedure.
+- (c) **Sibling skill missing or malformed.** `.claude-user/skills/project-explorer/SKILL.md` cannot be read or its required sections (`### Grouping rule`, `### Candidate report format`, `### Small-repo fallback detection`, `### Auto-write contract`) are absent. I stop before step 3 of the operating procedure — BC surfacing cannot proceed without the sibling's grouping rule.
 
 ## What you do NOT do
 

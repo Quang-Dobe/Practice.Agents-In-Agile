@@ -7,7 +7,7 @@ consumed_by: project-overview agent
 
 ## Purpose
 
-This skill is the operating manual the `project-overview` runtime agent reloads at the start of every run. It is the auditable source for narrative-tree generation under `docs/narrative/` — BC detection cited by reference to `project-explorer`, narrative file content contracts (`architecture.md` + `walkthrough.md`), Mermaid sourcing rules, frontmatter contract, human-edit fence convention, APPROVE gate, idempotency guard. The agent treats this file as authoritative for the run; the co-located `research.md` carries the long-form citations and per-category enumerations that this file cites by reference. This file is also reloaded by `.claude-user/agents/project-wiki-enhancer.md` when it runs the narrative pass of `/project:enhance-wiki` (see `## Diff-aware update mode` below); the bootstrap `project-overview` agent uses sections above `## Diff-aware update mode`, the enhancer agent uses sections at or below it.
+This skill is the operating manual the `project-overview` runtime agent reloads at the start of every run. It is the auditable source for narrative-tree generation under `docs/narrative/` — BC detection cited by reference to `project-explorer`, narrative file content contracts (`architecture.md` + `walkthrough.md`), Mermaid sourcing rules, frontmatter contract, human-edit fence convention, auto-write contract, idempotency guard. The agent treats this file as authoritative for the run; the co-located `research.md` carries the long-form citations and per-category enumerations that this file cites by reference. This file is also reloaded by `.claude-user/agents/project-wiki-enhancer.md` when it runs the narrative pass of `/project:enhance-wiki` (see `## Diff-aware update mode` below); the bootstrap `project-overview` agent uses sections above `## Diff-aware update mode`, the enhancer agent uses sections at or below it.
 
 ## Inputs
 
@@ -38,8 +38,8 @@ Numbered steps 1-7. The agent must execute these in order; later sections in thi
 2. **Skill load.** The agent reloads this `SKILL.md` and treats it as the operating manual for the rest of the run. The agent must not proceed past this step if the skill file is missing or malformed.
 3. **Repo walk.** The agent scans `<path>` for exposed endpoints, handlers, workers, and domain code signals via the reuse-by-reference rule in `## BC candidate surfacing (cite project-explorer)` below. Excludes test projects, generated files, `bin/`, `obj/`, `node_modules/`, `dist/` per the same exclusion globs as `project-explorer`.
 4. **BC candidate surfacing.** The agent groups signals into bounded-context candidates per `## BC candidate surfacing (cite project-explorer)` below — same grouping rule as the sibling skill.
-5. **Human-in-the-loop APPROVE gate.** The agent prints the candidate report and halts on the literal `APPROVE` token per `## APPROVE gate` below. No file is written under `docs/narrative/` until the user types the literal token `APPROVE`.
-6. **Output generation.** Once APPROVE is received, the agent writes `docs/narrative/architecture.md` and `docs/narrative/<bc>/walkthrough.md` per `## Output schema` below.
+5. **Print candidate report (non-blocking).** The agent prints the candidate report for the audit trail per `## Auto-write` below, then proceeds directly to output generation. No human approval is required; the agent does not halt.
+6. **Output generation.** After printing the candidate report, the agent writes `docs/narrative/architecture.md` and `docs/narrative/<bc>/walkthrough.md` per `## Output schema` below.
 7. **Frontmatter recording.** Every file the agent emits under `docs/narrative/` carries the five-field YAML frontmatter block per `## Frontmatter contract` below.
 
 ## BC candidate surfacing (cite project-explorer)
@@ -203,23 +203,14 @@ participant TODO
 
 **Top-of-file `## Stubs` summary requirement.** Every `walkthrough.md` file MUST carry a `## Stubs` H2 section immediately after the frontmatter and before the first content section. The section lists every stub in the file as a bulleted line `- <section name>: <reason>` (e.g., `- Drill-down: PlaceOrderEndpoint: could not trace 4 step(s) to file:line`). Files with zero stubs render `## Stubs` with body `(none)` — the section is **always present** on every `walkthrough.md`, even when empty. The `## Stubs` section is **not emitted in `architecture.md`** (no Mermaid blocks appear there). This is the operator-visible flag referenced in `analyze-workflow-project-explore.analyzed.md` § 7 row 5.
 
-## APPROVE gate
+## Auto-write
 
-This contract is reused by reference from `.claude-user/skills/project-explorer/SKILL.md` `### APPROVE gate contract` — only the literal prompt target is substituted. The cite-by-reference keeps the gate contract in a single place; any future edit to the sibling skill's gate contract is inherited here on next reload.
+This contract is reused by reference from `.claude-user/skills/project-explorer/SKILL.md` `### Auto-write contract` — the narrative agent applies the identical posture to `docs/narrative/`. The cite-by-reference keeps the contract in a single place; any future edit to the sibling skill's auto-write contract is inherited here on next reload.
 
-After printing the candidate report, the agent halts and prints the literal prompt:
-
-```
-Type APPROVE to write docs/narrative/, or describe edits.
-```
-
-The agent MUST NOT write any file under `docs/narrative/` until the user's response, after trimming leading and trailing whitespace (trim is exact-case-preserving), matches the literal token `APPROVE` exact-case. Case variants (`approve`, `Approve`, `approve!`), yes-equivalents (`ok`, `yes`, `sure`), and any other text are treated as edit instructions per the loop below — never as approval.
-
-**Edit-revision loop.** Any response that is not the literal exact-case `APPROVE` is treated as a free-text edit instruction. The agent interprets it (typical edits: rename a BC, merge two BCs, split one BC into two, flip the fallback flag, drop or add a candidate). The agent then regenerates the candidate report with the change applied, prefixed by an `Applied edits:` preamble that summarises what changed, then re-prints the literal APPROVE prompt. If the response has no actionable change (e.g., the user typed `approve` lowercase), the preamble is `Applied edits: (no actionable change interpreted from your response; if you intended approval, please type the literal token APPROVE in exact case.)`. After the preamble + revised report, the agent re-prints the literal APPROVE prompt. The loop has **no round cap** — it iterates until the user types exact-case `APPROVE` or aborts the session.
+The agent is **fully agent-driven**: after printing the candidate report (`## BC candidate surfacing (cite project-explorer)`), the agent proceeds directly to writing `docs/narrative/`. There is **no APPROVE gate, no halt, and no edit-revision loop** — the agent surfaces its BC decisions in the printed report for the audit trail, then writes immediately. The only thing that stops a run is the `## Idempotency guard` (refuses when `docs/narrative/` is already non-empty); that guard is a re-run safety check, not an approval gate.
 
 ## Stop conditions
 
 - **(a) Idempotency guard refuses.** `docs/narrative/` already exists and is non-empty in the working directory. The agent exits before any further step per `## Idempotency guard`.
-- **(b) APPROVE gate not satisfied.** User does not type the literal exact-case `APPROVE` token at the BC gate; any other response is treated as an edit per `## APPROVE gate` — never as approval.
-- **(c) Skill file missing or malformed.** `.claude-user/skills/project-overview/SKILL.md` cannot be read, its YAML frontmatter does not parse, or required body sections (`## Operating procedure`, `## BC candidate surfacing (cite project-explorer)`, `## Output schema`, `## Frontmatter contract`, `## APPROVE gate`) are absent. The agent stops before step 3 of `## Operating procedure`.
-- **(d) Sibling skill missing or malformed.** `.claude-user/skills/project-explorer/SKILL.md` cannot be read or its required sections (`### Grouping rule`, `### Candidate report format`, `### Small-repo fallback detection`, `### APPROVE gate contract`) are absent. The agent stops before step 3 of `## Operating procedure` — BC surfacing cannot proceed without the sibling's grouping rule. (Without this guard, the cite-by-reference rule in `## BC candidate surfacing (cite project-explorer)` would silently degrade.)
+- **(b) Skill file missing or malformed.** `.claude-user/skills/project-overview/SKILL.md` cannot be read, its YAML frontmatter does not parse, or required body sections (`## Operating procedure`, `## BC candidate surfacing (cite project-explorer)`, `## Output schema`, `## Frontmatter contract`, `## Auto-write`) are absent. The agent stops before step 3 of `## Operating procedure`.
+- **(c) Sibling skill missing or malformed.** `.claude-user/skills/project-explorer/SKILL.md` cannot be read or its required sections (`### Grouping rule`, `### Candidate report format`, `### Small-repo fallback detection`, `### Auto-write contract`) are absent. The agent stops before step 3 of `## Operating procedure` — BC surfacing cannot proceed without the sibling's grouping rule. (Without this guard, the cite-by-reference rule in `## BC candidate surfacing (cite project-explorer)` would silently degrade.)

@@ -15,10 +15,10 @@ Run a dual-pass diff-aware update of the runtime wiki trees of the working direc
    Both docs/narrative/ and docs/domain/ are missing. Run /project:overview to bootstrap docs/narrative/, then /project:explore to bootstrap docs/domain/, then /project:enhance-wiki to update.
    ```
 
-   Single-tree-missing (only one of the two trees missing) is **not** a refusal at the command layer; that case is handled by the agent's symmetric advisory branch (see `.claude-user/skills/project-wiki-enhancer/SKILL.md` `## Tree-presence advisories`).
+   Single-tree-missing (only one of the two trees missing) is **not** a refusal at the command layer; that case is handled by the agent's symmetric advisory branch (see the `project-wiki-enhancer` skill `## Tree-presence advisories`).
 
 4. Resolve `[path]` to an absolute filesystem path before spawning.
 
-5. Spawn the `project-wiki-enhancer` subagent via the `Agent` tool with `description: "project-wiki-enhancer: dual-pass update docs/narrative/ then docs/domain/"` and a `prompt` containing: (a) the resolved absolute `[path]`, and (b) the instruction that the agent must reload three skills in the locked order — `.claude-user/skills/project-wiki-enhancer/SKILL.md` **first**, `.claude-user/skills/project-overview/SKILL.md` **second**, `.claude-user/skills/project-explorer/SKILL.md` **third** — all before any other action.
+5. Spawn the `project-wiki-enhancer` subagent via the `Agent` tool with `description: "project-wiki-enhancer: dual-pass update docs/narrative/ then docs/domain/"` and a `prompt` containing: (a) the resolved absolute `[path]`, and (b) the instruction that the agent must reload three skills in the locked order — the `project-wiki-enhancer` skill **first**, the `project-overview` skill **second**, the `project-explorer` skill **third** — all before any other action.
 
 6. The subagent will execute its `## Operating procedure` (run-mode dispatch, pre-flight tree detection + advisory, three-skill load in locked order, narrative-pass execution then domain-pass execution per `## Dual-pass orchestration`, per-pass diff strategy selection, classify changed files, per-pass new-BC discovery auto-write per `## New-BC discovery (auto-write)`, removed-BC logging into the per-tree target, regenerate in memory, fenced human-edit zone splice, byte-compare + selective write + frontmatter refresh, cross-pass idempotency exit) and update `docs/narrative/` then `docs/domain/` in place — each pass writing only files whose post-fence-splice bytes differ from the on-disk bytes.

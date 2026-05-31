@@ -5,7 +5,7 @@ description: Discover and load optional project-tier skills and agents by concer
 
 # Project seams skill
 
-`.claude-user/` is stack-agnostic. A consuming repo supplies stack/rule content in its own `.claude/` tree. This skill is how a generic agent finds and honors those optional seams — and never blocks when they are absent.
+The user-tier kit (installed to `~/.claude/`) is stack-agnostic. A consuming repo supplies stack/rule content in its own `.claude/` tree. This skill is how a generic agent finds and honors those optional seams — and never blocks when they are absent.
 
 ## Reserved project skills (auto-discover)
 For each concern this agent references, check `<repo>/.claude/skills/<concern>/SKILL.md`. Load and honor it if present; emit no error and proceed if absent.

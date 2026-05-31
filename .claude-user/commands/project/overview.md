@@ -13,6 +13,6 @@ Bootstrap the human-readable narrative tree under `docs/narrative/` of the worki
 
 3. Resolve `<path>` to an absolute filesystem path before spawning.
 
-4. Spawn the `project-overview` subagent via the `Agent` tool with `description: "project-overview: bootstrap docs/narrative/"` and a `prompt` containing: the resolved absolute `<path>`, the `[branch-name]` arg if supplied (or the literal `null` if omitted), and the instruction that the agent must reload `.claude-user/skills/project-overview/SKILL.md` before any other action.
+4. Spawn the `project-overview` subagent via the `Agent` tool with `description: "project-overview: bootstrap docs/narrative/"` and a `prompt` containing: the resolved absolute `<path>`, the `[branch-name]` arg if supplied (or the literal `null` if omitted), and the instruction that the agent must reload the `project-overview` skill before any other action.
 
 5. The subagent will execute its `## Operating procedure` (idempotency guard, skill load, repo walk, BC candidate surfacing, print candidate report, output generation, frontmatter recording) and produce the human-readable narrative tree under `docs/narrative/`. The agent is fully agent-driven: it prints its BC decisions for the audit trail, then writes without any APPROVE gate or halt. The idempotency guard (refuses on a non-empty `docs/narrative/`) is the only stop.

@@ -45,7 +45,7 @@ Same shape as Section 2.
 
 ## N+2. Project-Specific Rule Overrides
 
-If this feature deviates from a rule in a project rule skill (`architecture-rules` / `coding-rules` / `test-rules` under `.claude/skills/` — this scaffold ships none; see `.claude-user/CONVENTIONS.md`), list each override here with:
+If this feature deviates from a rule in a project rule skill (`architecture-rules` / `coding-rules` / `test-rules` under `.claude/skills/` — this scaffold ships none; see `~/.claude/CONVENTIONS.md`), list each override here with:
 
 - The rule skill + section being overridden.
 - The override (one line).

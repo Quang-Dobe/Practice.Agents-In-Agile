@@ -11,12 +11,12 @@ COPY ME. This is a TEMPLATE, not an active skill. To use:
   3. Fill the numbered sections. Keep section numbers STABLE — planning
      artifacts cite them (e.g. "per `coding-rules` Section 3.2").
   4. Delete this comment.
-See ../../CONVENTIONS.md (in .claude-user/) for the full convention + agent→skill map.
+See `~/.claude/CONVENTIONS.md` for the full convention + agent→skill map.
 -->
 
 # <Concern> Rules — <Project Name>
 
-> Authored per project. The `.claude-user/` crew reads this skill as an **optional seam**:
+> Authored per project. The user-tier crew reads this skill as an **optional seam**:
 > if absent, the crew proceeds without it. Long rulesets: keep this file a thin loader and put
 > the full text in a sibling `.md` the loader points to.
 

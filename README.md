@@ -1,10 +1,10 @@
 # Practice — Agents In Agile
 
-A reusable "team of AI agents" kit for software projects. Drop the `.claude-user/`
-folder into any repository and you get a small crew of specialised AI assistants
-that walk a feature from a rough idea, through structured planning, all the way
-to code — and a second pair of agents that build and maintain a living
-"map of the codebase" you can read like a wiki.
+A reusable "team of AI agents" kit for software projects. Install it once to your
+user profile (`~/.claude/`) via `install.ps1` and every repository you open gets a
+small crew of specialised AI assistants that walk a feature from a rough idea,
+through structured planning, all the way to code — and a second pair of agents that
+build and maintain a living "map of the codebase" you can read like a wiki.
 
 This repository is the kit itself. It does not contain any application code.
 
@@ -84,7 +84,8 @@ Full beginner-friendly walkthrough: [`docs/workflow-domain-wiki.md`](docs/workfl
 
 ## How to use this kit in your own project
 
-1. Copy the `.claude-user/` folder into the root of your project.
+1. Install the kit to your user profile: from this repo run `pwsh -File ./install.ps1`
+   (copies `.claude-user/` → `~/.claude/`). One-time — every repo you open then has the crew.
 2. Make sure you are on Windows + PowerShell 7+ (or adapt the hook scripts).
 3. Make sure Python is on your PATH — two small hook scripts use it.
 4. Open the project in Claude Code.

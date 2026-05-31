@@ -65,4 +65,4 @@ No agent involved. Main Claude (you) does this directly.
 - **Resume after mid-stage session close.** Detect partial state by checking which Step 1/2/3/4 rows are `[X]` in `<name>.requirement.md` and which planning artifact files exist on disk. Resume from the next pending stage rather than redoing prior ones.
 - **No commits.** The user commits explicitly. Do not run `git commit`.
 - **`/workflow:step-approve` parity.** Each APPROVE in Stage 2 mirrors `/workflow:step-approve <name>`'s logic for flipping the requirement checkbox.
-- **Live-spawn note.** The four named subagents (`business-analyst`, `architect`, `tester`, `software-engineer`) must be present in `.claude-user/agents/`. They are loaded by Claude Code at session start; if you renamed or replaced any of them mid-session, restart the session before running this command.
+- **Live-spawn note.** The four named subagents (`business-analyst`, `architect`, `tester`, `software-engineer`) must be installed at user scope (`~/.claude/agents/`, via `install.ps1`). They are loaded by Claude Code at session start; if you renamed or replaced any of them mid-session, restart the session before running this command.

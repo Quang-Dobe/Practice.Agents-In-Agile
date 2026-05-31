@@ -26,8 +26,6 @@ filesystem paths are accepted.
    Remote URLs are not supported in v1. Pass a local filesystem path.
    ```
 
-   (mirroring `.claude-user/commands/project/explore.md`.)
-
 3. **Resolve to absolute.** Resolve `[root-path]` to an absolute filesystem path. In
    PowerShell: `Resolve-Path $rootPath`.
 
@@ -59,14 +57,13 @@ filesystem paths are accepted.
    (cannot be read, YAML frontmatter does not parse, or required body sections are absent),
    **stop before writing anything** to `docs/memory/` and report that the `wiki-memory`
    skill is missing/malformed. Do not write a partial topic file against an undefined
-   contract (mirroring the `project-explorer` stop-conditions).
+   contract.
 
 6. **Spawn the worker (primary shape).** Spawn the `wiki-bootstrapper` subagent via the
    `Agent` tool with `description: "wiki-bootstrapper: bootstrap docs/memory/"` and a
    `prompt` containing: the resolved absolute `[root-path]`, the discovered qualifying-repo
    set, the located (or absent) `docs/architecture.md`, and the instruction that the agent
-   must reload `.claude/skills/wiki-memory/SKILL.md` before any other action. This
-   mirrors the `explore.md` → `project-explorer` pattern.
+   must reload `.claude/skills/wiki-memory/SKILL.md` before any other action.
 
    **Inline fallback.** If the worker agent is unavailable, the command performs the work
    itself with identical behaviour and guarantees: reload the skill first (honoring step 5),

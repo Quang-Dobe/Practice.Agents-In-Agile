@@ -1,9 +1,9 @@
 # Project-Level Rules & Skills Convention
 
-`.claude-user/` is **stack-agnostic** and copied into new projects **unchanged**. It ships no
-language-, framework-, or architecture-specific rules. Each consuming project supplies its own
-rules in **its own `.claude/` tree** — never inside `.claude-user/`. That keeps the kit pristine
-and re-copyable.
+The user tier — installed to **user scope (`~/.claude/`) via `install.ps1`, unchanged** (not
+copied per-project) — is **stack-agnostic**. It ships no language-, framework-, or
+architecture-specific rules. Each consuming project supplies its own rules in **its own `.claude/`
+tree** — never inside the user tier. That keeps the kit pristine and reusable across every repo you open.
 
 The crew reads these project-supplied artifacts as **optional seams**. When a seam is absent, the
 agent proceeds without it and **never blocks**.
@@ -23,9 +23,10 @@ agent proceeds without it and **never blocks**.
     agents/
       rules-checker.md         <- you author (optional)
       test-runner.md           <- you author (optional)
-  .claude-user/                <- COPIED UNCHANGED from this scaffold
   docs/
     architecture.md            <- optional free-form architecture seam
+
+# user tier (this scaffold) lives at ~/.claude/, installed once via install.ps1 — NOT copied into the project
 ```
 
 ## Two tiers: generic (USER) vs project (REPO)
@@ -33,8 +34,8 @@ agent proceeds without it and **never blocks**.
 The crew agents are **thin**. Each agent declares a `skills:` manifest in its frontmatter and the
 harness preloads those skills at startup. Two kinds of skill exist:
 
-- **Generic capability skills** — stack-agnostic, ship with this scaffold under `.claude-user/skills/`
-  (installed to user scope). They hold the *how* of each artifact (`architecture-planning`,
+- **Generic capability skills** — stack-agnostic, installed to user scope under `~/.claude/skills/`.
+  They hold the *how* of each artifact (`architecture-planning`,
   `risk-severity-analysis`, `implementation-planning`, `step-execution`, …) plus cross-cutting
   process (`pipeline-protocol`, `project-seams`, `prompt-defense`). **Never edited per project.**
 - **Project rule/pattern skills** — stack-specific, authored by the consuming repo under
@@ -102,7 +103,7 @@ If you also want a PostToolUse build/test hook, add it to your project's
 
 ## Invariants
 
-- `.claude-user/` is never edited per project. All project rules live under `.claude/`.
+- The user tier (`~/.claude/`) is never edited per project. All project rules live under `.claude/`.
 - Every seam is optional. Missing seam → agent emits no error, proceeds.
 - `docs/architecture.md` is a free-form complement to the rule skills, not a replacement.
 

@@ -18,9 +18,8 @@
     - Feature crew (6 role agents + 12 generic skills + 4 feature/workflow command groups +
       templates) is fully user-scope-ready after this runs.
     - The WIKI kit (project-explorer / project-overview / project-wiki-enhancer + their skills and
-      project/* commands) still contains internal `.claude-user/...` path references; it is copied
-      for name resolution but its in-tree path reads are a known follow-up. See
-      docs/enhance-agent-skills/DECISIONS-NEEDED.md (D1 addendum).
+      project/* commands) resolves its skills BY NAME via each agent's `skills:` manifest — no
+      internal `.claude-user/...` path reads remain, so it works unchanged at user scope.
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
@@ -58,4 +57,4 @@ if ((Test-Path $conv) -and $PSCmdlet.ShouldProcess((Join-Path $Target 'CONVENTIO
 
 Write-Host "`nDone. The thin feature-crew agents now resolve their skills by name at user scope." -ForegroundColor Cyan
 Write-Host "Per-repo project rules still go in each repo's own .claude/skills/ (see CONVENTIONS.md)." -ForegroundColor DarkGray
-Write-Host "Note: the wiki kit (project-*) has internal .claude-user/ path refs — see DECISIONS-NEEDED.md D1." -ForegroundColor Yellow
+Write-Host "Wiki kit (project-*) resolves skills by name at user scope — no path follow-up needed." -ForegroundColor DarkGray

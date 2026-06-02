@@ -5,9 +5,7 @@ argument-hint: <question>
 
 Ask the root-tier LLM-Wiki a question. The question is routed to the `wiki-router`
 sub-agent, which classifies it in-domain vs out-of-domain and — when in-domain —
-answers from the wiki using the fixed retrieval order (`docs/memory/*` →
-`docs/architecture.md` → repos' `docs/narrative/` → repos' `docs/domain/` → repo source,
-last resort), stopping at the first tier that answers. The router reads the wiki first
+answers from the wiki using the fixed retrieval order (root `docs/memory/*` → `docs/architecture.md` → repos' `docs/narrative/` → repos' `docs/domain/` → repos' `docs/memory/` → repo source, last resort), stopping at the first tier that answers. The router reads the wiki first
 and repo source last; it never writes on a pure read/answer path.
 
 `<question>` is the natural-language question to answer. This command takes a **question**,
@@ -36,8 +34,6 @@ not a path — there is no remote-URL guard.
 
    The router classifies the question, answers from the wiki (or declines if
    out-of-domain), emits its one-line `wiki-trace:` line, and — only if it had to read
-   repo source — names the memory-append hand-off by path. This mirrors the
-   `/wiki:bootstrap` → `wiki-bootstrapper` and `/project:explore` → `project-explorer`
-   spawn patterns. A question answered from the wiki (no source read) produces zero
-   writes and presents no `APPROVE` prompt; the router only ever writes via the
-   `wiki-memory` write path, after a source read, with that skill loaded and valid.
+   repo **source** (T6) — appends the learning to **that repo's** `<repo>/docs/memory/`
+   via the `wiki-memory` write path (ungated: append-only + dedup + fence). A question
+   answered from any wiki tier (T1–T5, including per-repo memory) produces zero writes.

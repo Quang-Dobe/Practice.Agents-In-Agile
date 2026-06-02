@@ -24,20 +24,24 @@ this skill is what makes that stop-condition concrete.
 
 ## Write confinement
 
-Every write this manual authorizes lands **only** under `docs/memory/`. There are **no**
-exceptions.
+Every write this manual authorizes lands **only** under a `docs/memory/` tree — either the
+root `docs/memory/` (rollup) **or** a per-repo `<repo>/docs/memory/` (learnings). There are
+**no** other exceptions.
 
-- The sole write target is `docs/memory/<slug>.md`. Nothing else is ever created or
-  modified.
-- **Never** write to `docs/architecture.md`.
+- The write target is `<docs/memory-root>/<slug>.md`, where `<docs/memory-root>` is either
+  the root `docs/memory/` or a single repo's `<repo>/docs/memory/`. Nothing else is ever
+  created or modified.
+- **Never** write to `docs/architecture.md` (that file is owned solely by the
+  `wiki-architect` agent / `wiki-architecture` skill, never this path).
 - **Never** write into any repo's `docs/narrative/` or `docs/domain/` tree.
 - **Never** write into repo source (any `repo-*/src/**` or other repo file).
 - **Never** write into `.claude/` (this toolset, including this skill, the agents,
   commands, templates, or the fixtures used to test them).
 
-Before any write, the agent confirms the target path is under `docs/memory/`. If a
-candidate target resolves anywhere else, the write is refused — there is no fallback that
-writes outside `docs/memory/`.
+Before any write, the agent confirms the target path is under a `docs/memory/` tree
+(root docs/memory/ OR a per-repo <repo>/docs/memory/). If a candidate target resolves
+anywhere else, the write is refused — there is no fallback that writes outside a
+`docs/memory/` tree.
 
 ## Create-or-append policy
 
@@ -72,9 +76,13 @@ The entry appends to the topic **slug that classified the question** — the mat
 classification manifest. Slug derivation: the
 bounded-context / heading name lowercased into a slug (e.g. `Billing` → `billing`).
 
-- If `docs/memory/<slug>.md` **exists** → **append** the new entry (disposition =
+The `<docs/memory-root>` is supplied by the caller: the `wiki-router` uses the
+`<repo>/docs/memory/` of the repo whose source it read at T6; the `wiki-bootstrapper`
+uses the root `docs/memory/`.
+
+- If `<docs/memory-root>/<slug>.md` **exists** → **append** the new entry (disposition =
   append).
-- If `docs/memory/<slug>.md` **does not exist** → **create** it from
+- If `<docs/memory-root>/<slug>.md` **does not exist** → **create** it from
   `.claude/templates/memory-topic.md` (a `# <Title>` heading, a one-line summary, a
   `## Sources` section, and a `## Entries` section), then add the entry into its
   `## Entries` section (disposition = create).
@@ -95,21 +103,13 @@ or refreshes a `## Sources` link — maintaining `## Sources` is the bootstrappe
 not the write path's. Provenance for a source-read finding lives in the entry's
 `source-ref:` field, not in `## Sources`.
 
-### Gate posture — ungated T5 write-back vs gated bootstrap
+### Gate posture — all writes ungated
 
-The two consuming agents enter this manual under **different** gate postures, and this
-manual does **not** reconcile them into one:
-
-- **`wiki-router` T5 write-back is UNGATED / automatic — NO `APPROVE` prompt.** When the
-  router reads source at T5 to answer a question, the per-question append happens
-  automatically. This honors the Stage-1 decision that write-back fires on *every*
-  retrieval, not gated on acceptance. The append is **incidental** to answering, so it is
-  not operator-invoked and presents no `APPROVE` gate. Its safety net is **append-only +
-  same-ref dedup + fence-protection** — not a gate.
-- **`wiki-bootstrapper` bulk bootstrap is operator-invoked and `APPROVE`-gated.** The
-  bootstrap path presents the exact-case `APPROVE` gate before its bulk write
-  (per the README convention). That gate governs the **bulk** bootstrap write, **NOT**
-  the router's incidental T5 write-back.
+Every write through this manual is **ungated — NO `APPROVE` prompt**, for **all** callers
+(`wiki-router` T6 write-back, `wiki-bootstrapper` rollup). The append is incidental to
+answering / rolling up, not operator-invoked. The safety net is **append-only + same-ref
+dedup `(repo, path, line)` + fence protection** — not a gate. (Historical note: an earlier
+version gated the bootstrap rollup; that gate is retired.)
 
 ### Fence protection (inline)
 

@@ -35,6 +35,8 @@ a partial topic file against an undefined contract.
   are excluded.
 - **`docs/architecture.md`** — the (possibly absent) cross-repo overview at the root. When
   absent I note it and continue; I never fabricate it.
+- **Per-repo `docs/memory/`** — each qualifying repo's curated learnings tree (written by
+  the `wiki-router` on T6 source reads). Linked into the rollup; bodies never copied.
 
 ## Operating procedure
 
@@ -47,7 +49,8 @@ a partial topic file against an undefined contract.
    - One **per-BC topic** per bounded context discovered across repos: filename = lowercased
      BC slug (e.g. `docs/memory/billing.md`), title = BC name (e.g. `# Billing`). Each
      `## Sources` links the matching `docs/architecture.md` section, that BC's narrative
-     file, and that BC's domain file — **only the trees that exist**.
+     file, that BC's domain file, **and that BC's per-repo `docs/memory/` file** — only the
+     trees that exist.
    - One **cross-cutting topic** derived from `docs/architecture.md` (e.g.
      `docs/memory/architecture.md`) summarizing cross-repo relationships and linking the
      architecture section(s) — produced **only when `docs/architecture.md` exists**.
@@ -56,20 +59,17 @@ a partial topic file against an undefined contract.
    plus repo-relative `## Sources` links — never a multi-line lifted block (no Mermaid
    bodies, no full aggregate tables, no run of ≥ 2 consecutive non-trivial source lines).
    Links are the load-bearing artifact.
-5. **Present for APPROVE.** Show the per-topic preview (target repo-relative path,
-   create-vs-append disposition, title + one-line summary, full `## Sources` link list,
-   entry/append count) — **never full file bodies**. Proceed only on the exact-case token
-   `APPROVE`; treat any other response (including `approve`, `Approve`, `yes`, empty input,
-   or edit feedback) as an edit request and re-prompt.
-6. **Write — additive, confined to `docs/memory/`.** Per the `wiki-memory` skill: create
-   missing topic files; ADD missing `## Sources` links (appended after existing ones,
-   original order preserved) and new `## Entries` sub-blocks. Never rewrite an existing
-   summary line, never reorder/remove an existing source link, never touch fenced human
-   text. Link only to files that exist.
-7. **Emit advisories.** One line per missing/partial input (absent architecture.md,
+5. **Write — ungated.** Gate-free; no prompt required. Per the `wiki-memory` skill the rollup is
+   create-or-additive; safety net is append-only + dedup + fence. Show a one-line summary of
+   what was created/appended (not full bodies) for the audit trail, then write. Per the
+   `wiki-memory` skill: create missing topic files; ADD missing `## Sources` links (appended
+   after existing ones, original order preserved) and new `## Entries` sub-blocks. Never
+   rewrite an existing summary line, never reorder/remove an existing source link, never
+   touch fenced human text. Link only to files that exist.
+6. **Emit advisories.** One line per missing/partial input (absent architecture.md,
    narrative-only repo, domain-only repo, zero qualifying repos) — noted, not fabricated;
    never block.
-8. **Never commit.** Leave the new/modified `docs/memory/*.md` as uncommitted working-tree
+7. **Never commit.** Leave the new/modified `docs/memory/*.md` as uncommitted working-tree
    changes.
 
 ## What you do NOT do

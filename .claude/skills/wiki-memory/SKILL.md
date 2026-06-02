@@ -9,7 +9,7 @@ consumed_by: wiki-router agent, wiki-bootstrapper agent
 
 This skill is the **auditable write manual** for every write into `docs/memory/`. It is
 reloaded at the start of every run by **two** agents before they touch a single byte of
-the wiki: the `wiki-router` when source is read at T5 and it hands off to the
+the wiki: the `wiki-router` when source is read at T6 and it hands off to the
 memory-append path, and the `wiki-bootstrapper` when it bootstraps/refreshes the
 store. Both agents reload this skill before writing. Neither agent inlines these rules —
 this file is the single source of truth for
@@ -98,7 +98,7 @@ touch **nothing else**. The agent never edits, reorders, or removes a single byt
 - any `<!-- human:begin --> ... <!-- human:end -->` fenced region (see the inline
   fence-protection rule below).
 
-A T5 source-read append is an **`## Entries`-only** operation. It **never** adds, removes,
+A T6 source-read append is an **`## Entries`-only** operation. It **never** adds, removes,
 or refreshes a `## Sources` link — maintaining `## Sources` is the bootstrapper's job,
 not the write path's. Provenance for a source-read finding lives in the entry's
 `source-ref:` field, not in `## Sources`.
@@ -138,7 +138,7 @@ source-ref: <repo>@<commit> <repo-relative-path>:<line>
   `repo-a/src/Billing/ChargeSettlementService.cs`). **Required** — provenance always
   carries at least the path.
 - `:<line>` — the line the fact sits on. **Optional but recorded when known** — when the
-  source fact is at a known line (the common T5 case), the line MUST be included.
+  source fact is at a known line (the common T6 case), the line MUST be included.
 
 **Omit the parts you do not have**, but never omit the path. The components are written in
 a single, parseable shape so both the dedup guard (below) and a future HEAD diff can read
@@ -192,7 +192,7 @@ The ordered write algorithm. Both consuming agents follow it for every candidate
    to get the tuple `(<repo>, <repo-relative-path>, <line>)`; a missing `:<line>`
    normalizes to `(…, ∅)`.
 3. **Resolve the target topic.** Derive the slug from the classifying BC / heading
-   (lowercased), giving `docs/memory/<slug>.md`. Confirm the target path is
+   (lowercased), giving `<docs/memory-root>/<slug>.md`. Confirm the target path is
    under `docs/memory/` (`## Write confinement`).
 4. **Scan for a duplicate.** Read the target topic's `## Entries` (if the file exists) and
    compute the normalized key of each existing entry. If any equals the candidate key →
@@ -201,7 +201,7 @@ The ordered write algorithm. Both consuming agents follow it for every candidate
    distinct from a successful append. The file is left byte-for-byte unchanged. The
    question is still answered.
 6. **Else create-or-append.**
-   - If `docs/memory/<slug>.md` does not exist → create it from
+   - If `<docs/memory-root>/<slug>.md` does not exist → create it from
      `.claude/templates/memory-topic.md`, then insert the entry at the end of its
      `## Entries`.
    - If it exists → insert the entry **strictly at the END of `## Entries`**, after the

@@ -29,7 +29,7 @@ only.
    classify empty/existing.
 6. **Per repo (all repos, non-interactive):**
    - **empty →** `ensureRepo`: `/project:overview <repo>` then `/project:explore <repo>`.
-   - **existing →** `/project:enhance-wiki <repo>` (refresh narrative + domain).
+   - **existing →** `/project:update <repo>` (refresh narrative + domain).
    Sequential, or sub-agent per repo at the implementer's discretion (each writes only its
    own subtree — no worktree needed).
 7. **Roll up** to root `docs/memory/` via the `wiki-bootstrapper`: summarize-and-link the

@@ -34,13 +34,13 @@ The single per-repo routine both commands call.
 - **existing repo →** caller decides:
   - `mode = "skip"` (bootstrap) → do nothing (bootstrap is gap-fill only; it never
     refreshes existing trees).
-  - `mode = "refresh"` (enhance) → run `/project:enhance-wiki <repo>`.
+  - `mode = "refresh"` (enhance) → run `/project:update <repo>`.
 
 If the crew `project:*` commands are **unavailable** (only `.claude/` installed, not the
 `.claude-user/` crew), emit the one-line advisory and **skip orchestration** for that repo,
 proceeding to rollup with whatever trees already exist:
 ```
-Advisory: project:overview/explore/enhance-wiki not available — skipping per-repo orchestration for <repo>; rolling up existing trees only.
+Advisory: project:overview/explore/update not available — skipping per-repo orchestration for <repo>; rolling up existing trees only.
 ```
 
 ## Two-question protocol (bootstrap only)

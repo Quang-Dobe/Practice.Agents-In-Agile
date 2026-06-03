@@ -69,7 +69,7 @@ There are only two commands:
   The agent reads the code, suggests groupings (called "bounded contexts" —
   basically "areas of the business this code is about"), prints the groupings
   for the audit trail, then writes the wiki automatically (no APPROVE gate). If you ran `/project:overview` first, it also reads that narrative as a hint to better order and describe the areas; without it, `/project:explore` works exactly as before.
-- `/project:enhance-wiki [path]` — run this whenever the code has changed.
+- `/project:update [path]` — run this whenever the code has changed.
   The agent figures out **what** changed and auto-creates any new area after
   printing the candidate report (no APPROVE gate),
   preserves anything you wrote by hand (as long as it's wrapped in special

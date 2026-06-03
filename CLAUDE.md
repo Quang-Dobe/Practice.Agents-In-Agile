@@ -12,7 +12,7 @@ This repo holds **two sibling kits**:
 - `.claude-user/` — the per-project feature + domain-wiki crew documented below.
 - `.claude/` — a separate **root-tier cross-repo LLM-Wiki** kit (`wiki-bootstrapper` + `wiki-router` agents, `/wiki:bootstrap`, `/wiki:ask`, and `/wiki:enhance`); writes `docs/memory/` (root rollup + per-repo learnings) and `docs/architecture.md`. Independent of the crew below; see `.claude/README.md`.
   **Coupling (new):** `/wiki:bootstrap` and `/wiki:enhance` now invoke the crew's
-  `/project:overview`, `/project:explore`, and `/project:enhance-wiki` to produce/refresh
+  `/project:overview`, `/project:explore`, and `/project:update` to produce/refresh
   per-repo trees before rolling up. After `install.ps1` both kits live under `~/.claude/`, so
   the slash commands resolve. If the crew is absent, the wiki commands emit a one-line
   advisory and roll up existing trees only.
@@ -26,7 +26,7 @@ This scaffold ships two independent workflows:
 2. **Domain wiki pipeline** — two runtime agents that bootstrap and then keep a
    living DDD wiki under `docs/domain/` in sync with the codebase.
 
-The two pipelines are independent but share the same `docs/` root — with **one documented exception**: `/workflow:step-handoff` invokes `/project:enhance-wiki` at session close to keep the wiki in sync (see the carve-out under *When to use which workflow*).
+The two pipelines are independent but share the same `docs/` root — with **one documented exception**: `/workflow:step-handoff` invokes `/project:update` at session close to keep the wiki in sync (see the carve-out under *When to use which workflow*).
 
 ## Feature/Workflow Pipeline
 
@@ -45,18 +45,18 @@ Five-role crew: Product Owner, Business Analyst, Architect, Software Engineer, T
 
 ## Domain Wiki Pipeline
 
-Three runtime agents own everything under `docs/domain/` and `docs/narrative/`. The DDD canonical schema (bounded contexts, aggregates, events, commands, repositories, services, glossary, context map) lives under `docs/domain/` — owned by the `project-explorer` and `project-wiki-enhancer` pair. The human-readable narrative tree (one-page repo overview + one walkthrough per bounded context) lives under `docs/narrative/` — owned by the new `project-overview` agent. All three are runtime-only and never produce planning artifacts. The pipeline runs in two passes: narrative first (so a non-tech reader can follow the business flow), then schema (with narrative as soft input where present).
+Three runtime agents own everything under `docs/domain/` and `docs/narrative/`. The DDD canonical schema (bounded contexts, aggregates, events, commands, repositories, services, glossary, context map) lives under `docs/domain/` — owned by the `project-explorer` and `project-update` pair. The human-readable narrative tree (one-page repo overview + one walkthrough per bounded context) lives under `docs/narrative/` — owned by the new `project-overview` agent. All three are runtime-only and never produce planning artifacts. The pipeline runs in two passes: narrative first (so a non-tech reader can follow the business flow), then schema (with narrative as soft input where present).
 
-All three domain-wiki agents are **fully agent-driven**: they print their bounded-context decisions for the audit trail and then write automatically — no APPROVE gate, no halt, no interactive pause anywhere in this pipeline. The only thing that stops a run is the idempotency / pre-flight refusal (bootstrap refuses on a non-empty tree; enhance-wiki refuses when both trees are missing).
+All three domain-wiki agents are **fully agent-driven**: they print their bounded-context decisions for the audit trail and then write automatically — no APPROVE gate, no halt, no interactive pause anywhere in this pipeline. The only thing that stops a run is the idempotency / pre-flight refusal (bootstrap refuses on a non-empty tree; update refuses when both trees are missing).
 
 1. `/project:explore <path> [branch]` — one-shot bootstrap. Spawns the
    `project-explorer` agent which walks the target repo, prints bounded-context
    candidates for the audit trail, then writes the full Evans-canonical tree under
    `docs/domain/` of the working directory. Refuses if `docs/domain/` already has
    content (it is not a re-runner). Reads `docs/narrative/architecture.md` and `docs/narrative/<bc>/walkthrough.md` as **soft input** when present, augmenting BC candidate ordering and per-aggregate description seeds; behaviour is byte-identical to today when `docs/narrative/` is absent.
-2. `/project:overview <path> [branch]` — one-shot narrative bootstrap. Spawns the `project-overview` agent which walks the target repo, prints bounded-context candidates for the audit trail, then writes `docs/narrative/architecture.md` (one-page repo overview) plus `docs/narrative/<bc>/walkthrough.md` per detected BC (Mermaid sequence diagram + 3-paragraph intro + per-endpoint / handler / worker drill-down) under `docs/narrative/` of the working directory. Refuses if `docs/narrative/` already has content (it is not a re-runner; subsequent narrative refreshes are owned by `/project:enhance-wiki`).
-3. `/project:enhance-wiki [path]` — **dual-pass**
-   diff-aware update. Spawns the `project-wiki-enhancer` agent which reloads
+2. `/project:overview <path> [branch]` — one-shot narrative bootstrap. Spawns the `project-overview` agent which walks the target repo, prints bounded-context candidates for the audit trail, then writes `docs/narrative/architecture.md` (one-page repo overview) plus `docs/narrative/<bc>/walkthrough.md` per detected BC (Mermaid sequence diagram + 3-paragraph intro + per-endpoint / handler / worker drill-down) under `docs/narrative/` of the working directory. Refuses if `docs/narrative/` already has content (it is not a re-runner; subsequent narrative refreshes are owned by `/project:update`).
+3. `/project:update [path]` — **dual-pass**
+   diff-aware update. Spawns the `project-update` agent which reloads
    its own skill, then the `project-overview` skill, then the
    `project-explorer` skill (three skills, locked order), picks a per-pass
    git fast-path or full-walk fallback, refreshes `docs/narrative/` first
@@ -71,7 +71,7 @@ All three domain-wiki agents are **fully agent-driven**: they print their bounde
    with the present-tree pass. The narrative diff-aware update is part of this command.
 
 Both commands accept a local filesystem path only — remote URLs are refused in v1.
-Neither command writes outside its own output tree (`/project:overview` writes only `docs/narrative/`; `/project:explore` and `/project:enhance-wiki` write only `docs/domain/`).
+Neither command writes outside its own output tree (`/project:overview` writes only `docs/narrative/`; `/project:explore` and `/project:update` write only `docs/domain/`).
 
 **Root-tier wiki integration.** The root-tier `/wiki:enhance` command (`.claude/` kit) calls these crew commands as part of its full-sync pass. It also writes two additional trees that the crew commands do not touch: a per-repo `docs/memory/` (router T6 write-back — learnings from source reads appended by `wiki-router`) and the root `docs/architecture.md` (generated by the `wiki-architect` agent via `/wiki:enhance`; human `<!-- human:begin/end -->` fences preserved byte-for-byte).
 
@@ -79,16 +79,16 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 
 ## Layout
 
-- `.claude-user/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, workflow-step-planner, project-explorer, project-wiki-enhancer, project-overview)
+- `.claude-user/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, workflow-step-planner, project-explorer, project-update, project-overview)
 - `.claude-user/commands/` — slash commands under `feature/`, `project/`, `workflow/`
-- `.claude-user/skills/` — concern-named skills (one folder per skill). Feature-crew **capability** skills (`feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`, `open-question-drafting`) + **cross-cutting** skills (`pipeline-protocol`, `project-seams`, `prompt-defense`) + the three wiki skills (`project-explorer`, `project-overview`, `project-wiki-enhancer`)
+- `.claude-user/skills/` — concern-named skills (one folder per skill). Feature-crew **capability** skills (`feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`, `open-question-drafting`) + **cross-cutting** skills (`pipeline-protocol`, `project-seams`, `prompt-defense`) + the three wiki skills (`project-explorer`, `project-overview`, `project-update`)
 - `.claude-user/templates/` — `feature.requirement.md`, `feature.overview-plan.md`, `feature.test.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`, `project-rules.template.md` (copy-me example for a project rule skill)
 - `.claude-user/CONVENTIONS.md` — how a consuming project supplies its own rule skills + optional agents under its `.claude/` tree (the stack-specific seam this kit deliberately omits); also holds the per-agent context-access matrix
 - `.claude-user/hooks/` — `session-start-banner.py`
 - `docs/<FEATURE>/` — feature pipeline artifacts: `<FEATURE>.requirement.md`, `.overview-plan.md`, `.plan.md`, `.analyzed.md`, `.status.md`. Raw requirements also start here.
-- `docs/domain/` — domain wiki output owned by the project-explorer / project-wiki-enhancer agents. Bootstrapped once, then diff-updated on every subsequent run.
-- `docs/narrative/` — human-readable narrative tree owned by the `project-overview` agent at bootstrap and by `/project:enhance-wiki` on every subsequent code change. One file per bounded context (`<bc>/walkthrough.md`) plus a top-level `architecture.md`.
-- `.claude-user/agents/project-overview.md` — runtime agent definition for the narrative bootstrap. Mirrors the `project-explorer` / `project-wiki-enhancer` sibling pattern.
+- `docs/domain/` — domain wiki output owned by the project-explorer / project-update agents. Bootstrapped once, then diff-updated on every subsequent run.
+- `docs/narrative/` — human-readable narrative tree owned by the `project-overview` agent at bootstrap and by `/project:update` on every subsequent code change. One file per bounded context (`<bc>/walkthrough.md`) plus a top-level `architecture.md`.
+- `.claude-user/agents/project-overview.md` — runtime agent definition for the narrative bootstrap. Mirrors the `project-explorer` / `project-update` sibling pattern.
 - `.claude/` — the sibling root-tier LLM-Wiki kit (out of scope for this file). Documented in `.claude/README.md`.
 
 ## Conventions
@@ -99,15 +99,15 @@ Neither command writes outside its own output tree (`/project:overview` writes o
   - Concern-named rule skills under `.claude/skills/`: `architecture-rules` (architect, step-planner, SE), `coding-rules` (SE), `test-rules` (tester).
   - Optional project agents `.claude/agents/rules-checker.md` and `.claude/agents/test-runner.md`.
   - Full convention + agent→skill map: **`.claude-user/CONVENTIONS.md`**. Author a rule skill by copying `.claude-user/templates/project-rules.template.md` into `.claude/skills/<concern>-rules/SKILL.md`.
-- The three domain-wiki agents (`project-explorer`, `project-wiki-enhancer`, `project-overview`) are tooling for downstream repos; they are runtime, never planning, and never emit a `status.md`.
-- Human edits to generated `docs/domain/` and `docs/narrative/` files must live inside `<!-- human:begin --> ... <!-- human:end -->` fences to survive any future regeneration. Fences are load-bearing in BOTH trees: `docs/domain/` fences survive `/project:enhance-wiki`'s domain pass, and `docs/narrative/` fences survive its narrative pass byte-for-byte.
+- The three domain-wiki agents (`project-explorer`, `project-update`, `project-overview`) are tooling for downstream repos; they are runtime, never planning, and never emit a `status.md`.
+- Human edits to generated `docs/domain/` and `docs/narrative/` files must live inside `<!-- human:begin --> ... <!-- human:end -->` fences to survive any future regeneration. Fences are load-bearing in BOTH trees: `docs/domain/` fences survive `/project:update`'s domain pass, and `docs/narrative/` fences survive its narrative pass byte-for-byte.
 
 ## When to use which workflow
 
 - New product feature, need to plan & build it → **Feature pipeline** (`/feature:new` then `/feature:structure`).
-- Onboarding a new repo, want a living domain wiki → **Domain wiki pipeline**. Run `/project:overview` first to produce a plain-language narrative under `docs/narrative/` (skip if you only want the canonical schema). Then run `/project:explore` once to produce the canonical schema under `docs/domain/` (it will read the narrative as soft input when present). Use `/project:enhance-wiki` whenever code changes to refresh both `docs/narrative/` and `docs/domain/` in one command.
+- Onboarding a new repo, want a living domain wiki → **Domain wiki pipeline**. Run `/project:overview` first to produce a plain-language narrative under `docs/narrative/` (skip if you only want the canonical schema). Then run `/project:explore` once to produce the canonical schema under `docs/domain/` (it will read the narrative as soft input when present). Use `/project:update` whenever code changes to refresh both `docs/narrative/` and `docs/domain/` in one command.
 - Both can be used in the same repo. The feature pipeline writes under `docs/<FEATURE>/`; the wiki pipeline writes under `docs/domain/`. They never touch each other's files.
-  - **Carve-out (the single coupling seam).** The feature pipeline does not otherwise write the wiki trees, with exactly one exception: `/workflow:step-handoff` unconditionally invokes `/project:enhance-wiki` at session close. That invocation is subject to `/project:enhance-wiki`'s own missing-both-trees refusal. Because `/project:enhance-wiki` is fully agent-driven (no gate), it never blocks handoff finalization except on an unexpected error; it either succeeds (writes / clean no-op) or refuses for missing-both-trees (noted, handoff continues). Outside this one documented seam, the pipelines remain independent and the 'never touch each other's files' invariant holds.
+  - **Carve-out (the single coupling seam).** The feature pipeline does not otherwise write the wiki trees, with exactly one exception: `/workflow:step-handoff` unconditionally invokes `/project:update` at session close. That invocation is subject to `/project:update`'s own missing-both-trees refusal. Because `/project:update` is fully agent-driven (no gate), it never blocks handoff finalization except on an unexpected error; it either succeeds (writes / clean no-op) or refuses for missing-both-trees (noted, handoff continues). Outside this one documented seam, the pipelines remain independent and the 'never touch each other's files' invariant holds.
 
 ## Environment
 

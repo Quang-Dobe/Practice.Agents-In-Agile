@@ -150,7 +150,7 @@ Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** =
 |---|---|---|---|---|---|
 | **project-explorer** | R + W | R (soft, opt) | **W** (bootstrap; refuses if non-empty) | R (read-only walk; no git, no mutate) | `docs/domain/` |
 | **project-overview** | R + W + Bash | **W** (bootstrap; refuses if non-empty) | — (neither reads nor writes) | R (read-only walk) | `docs/narrative/` |
-| **project-wiki-enhancer** | R + W + Bash | **R + W** (diff-update, fence-preserving) | **R + W** (diff-update, fence-preserving) | R (read-only; git diff for fast-path) | both trees |
+| **project-update** | R + W + Bash | **R + W** (diff-update, fence-preserving) | **R + W** (diff-update, fence-preserving) | R (read-only; git diff for fast-path) | both trees |
 
 - All three treat the target repo as strictly read-only — never clone, checkout, or mutate.
 - None read or write feature planning docs (`docs/<feature>/`); none emit a `status.md`.

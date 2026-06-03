@@ -25,7 +25,7 @@ Before reloading this skill (operating procedure step 2), the agent checks `docs
 **Refusal message.** When the refuse condition is met, the agent prints the literal message:
 
 ```
-docs/domain/ is not empty. project-explorer is a one-shot bootstrapper. Use project-wiki-enhancer for updates.
+docs/domain/ is not empty. project-explorer is a one-shot bootstrapper. Use project-update for updates.
 ```
 
 and exits before the skill-load step (step 2 of `## Operating procedure`) continues. No repo walk, no candidate surfacing, no writes.
@@ -34,7 +34,7 @@ and exits before the skill-load step (step 2 of `## Operating procedure`) contin
 
 Numbered steps 1-7. Mirror the Core Behaviour list in the feature's overview plan. The agent must execute these in order; later sections fill in the precise contract for each step.
 
-1. **Idempotency guard.** Resolve `<path>`; check the current working directory's `docs/domain/`. If it exists and is non-empty, refuse with a canonical message pointing the user at the sibling `project-wiki-enhancer` and exit before any further step runs. See `## Idempotency guard` above.
+1. **Idempotency guard.** Resolve `<path>`; check the current working directory's `docs/domain/`. If it exists and is non-empty, refuse with a canonical message pointing the user at the sibling `project-update` and exit before any further step runs. See `## Idempotency guard` above.
 2. **Skill load.** The agent reloads this `SKILL.md` and treats it as the operating manual for the rest of the run. The agent must not proceed past this step if the skill file is missing or malformed.
 3. **Repo walk.** The agent scans `<path>` for the code signals enumerated in `## Code signals` below — aggregates, repositories, events, services, value objects, and ubiquitous-language tokens. .NET signals are first-class; other stacks are best-effort. Excludes test projects, generated files, `bin/`, `obj/`, `node_modules/`, `dist/`.
 4. **BC candidate surfacing.** The agent groups the signals into bounded-context candidates using repo namespacing / top-level project boundaries / folder structure. Names must trace to a real namespace or folder path; no invented taxonomy. See `## BC candidate surfacing` below.
@@ -145,7 +145,7 @@ docs/
 
 ### Per-file content contract
 
-All `file:line` citations in the output tree use paths relative to the `<path>` root the agent was invoked against. Empty sections are rendered as `(none)` rather than omitted, preserving the locked file shape for downstream `project-wiki-enhancer`. Frontmatter contract is defined in `## Frontmatter contract`; every file under `docs/domain/` carries the four-field YAML block as its first content.
+All `file:line` citations in the output tree use paths relative to the `<path>` root the agent was invoked against. Empty sections are rendered as `(none)` rather than omitted, preserving the locked file shape for downstream `project-update`. Frontmatter contract is defined in `## Frontmatter contract`; every file under `docs/domain/` carries the four-field YAML block as its first content.
 
 | File | Required content |
 |---|---|

@@ -1,13 +1,13 @@
 ---
-name: project-wiki-enhancer
+name: project-update
 version: 1
-consumed_by: project-wiki-enhancer agent
-description: Operating manual for the project-wiki-enhancer runtime agent that owns all writes to docs/domain/ after project-explorer bootstraps it.
+consumed_by: project-update agent
+description: Operating manual for the project-update runtime agent that owns all writes to docs/domain/ after project-explorer bootstraps it.
 ---
 
 ## Purpose
 
-`project-wiki-enhancer` owns every write to `docs/domain/` after `project-explorer` bootstraps it. The enhancer reloads `project-explorer`'s `SKILL.md` verbatim at runtime to inherit the output schema, frontmatter contract, BC discovery heuristics, and exclusion globs — there is no fork and no copy. This file owns the enhancer-specific behaviour that is not in the sibling skill: the hybrid diff strategy, the path -> BC classifier, the fenced human-edit zone splice rule, the byte-perfect idempotency contract with its canonical exit message, the auto-write of newly discovered BCs, the removed-BC log-only rule, and the load-bearing `## Known coupling` and `## Migration caveat` sections.
+`project-update` owns every write to `docs/domain/` after `project-explorer` bootstraps it. The enhancer reloads `project-explorer`'s `SKILL.md` verbatim at runtime to inherit the output schema, frontmatter contract, BC discovery heuristics, and exclusion globs — there is no fork and no copy. This file owns the enhancer-specific behaviour that is not in the sibling skill: the hybrid diff strategy, the path -> BC classifier, the fenced human-edit zone splice rule, the byte-perfect idempotency contract with its canonical exit message, the auto-write of newly discovered BCs, the removed-BC log-only rule, and the load-bearing `## Known coupling` and `## Migration caveat` sections.
 
 ## Inputs
 
@@ -20,7 +20,7 @@ The enhancer is fully agent-driven: every change — including a newly discovere
 Before any skill load or diff step runs, the agent checks `docs/domain/` of the current working directory (not `[path]`). If `docs/domain/` is missing or empty, the agent refuses with the literal message:
 
 ```
-docs/domain/ is missing or empty. Run /project:explore first to bootstrap, then /project:enhance-wiki to update.
+docs/domain/ is missing or empty. Run /project:explore first to bootstrap, then /project:update to update.
 ```
 
 and exits before the skill-load step. This mirrors `project-explorer`'s refusal-points-at-sibling pattern in reverse: `project-explorer` refuses when `docs/domain/` is non-empty (pointing at this enhancer); this enhancer refuses when `docs/domain/` is missing/empty (pointing back at `project-explorer`).
@@ -50,7 +50,7 @@ Four-way tree-presence matrix:
   ```
 
   The agent then skips the narrative pass and proceeds with the domain pass only.
-- **Both-missing refusal.** Refused at the command layer (the `/project:enhance-wiki` command) before the agent is spawned. The agent never runs in this case. The literal refusal message is locked at the command layer.
+- **Both-missing refusal.** Refused at the command layer (the `/project:update` command) before the agent is spawned. The agent never runs in this case. The literal refusal message is locked at the command layer.
 
 ## Dual-pass orchestration
 
@@ -65,7 +65,7 @@ Numbered steps 0-12. The agent must execute these in order. Later sections in th
 
 0. **Run-mode dispatch.** Read the four-way tree-presence matrix from `## Tree-presence advisories`. Plan the run order: narrative pass first (when `docs/narrative/` is present), domain pass second (when `docs/domain/` is present). Both passes auto-write (see `## Inputs`). When both trees are missing, the command-layer refusal already fired before this agent was spawned — see `## Pre-flight refuse condition` for the agent-level documentation of that contract.
 1. **Resolve target.** Resolve `[path]` (defaults to the current working directory). Locate the current working directory's `docs/domain/`. If `docs/domain/` is missing or empty, refuse with the message pointing the user at `/project:explore` (see `## Pre-flight refuse condition` above) — bootstrap first, then enhance.
-2. **Skill load (all three).** The subagent loads its own the `project-wiki-enhancer` skill first, then reloads the `project-overview` skill second, then reloads the `project-explorer` skill third — verbatim, in that locked order. All three are treated as authoritative for the run; enhancer-specific behaviour (diff strategy, fence handling, idempotency exit message) lives in this skill, narrative-side output schema + frontmatter + diff-aware update mode live in the project-overview skill, and domain-side output schema + frontmatter + BC heuristics live in the project-explorer skill. See `## Skill reload contract` for the explicit reload targets.
+2. **Skill load (all three).** The subagent loads its own the `project-update` skill first, then reloads the `project-overview` skill second, then reloads the `project-explorer` skill third — verbatim, in that locked order. All three are treated as authoritative for the run; enhancer-specific behaviour (diff strategy, fence handling, idempotency exit message) lives in this skill, narrative-side output schema + frontmatter + diff-aware update mode live in the project-overview skill, and domain-side output schema + frontmatter + BC heuristics live in the project-explorer skill. See `## Skill reload contract` for the explicit reload targets.
 3. **Diff strategy selection (hybrid).** Read `last_generated_sha` from frontmatter (sample one file under `docs/domain/`; all frontmatter is treated as consistent — every file's `last_generated_sha` advances together on a successful run).
    - **Git fast path** fires when `[path]` is a git working tree AND `last_generated_sha` is present AND that SHA is reachable from HEAD. Command: `git diff --name-only <last_generated_sha>..HEAD`. Apply the exclusion globs verbatim. Map each surviving file to its owning BC via `project-explorer`'s namespace/folder heuristic.
    - **Full-walk fallback** fires when any git-fast-path precondition fails (no git, no `last_generated_sha`, or SHA unreachable — including the first enhancer run against a `project-explorer`-bootstrapped tree where `last_generated_sha` is absent). Walks every BC under `[path]` per `project-explorer`'s skill and compares every regenerated file in memory against the on-disk file.
@@ -85,7 +85,7 @@ Numbered steps 0-12. The agent must execute these in order. Later sections in th
 
 The enhancer agent reloads three skills in this order, at the start of every run:
 
-1. the `project-wiki-enhancer` skill — this file. Loaded first.
+1. the `project-update` skill — this file. Loaded first.
 2. the `project-overview` skill — loaded **second**. Treated as authoritative for the narrative-side output schema, frontmatter contract, fence convention, and the seven new `## Diff-aware update mode` sub-sections.
 3. the `project-explorer` skill — loaded **third**. Treated as authoritative for everything both passes regenerate against (BC heuristics, exclusion globs, candidate report format, auto-write contract).
 
@@ -479,7 +479,7 @@ Any edit to those sections in either the `project-explorer` skill or the `projec
 
 ## Migration caveat
 
-> **At the moment regen fires, the original contract still holds.** When the enhancer regenerates a BC's files (no human-edit fences present, or a fence-splice run), any pre-existing human edit made **outside** a `<!-- human:begin --> ... <!-- human:end -->` fence is overwritten by the regenerated content, exactly as before. To preserve an edit across that overwrite, wrap it in `<!-- human:begin --> ... <!-- human:end -->` fences before invoking `/project:enhance-wiki`.
+> **At the moment regen fires, the original contract still holds.** When the enhancer regenerates a BC's files (no human-edit fences present, or a fence-splice run), any pre-existing human edit made **outside** a `<!-- human:begin --> ... <!-- human:end -->` fence is overwritten by the regenerated content, exactly as before. To preserve an edit across that overwrite, wrap it in `<!-- human:begin --> ... <!-- human:end -->` fences before invoking `/project:update`.
 >
 > **The shift the per-BC pre-check introduces.** With the `## Per-BC SHA pre-check` in place, regen no longer fires for a BC whose source slice is unchanged — the pre-check SKIPs that BC before any regen, fence-splice, or write happens. As a consequence, an outside-fence human edit now **survives until that BC's source slice changes**: it persists across every run in which the BC's source slice is unchanged, and is overwritten the moment that slice changes and regen fires — exactly the same overwrite as before, just deferred to the next source change.
 >

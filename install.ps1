@@ -11,20 +11,27 @@
     discovery root (~/.claude/skills/ or a repo's .claude/skills/). .claude-user/ is NOT a
     discovery root, so the generic tier must be installed to ~/.claude/. This script does that.
 
-    Idempotent: re-running overwrites the installed copies. It never deletes a repo's own
-    project-tier .claude/ content.
+    Add-only for agents/skills/commands/templates: re-running copies ONLY files that are missing
+    at the target. Existing target files are left untouched (never overwritten, never deleted), so
+    local edits survive a re-run. New folders/files added to the scaffold flow through. It never
+    deletes a repo's own project-tier .claude/ content.
+    NOTE: because existing files are skipped, edits to an ALREADY-installed scaffold file do not
+    propagate on re-run — delete the target file first (or hand-merge) to pick up such a change.
 
 .NOTES
     - Feature crew (6 role agents + 12 generic skills + 4 feature/workflow command groups +
       templates) is fully user-scope-ready after this runs.
-    - The WIKI kit (project-explorer / project-overview / project-wiki-enhancer + their skills and
+    - The WIKI kit (project-explorer / project-overview / project-update + their skills and
       project/* commands) resolves its skills BY NAME via each agent's `skills:` manifest — no
       internal `.claude-user/...` path reads remain, so it works unchanged at user scope.
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [string]$Source = (Join-Path $PSScriptRoot '.claude-user'),
-    [string]$Target = (Join-Path $HOME '.claude')
+    [string]$Target = (Join-Path $HOME '.claude'),
+    # Report-only: run the per-file loop and print [add]/[skip] for every file, but write nothing.
+    # Unlike -WhatIf (which short-circuits the loop and shows folder-level ops only).
+    [switch]$DryRun
 )
 
 $ErrorActionPreference = 'Stop'
@@ -40,19 +47,39 @@ foreach ($sub in $subtrees) {
     $src = Join-Path $Source $sub
     if (-not (Test-Path $src)) { continue }
     $dst = Join-Path $Target $sub
-    if ($PSCmdlet.ShouldProcess($dst, "Sync $sub")) {
-        New-Item -ItemType Directory -Force -Path $dst | Out-Null
-        Copy-Item -Path (Join-Path $src '*') -Destination $dst -Recurse -Force
-        $count = (Get-ChildItem -Path $dst -Recurse -File | Measure-Object).Count
-        Write-Host ("  [ok] {0,-10} -> {1} ({2} files)" -f $sub, $dst, $count) -ForegroundColor Green
+    if ($DryRun -or $PSCmdlet.ShouldProcess($dst, "Add new files to $sub (skip existing)")) {
+        if (-not $DryRun) { New-Item -ItemType Directory -Force -Path $dst | Out-Null }
+        $srcRoot = (Resolve-Path $src).Path
+        $added = 0
+        $kept = 0
+        Get-ChildItem -Path $src -Recurse -File | ForEach-Object {
+            $rel = $_.FullName.Substring($srcRoot.Length).TrimStart('\', '/')
+            $destFile = Join-Path $dst $rel
+            if (Test-Path $destFile) {
+                $kept++
+                Write-Host ("       [skip] {0}\{1} (already exists)" -f $sub, $rel) -ForegroundColor DarkYellow
+                return
+            }
+            if (-not $DryRun) {
+                $destDir = Split-Path $destFile -Parent
+                New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+                Copy-Item -Path $_.FullName -Destination $destFile
+            }
+            $added++
+            $tag = if ($DryRun) { '[add?]' } else { '[add] ' }
+            Write-Host ("       {0} {1}\{2}" -f $tag, $sub, $rel) -ForegroundColor Green
+        }
+        $prefix = if ($DryRun) { '[dry]' } else { '[ok] ' }
+        Write-Host ("  {0} {1,-10} -> {2} (+{3} new, {4} kept)" -f $prefix, $sub, $dst, $added, $kept) -ForegroundColor Cyan
     }
 }
 
 # CONVENTIONS.md is reference docs for project-tier authors.
 $conv = Join-Path $Source 'CONVENTIONS.md'
-if ((Test-Path $conv) -and $PSCmdlet.ShouldProcess((Join-Path $Target 'CONVENTIONS.md'), 'Copy CONVENTIONS.md')) {
-    Copy-Item -Path $conv -Destination (Join-Path $Target 'CONVENTIONS.md') -Force
-    Write-Host "  [ok] CONVENTIONS.md -> $Target" -ForegroundColor Green
+if ((Test-Path $conv) -and ($DryRun -or $PSCmdlet.ShouldProcess((Join-Path $Target 'CONVENTIONS.md'), 'Copy CONVENTIONS.md'))) {
+    if (-not $DryRun) { Copy-Item -Path $conv -Destination (Join-Path $Target 'CONVENTIONS.md') -Force }
+    $ctag = if ($DryRun) { '[dry] CONVENTIONS.md (would overwrite)' } else { '[ok] CONVENTIONS.md' }
+    Write-Host "  $ctag -> $Target" -ForegroundColor Green
 }
 
 Write-Host "`nDone. The thin feature-crew agents now resolve their skills by name at user scope." -ForegroundColor Cyan

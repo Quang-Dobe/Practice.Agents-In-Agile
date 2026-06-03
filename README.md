@@ -32,6 +32,45 @@ guides at the bottom are also written for non-technical readers.
 Like a small agile team in a box. Five "roles", each played by a different AI
 agent, take turns:
 
+```
+  raw idea
+     │  /feature:new
+     ▼
+ ┌──────────────┐
+ │ Product Owner│  frames why/what (writes nothing)
+ └──────┬───────┘
+        ║ APPROVE
+        ▼
+ ┌──────────────┐
+ │Business Analyst│ writes requirement.md
+ └──────┬───────┘
+        ║ APPROVE
+        ├───────────────► ┌─────────┐
+        │   test spec     │ Tester  │ writes test.md
+        │                 └────┬────┘
+        ▼                      │
+ ┌──────────────┐              │
+ │  Architect   │ overview-plan + analyzed.md
+ └──────┬───────┘              │
+        ║ APPROVE              │
+        ▼                      │
+ ┌──────────────┐              │
+ │Software Engr │ plan.md + code, step by step
+ └──────┬───────┘              │
+        │  /workflow:step-start │
+        ▼                      │
+   ┌─────────┐  step-approve   │
+   │ step ✔  │◄────────────────┘  (loop each step)
+   └────┬────┘
+        │ all steps done + E2E green
+        ▼
+   approved code
+
+  ║ = APPROVE gate (you type APPROVE; nothing advances until then)
+```
+
+
+
 | Role               | What they do                                                                |
 | ------------------ | --------------------------------------------------------------------------- |
 | Product Owner      | Asks the why and the what. Frames the idea. Writes nothing.                 |
@@ -61,6 +100,33 @@ Full beginner-friendly walkthrough: [`docs/workflow-feature-pipeline.md`](docs/w
 A trio of agents builds and maintains a clean, human-readable map of your codebase. There are two trees: `docs/narrative/` (the friendly tour — one page about the repo as a whole, then one walkthrough per "area of the business") and `docs/domain/` (the canonical DDD schema — bounded contexts, aggregates, events, commands, repositories, services, glossary, context map). Read narrative first when you arrive at a new codebase; drill into the schema when you need precise structure.
 
 Think of the narrative as a friendly tour with diagrams and plain-words intros, and the schema as the table of contents, glossary, and "who-talks-to-whom" diagram for the code — both written in plain business language ("Order", "Payment", "Customer") instead of technical jargon.
+
+```
+                      your codebase
+                           │
+        ┌──────────────────┼──────────────────┐
+        │ /project:overview │ /project:explore  │ /project:update
+        │   (once)          │   (once)          │  (on every change)
+        ▼                   ▼                   ▼
+ ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+ │project-      │   │project-      │   │project-update│
+ │overview agent│   │explorer agent│   │    agent     │
+ └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
+        │                  │                  │ diff-aware
+        ▼      soft hint    ▼                  │ fence-safe
+ ╔═════════════╗ ········► ╔═════════════╗     │
+ ║docs/narrative║          ║ docs/domain  ║     │
+ ║ plain tour   ║          ║ DDD schema   ║     │
+ ╚══════▲══════╝          ╚══════▲══════╝     │
+        │                         │            │
+        └─────────────────────────┴────────────┘
+                 update refreshes both
+
+  No APPROVE gate — agents write automatically.
+  Hand edits survive only inside <!-- human:begin/end --> fences.
+```
+
+
 
 There are only two commands:
 

@@ -36,7 +36,7 @@ a partial topic file against an undefined contract.
 - **`docs/architecture.md`** — the (possibly absent) cross-repo overview at the root. When
   absent I note it and continue; I never fabricate it.
 - **Per-repo `docs/memory/`** — each qualifying repo's curated learnings tree (written by
-  the `wiki-router` on T6 source reads). Linked into the rollup; bodies never copied.
+  `/wiki:ask` on T6 source reads). Linked into the rollup; bodies never copied.
 
 ## Operating procedure
 

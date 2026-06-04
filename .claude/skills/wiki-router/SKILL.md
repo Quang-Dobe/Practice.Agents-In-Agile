@@ -1,143 +1,60 @@
 ---
 name: wiki-router
-description: Classification + fixed retrieval-order operating manual for the wiki-router runtime agent
-version: 1
-consumed_by: wiki-router agent
+description: Classification + fixed retrieval-order checklist consumed inline by /wiki:ask (no sub-agent)
+version: 2
+consumed_by: /wiki:ask command
 ---
 
-## Purpose
+## Classify (manifest only — before any tier read)
 
-This skill is the operating manual the `wiki-router` runtime agent reloads at the
-start of **every** run. It is the auditable source for two things and only two
-things: (a) how the router decides a question is **in-domain** vs **out-of-domain**,
-and (b) the **fixed, deterministic retrieval order** the router walks for an
-in-domain question, with the stop-once-sufficient rule and the one-line TRACE it
-emits.
+Build the scope manifest from titles/headings ONLY — never file bodies:
 
-This skill performs **no writes** itself. It is read + classify + retrieve + answer +
-name-the-hand-off only. The write RULES (create-or-append, dedup, `source-ref:`
-provenance, `<!-- human:begin/end -->` fence protection) live in a **separate** skill,
-`.claude/skills/wiki-memory/SKILL.md`. When source is read at
-T6 the router hands off to that skill **by path** — it never inlines write rules here.
+- the `# <Topic title>` line of every root `docs/memory/*.md`
+- the `#`/`##`/`###` heading lines of `docs/architecture.md`
+- the `# <Topic title>` line of every `<repo>/docs/memory/*.md`
 
-## Classification
+Body reads happen only after an in-domain decision, during tier retrieval — never here.
 
-Classification runs **before any tier retrieval**. The router decides
-in-domain vs out-of-domain from a **cheap scope manifest** built from
-**titles and headings only** — never from full file bodies:
-
-- **`docs/memory/` topic TITLES** — the `# <Topic title>` heading (one per topic file)
-  of every `docs/memory/*.md`. Read the title line only; do not read the topic body.
-- **`docs/architecture.md` HEADINGS** — the `#`/`##`/`###` heading lines of the root
-  `docs/architecture.md`. Read the heading lines only; do not read the section bodies.
-- **per-repo `<repo>/docs/memory/` topic TITLES** — the `# <Topic title>` line of every
-  `<repo>/docs/memory/*.md` across the qualifying repos. Title line only; never the body.
-
-The manifest is the set of these titles + headings (e.g. `Billing`, `Catalog`, `Service relationships`). Building it must **not** open the body of `billing.md`,
-the body of `architecture.md`, or any narrative/domain/source file. Body reads happen
-**only after** an in-domain decision, during tier retrieval — never as part of the
-classify step.
-
-- **In-domain** = the question has a corpus anchor in the manifest: a memory topic
-  title or an architecture heading the question is clearly about (e.g. a "Billing"
-  question when a `Billing` topic title and/or a `## Billing` heading exist).
-- **Out-of-domain** = general-knowledge / unrelated-tech with **no** manifest anchor
-  (e.g. "How do I center a div in CSS?", "What is the boiling point of water?").
-  The absence of a manifest match IS the out-of-domain condition.
-
-**Error weighting.** v1 weights false-positives and false-negatives
-**equally** — no asymmetric tuning. There is no bias toward "search anyway when unsure"
-nor toward "decline when unsure". v1 uses the manifest-anchor test as the deterministic call.
-
-## Fixed retrieval order
-
-For an **in-domain** question only, walk these **six tiers** in this **exact** order.
-A **stop-check** sits between every tier. A tier is **sufficient** when it yields a
-**concrete citable artifact** (a matching memory topic/entry, an architecture section,
-a narrative file, a domain file, or — at T6 — the source file) that **answers the
-question**. The rule is: **found a citable answer? yes → cite it + stop; no → descend
-exactly one tier.** Never skip a tier; never read a lower tier once a higher tier was
-sufficient (no over-descent).
-
-1. **T1 — root `docs/memory/*`** (curated rollup). *Found a citable answer? yes → cite the
-   `docs/memory/<topic>.md` artifact + STOP@T1. no → descend to T2.*
-2. **T2 — `docs/architecture.md`** (cross-repo overview). *yes → cite the
-   `docs/architecture.md` section + STOP@T2. no → descend to T3.*
-3. **T3 — repos' `docs/narrative/`** (per-repo walkthrough). *yes → cite the
-   `<repo>/docs/narrative/...` file + STOP@T3. no → descend to T4.*
-4. **T4 — repos' `docs/domain/`** (Evans-canonical schema). *yes → cite the
-   `<repo>/docs/domain/...` file + STOP@T4. no → descend to T5.*
-5. **T5 — repos' `docs/memory/`** (per-repo curated learnings from prior source reads).
-   *yes → cite the `<repo>/docs/memory/<slug>.md` artifact + STOP@T5. no → descend to T6.*
-6. **T6 — repo source code** (last resort only). Read raw source **only** because every
-   tier T1–T5 above was insufficient. Answer from the source file and STOP@T6. Reading
-   source here triggers the per-repo memory write-back hand-off below.
-
-### One-line TRACE format
-
-The router emits **exactly one** TRACE line per question (for every outcome —
-in-domain stop, full descent, or out-of-domain). It is the auditable, greppable surface
-for the retrieval order. Use this **stable** format:
-
-```
-wiki-trace: T1 -> T2 -> STOP@T2 (docs/architecture.md#billing)
-```
-
-- Prefix is the literal token `wiki-trace:` (greppable; a future regression check can
-  pin on it).
-- The tiers consulted are listed **in order**, separated by ` -> `, starting at `T1`.
-- The tier that answered carries the stop marker `STOP@T<n>`; the citable artifact that
-  answered follows in parentheses (repo-relative path, optionally `#anchor`).
-- Examples:
-  - Stop at T1: `wiki-trace: T1 -> STOP@T1 (docs/memory/billing.md)`
-  - Mid-tier stop at T2: `wiki-trace: T1 -> T2 -> STOP@T2 (docs/architecture.md#billing)`
-  - Stop at per-repo memory: `wiki-trace: T1 -> T2 -> T3 -> T4 -> T5 -> STOP@T5 (repo-a/docs/memory/billing.md)`
-  - Full descent to source: `wiki-trace: T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> STOP@T6 (repo-a/src/Billing/OrderPaidPublisher.cs:42)`
-  - **Out-of-domain (no tier consulted):** `wiki-trace: (no tiers consulted)`
-
-The TRACE is **one line of text** — never a multi-line block. It always appears, once,
-for every routing outcome.
-
-## Source-last contract
-
-Repo source (T6) is read **only** when every wiki tier above (T1–T5) was insufficient.
-T6 is never reached before T1–T5 have each been checked and found insufficient.
-
-When T6 source **is actually read to answer**, that read triggers the **per-repo
-memory-append hand-off**: the learning is appended to the `docs/memory/` tree of **the repo
-whose source was read** — `<repo>/docs/memory/<slug>.md` — never the root rollup and never
-narrative/domain. The router does **not** inline write rules; it references the write manual
-by its literal path:
-
-```
-.claude/skills/wiki-memory/SKILL.md
-```
-
-All write RULES (create-or-append, same-`source-ref:` dedup, provenance, fence
-protection) live in that skill. This skill never inlines
-them and never writes a topic file. If that skill is **missing or malformed** at runtime
-(cannot be read, YAML frontmatter does not parse, or required body sections absent), the
-router **stops before any write** to `docs/memory/`, **still answers** the question from
-the T6 source read, and **reports** that `.claude/skills/wiki-memory/SKILL.md` is
-missing/malformed (mirrors the `wiki-bootstrapper` / `/wiki:bootstrap` stop-condition).
-
-## Out-of-domain handling
-
-An **out-of-domain** question is declined **without searching any tier** — no
-`docs/memory/` body, no `docs/architecture.md` body, no `repo-*/docs/**`, no source is
-opened. The classification (manifest titles/headings) already
-determined there is no corpus anchor, so no retrieval is performed.
-
-The router responds with this **exact-case verbatim literal** (reproduce byte-for-byte):
+- **In-domain** = the question has a manifest anchor (a topic title or heading it is clearly about).
+- **Out-of-domain** = no anchor. Decline with this **exact-case byte-for-byte** literal, emit the empty TRACE, open no tier, write nothing, stop:
 
 ```
 This question is outside the wiki's domain (the systems documented under docs/memory/, docs/architecture.md, and the sibling repos). No retrieval was performed.
 ```
 
-For an out-of-domain question the TRACE is **empty** — no tier IDs:
+False-positives and false-negatives weigh **equally** — the manifest-anchor test is the deterministic call; no "search anyway when unsure" bias, and no "decline when unsure" bias either.
+
+## Retrieve (in-domain only) — fixed order, stop once sufficient
+
+Walk EXACTLY this order. Between tiers apply the stop-check: *found a citable artifact that answers? yes → cite it + stop; no → descend exactly one tier.* Never skip a tier; never read below an answering tier (no over-descent).
+
+| Tier | Corpus |
+|---|---|
+| T1 | root `docs/memory/*` (curated rollup) |
+| T2 | `docs/architecture.md` (cross-repo overview) |
+| T3 | repos' `docs/narrative/` (per-repo walkthroughs) |
+| T4 | repos' `docs/domain/` (Evans-canonical schema) |
+| T5 | repos' `docs/memory/` (per-repo learnings from prior source reads) |
+| T6 | repo source — last resort, only after T1–T5 each insufficient; triggers the write-back below |
+
+## TRACE — one line, every outcome
 
 ```
-wiki-trace: (no tiers consulted)
+wiki-trace: T1 -> T2 -> STOP@T2 (docs/architecture.md#billing)
 ```
 
-No file is read beyond the manifest surface, and no file is written.
+- Literal greppable prefix `wiki-trace:`; consulted tiers in order, ` -> ` separated, starting at `T1`; `STOP@T<n>` at the answering tier; the citable artifact (repo-relative path, optional `#anchor`) in parentheses.
+- Full descent: `wiki-trace: T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> STOP@T6 (repo-a/src/Billing/OrderPaidPublisher.cs:42)`
+- Out-of-domain (no tier consulted): `wiki-trace: (no tiers consulted)`
+
+One line of text, never a multi-line block; emitted exactly once per question.
+
+## T6 write-back — the only write path (lazy-loaded)
+
+Load `.claude/skills/wiki-memory/SKILL.md` ONLY when T6 source was actually read to answer — never earlier. Then append the learning to `<repo>/docs/memory/<slug>.md` of **the repo whose source was read**, per that manual (ungated: append-only + same-`source-ref:` dedup + fence protection). Write rules are never inlined here.
+
+- `wiki-memory` missing/malformed (cannot be read, YAML frontmatter does not parse, or required body sections absent) → still answer from the source read; write NOTHING; report the missing/malformed skill.
+- T1–T5 answers: zero writes, zero source reads, no `APPROVE` prompt.
+- Never write outside a `docs/memory/` tree; never the root `docs/memory/` from this path; never narrative/domain/architecture/source/`.claude/`; never commit.
+
+(Historical note: v1 ran this checklist inside a `wiki-router` sub-agent that preloaded both skills on every question; v2 inlines it into `/wiki:ask` and lazy-loads the write manual to cut per-question overhead. Classification, tier order, TRACE, and all literals are unchanged.)

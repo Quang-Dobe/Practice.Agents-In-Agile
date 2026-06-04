@@ -8,7 +8,7 @@ consumed_by: wiki-architect agent
 ## Purpose
 
 The auditable manual for (re)authoring the root `docs/architecture.md` — the cross-repo
-overview. It is the **only** write path to that file; the `wiki-memory` and `wiki-router`
+overview. It is the **only** write path to that file; the `wiki-memory` and `/wiki:ask`
 paths are forbidden from touching it. Reloaded by the `wiki-architect` agent at the start of
 every run.
 

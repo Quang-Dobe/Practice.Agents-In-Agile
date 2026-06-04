@@ -2,16 +2,16 @@
 name: wiki-memory
 description: Append-only / dedup / provenance / fence write-path operating manual for the root docs/memory/ LLM-Wiki
 version: 1
-consumed_by: wiki-router agent, wiki-bootstrapper agent
+consumed_by: /wiki:ask command, wiki-bootstrapper agent
 ---
 
 ## Purpose
 
 This skill is the **auditable write manual** for every write into `docs/memory/`. It is
-reloaded at the start of every run by **two** agents before they touch a single byte of
-the wiki: the `wiki-router` when source is read at T6 and it hands off to the
-memory-append path, and the `wiki-bootstrapper` when it bootstraps/refreshes the
-store. Both agents reload this skill before writing. Neither agent inlines these rules —
+reloaded by its **two** consumers before they touch a single byte of
+the wiki: the `/wiki:ask` command — lazy-loaded only when source is read at T6 and it
+hands off to the memory-append path — and the `wiki-bootstrapper` when it
+bootstraps/refreshes the store. Both reload this skill before writing. Neither inlines these rules —
 this file is the single source of truth for
 write confinement, the create-or-append disposition, `source-ref:` provenance, the dedup
 guard, and the ordered write procedure.
@@ -72,11 +72,11 @@ timestamp and **no** triggering-question field — exactly the two required fiel
 ### Topic routing — which file
 
 The entry appends to the topic **slug that classified the question** — the matched
-`docs/memory/` topic title or `docs/architecture.md` heading from the router's
+`docs/memory/` topic title or `docs/architecture.md` heading from the `/wiki:ask`
 classification manifest. Slug derivation: the
 bounded-context / heading name lowercased into a slug (e.g. `Billing` → `billing`).
 
-The `<docs/memory-root>` is supplied by the caller: the `wiki-router` uses the
+The `<docs/memory-root>` is supplied by the caller: `/wiki:ask` uses the
 `<repo>/docs/memory/` of the repo whose source it read at T6; the `wiki-bootstrapper`
 uses the root `docs/memory/`.
 
@@ -106,7 +106,7 @@ not the write path's. Provenance for a source-read finding lives in the entry's
 ### Gate posture — all writes ungated
 
 Every write through this manual is **ungated — NO `APPROVE` prompt**, for **all** callers
-(`wiki-router` T6 write-back, `wiki-bootstrapper` rollup). The append is incidental to
+(`/wiki:ask` T6 write-back, `wiki-bootstrapper` rollup). The append is incidental to
 answering / rolling up, not operator-invoked. The safety net is **append-only + same-ref
 dedup `(repo, path, line)` + fence protection** — not a gate. (Historical note: an earlier
 version gated the bootstrap rollup; that gate is retired.)
@@ -214,7 +214,7 @@ The ordered write algorithm. Both consuming agents follow it for every candidate
 ## Well-formedness
 
 This section makes the **malformed** stop-condition concrete and testable,
-so the `wiki-router` and `wiki-bootstrapper` stop-before-write conditions ("cannot be
+so the `/wiki:ask` and `wiki-bootstrapper` stop-before-write conditions ("cannot be
 read, YAML frontmatter does not parse, or required body sections absent") have a precise
 schema to check.
 

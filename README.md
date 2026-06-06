@@ -3,8 +3,10 @@
 A reusable "team of AI agents" kit for software projects. Install it once to your
 user profile (`~/.claude/`) via `install.ps1` and every repository you open gets a
 small crew of specialised AI assistants that walk a feature from a rough idea,
-through structured planning, all the way to code — and a second pair of agents that
+through structured planning, all the way to code — and a second group of agents that
 build and maintain a living "map of the codebase" you can read like a wiki.
+A third, optional kit (`.claude/`) sits one level **above** your repositories and
+turns all those per-repo maps into one cross-repo "LLM Wiki" you can ask questions.
 
 This repository is the kit itself. It does not contain any application code.
 
@@ -25,7 +27,7 @@ guides at the bottom are also written for non-technical readers.
 
 ---
 
-## The two workflows at a glance
+## The three workflows at a glance
 
 ### 1. The Feature Pipeline — "Idea → Plan → Code"
 
@@ -33,40 +35,41 @@ Like a small agile team in a box. Five "roles", each played by a different AI
 agent, take turns:
 
 ```
-  raw idea
-     │  /feature:new
-     ▼
- ┌──────────────┐
- │ Product Owner│  frames why/what (writes nothing)
- └──────┬───────┘
-        ║ APPROVE
-        ▼
- ┌──────────────┐
- │Business Analyst│ writes requirement.md
- └──────┬───────┘
-        ║ APPROVE
-        ├───────────────► ┌─────────┐
-        │   test spec     │ Tester  │ writes test.md
-        │                 └────┬────┘
-        ▼                      │
- ┌──────────────┐              │
- │  Architect   │ overview-plan + analyzed.md
- └──────┬───────┘              │
-        ║ APPROVE              │
-        ▼                      │
- ┌──────────────┐              │
- │Software Engr │ plan.md + code, step by step
- └──────┬───────┘              │
-        │  /workflow:step-start │
-        ▼                      │
-   ┌─────────┐  step-approve   │
-   │ step ✔  │◄────────────────┘  (loop each step)
-   └────┬────┘
-        │ all steps done + E2E green
-        ▼
-   approved code
+   raw idea
+      │  /feature:new
+      ▼
+┌──────────────────┐
+│  Product Owner   │  frames the why / what (writes nothing)
+└────────┬─────────┘
+         ║ APPROVE
+         ▼
+┌──────────────────┐
+│ Business Analyst │  writes requirement.md
+└────────┬─────────┘
+         ║ APPROVE
+         ▼
+┌──────────────────┐    ┌──────────────────┐
+│    Architect     │    │      Tester      │  (in parallel)
+│ overview-plan.md │    │     test.md      │
+│ + analyzed.md    │    │ (e2e spec)       │
+└────────┬─────────┘    └────────┬─────────┘
+         ║ APPROVE               │
+         ▼                       │
+┌──────────────────┐             │
+│ Software Engineer│             │
+│ plan.md + code,  │             │
+│ step by step     │             │
+└────────┬─────────┘             │
+         │  /workflow:step-start │
+         ▼                       │
+    ┌──────────┐  step-approve   │
+    │  step OK │◄────────────────┘
+    └────┬─────┘   (loop each step; the final step
+         │          runs the E2E tests from test.md)
+         ▼
+   all steps done + E2E green = approved code
 
-  ║ = APPROVE gate (you type APPROVE; nothing advances until then)
+   ║ = APPROVE gate (you type APPROVE; nothing advances until then)
 ```
 
 
@@ -102,26 +105,30 @@ A trio of agents builds and maintains a clean, human-readable map of your codeba
 Think of the narrative as a friendly tour with diagrams and plain-words intros, and the schema as the table of contents, glossary, and "who-talks-to-whom" diagram for the code — both written in plain business language ("Order", "Payment", "Customer") instead of technical jargon.
 
 ```
-                      your codebase
+                     your codebase
                            │
         ┌──────────────────┼──────────────────┐
-        │ /project:overview │ /project:explore  │ /project:update
-        │   (once)          │   (once)          │  (on every change)
-        ▼                   ▼                   ▼
- ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
- │project-      │   │project-      │   │project-update│
- │overview agent│   │explorer agent│   │    agent     │
- └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
-        │                  │                  │ diff-aware
-        ▼      soft hint    ▼                  │ fence-safe
- ╔═════════════╗ ········► ╔═════════════╗     │
- ║docs/narrative║          ║ docs/domain  ║     │
- ║ plain tour   ║          ║ DDD schema   ║     │
- ╚══════▲══════╝          ╚══════▲══════╝     │
-        │                         │            │
-        └─────────────────────────┴────────────┘
-                 update refreshes both
+        │                  │                  │
+/project:overview  /project:explore    /project:update
+     (once)             (once)          (every change)
+        │                  │                  │
+        ▼                  ▼                  ▼
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│   project-    │  │   project-    │  │   project-    │
+│   overview    │  │   explorer    │  │    update     │
+│     agent     │  │     agent     │  │     agent     │
+└───────┬───────┘  └───────┬───────┘  └───────┬───────┘
+        │                  │                  │  diff-aware,
+        ▼                  ▼                  │  fence-safe
+╔═══════════════╗   ╔══════════════╗          │
+║docs/narrative/║··►║ docs/domain/ ║          │
+║  plain tour   ║   ║  DDD schema  ║          │
+╚═══════▲═══════╝   ╚══════▲═══════╝          │
+        │                  │                  │
+        └──────────────────┴──────────────────┘
+            update refreshes both trees
 
+  ··► = /project:explore reads the narrative as a soft hint
   No APPROVE gate — agents write automatically.
   Hand edits survive only inside <!-- human:begin/end --> fences.
 ```
@@ -146,6 +153,58 @@ The two trees have predictable shapes. `docs/narrative/` carries one `architectu
 
 Full beginner-friendly walkthrough: [`docs/workflow-domain-wiki.md`](docs/workflow-domain-wiki.md).
 
+### 3. The LLM Wiki — "one wiki across many repos"
+
+The two workflows above live **inside** a single repository. The third one lives
+**one level above** them: copy the `.claude/` folder to the parent directory that
+contains all your sibling repos, and three `/wiki:*` commands build a cross-repo
+knowledge base there. It never copies content — it **summarizes and links back**
+to the per-repo wikis the domain pipeline already produced.
+
+```
+    repo-a/docs/              repo-b/docs/              repo-c/docs/
+ narrative + domain        narrative + domain        narrative + domain
+          │                         │                         │
+          └─────────────────────────┼─────────────────────────┘
+                                    │   /wiki:bootstrap  (first time)
+                                    │   /wiki:enhance    (full re-sync)
+                                    ▼
+                   ┌─────────────────────────────────┐
+                   │  summarize + link (never copy)  │
+                   └──────┬───────────────────┬──────┘
+                          ▼                   ▼
+                    docs/memory/    docs/architecture.md
+                    (root rollup)     (cross-repo map)
+                          │
+                          ▼
+                 /wiki:ask <question>
+        answered inline from the wiki, in a fixed
+        retrieval order; raw repo code is read only
+        as a last resort, and what was learned is
+        saved back to that repo's docs/memory/
+
+  No APPROVE gate — same fence rule as the domain wiki.
+```
+
+The three commands:
+
+- `/wiki:bootstrap` — first-time setup. Asks two short questions (which repos,
+  run now or in background), fills any gaps (it calls `/project:overview` and
+  `/project:explore` for repos that have no wiki yet), then writes the root
+  rollup under `docs/memory/`.
+- `/wiki:enhance` — full re-sync, no questions asked. Refreshes every repo's
+  wiki (via `/project:update`), re-rolls the root `docs/memory/`, and regenerates
+  the cross-repo `docs/architecture.md`.
+- `/wiki:ask <question>` — ask anything about your codebases. It answers from
+  the wiki first, in a fixed and auditable order; only when the wiki can't answer
+  does it read raw source — and then it appends what it learned to that repo's
+  `docs/memory/` so the next ask is faster.
+
+`docs/memory/` is **co-owned**: you may edit, curate, and delete freely; the
+agent only ever appends — it never rewrites your text.
+
+Full details: [`.claude/README.md`](.claude/README.md).
+
 ---
 
 ## How to use this kit in your own project
@@ -153,11 +212,13 @@ Full beginner-friendly walkthrough: [`docs/workflow-domain-wiki.md`](docs/workfl
 1. Install the kit to your user profile: from this repo run `pwsh -File ./install.ps1`
    (copies `.claude-user/` → `~/.claude/`). One-time — every repo you open then has the crew.
 2. Make sure you are on Windows + PowerShell 7+ (or adapt the hook scripts).
-3. Make sure Python is on your PATH — two small hook scripts use it.
+3. Make sure Python is on your PATH — a small hook script uses it.
 4. Open the project in Claude Code.
 5. Pick the workflow you want:
    - To plan and build a new feature: run `/feature:new my-feature-name`.
    - To create a wiki of an existing codebase: run `/project:overview <path-to-that-codebase>` first (optional but recommended — gives you a plain-language tour at `docs/narrative/`), then `/project:explore <path-to-that-codebase>` to produce the canonical schema at `docs/domain/`.
+   - To build one wiki across many repos: copy `.claude/` to the folder that
+     contains your repos, then run `/wiki:bootstrap` there (see `.claude/README.md`).
 
 That's the whole setup. In the feature pipeline, the rest is the agents asking
 you questions and waiting for `APPROVE`; the domain-wiki agents run on their own
@@ -207,3 +268,4 @@ language. Read them in order if you are new:
 
 - [Feature Pipeline — Idea to Code, step by step](docs/workflow-feature-pipeline.md)
 - [Domain Wiki Pipeline — Build and maintain a living map of your codebase](docs/workflow-domain-wiki.md)
+- [LLM Wiki — One wiki across many repos](.claude/README.md) (reference-style, written for operators)

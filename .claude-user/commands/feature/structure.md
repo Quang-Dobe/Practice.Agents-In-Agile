@@ -19,10 +19,17 @@ Explicit four-stage orchestrator. Main Claude (you) spawns one specialist per st
 ## Stage 1 — Business Analyst authors `<name>.requirement.md`
 
 1. Verify `docs/<name>/<name>.requirement.md` exists (a raw requirement file). If not, error: `raw requirement file docs/<name>/<name>.requirement.md not found — create it (or run /feature:new <name> first)`.
-2. Spawn the `business-analyst` subagent via the `Agent` tool with `description: BA: author <name>.requirement.md` and a `prompt` containing: the feature name, the path to the raw requirement, the PO brainstorm summary if available (passed by the caller), and the instruction to author the structured requirement per its `requirement-authoring` skill, and the directive to read `docs/narrative/` if it exists (optional context; absent → the `/project:overview` advisory `docs/narrative/ not found - run /project:overview to generate it; proceeding without it.`, never blocks).
-3. Relay the BA's draft to the user. Mark it `[Waiting for Approval]` in chat.
-4. Wait for the user to type `APPROVE`. Do not proceed otherwise.
-5. After APPROVE: no checkbox flip (Stage 1 is a pure gate — the requirement file itself is the deliverable).
+2. **Recon gate — check the domain wiki.** Test whether `docs/domain/` and `docs/narrative/` exist (non-empty) in the working repo.
+   - **If EITHER exists** → skip the recon sub-flow. The BA grounds on the present wiki (current behavior). Go to step 4.
+   - **If BOTH are absent** → run the recon sub-flow (step 3) first, so the BA gets current-behavior grounding without reading source itself.
+3. **Recon sub-flow (only when both `docs/domain/` and `docs/narrative/` are absent):**
+   a. Spawn the `architect` subagent via the `Agent` tool with `description: Architect: stage-1 recon for <name>` and a `prompt` containing: the feature name, `stage: stage-1-recon` (→ follow its `codebase-recon` skill), the raw requirement path, and that source reads are **optional / as-needed** — return a **Current Behavior Brief**, write no file.
+   b. Capture the returned brief. Pass it verbatim into the BA spawn at step 4 as the recon grounding.
+4. Spawn the `business-analyst` subagent via the `Agent` tool with `description: BA: author <name>.requirement.md` and a `prompt` containing: the feature name, the path to the raw requirement, the PO brainstorm summary if available (passed by the caller), **the Architect Current Behavior Brief if the recon sub-flow ran** (with the directive to persist it as the `## Current Behavior (Architect recon)` appendix), the instruction to author the structured requirement per its `requirement-authoring` skill, and the directive to read `docs/narrative/` if it exists (optional context; absent → the `/project:overview` advisory `docs/narrative/ not found - run /project:overview to generate it; proceeding without it.`, never blocks).
+5. **Bounded Architect Q&A (only if the recon sub-flow ran AND the BA returned numbered `[Architect Q]` code-questions):** spawn the `architect` subagent again with `description: Architect: stage-1 Q&A for <name>` and `stage: stage-1-qa` (→ `codebase-recon`), passing the BA's questions. Relay the answers, then re-spawn the BA to finalize `requirement.md` folding them in. **One round only** — do not loop again.
+6. Relay the BA's draft to the user. Mark it `[Waiting for Approval]` in chat.
+7. Wait for the user to type `APPROVE`. Do not proceed otherwise.
+8. After APPROVE: no checkbox flip (Stage 1 is a pure gate — the requirement file itself is the deliverable).
 
 ## Stage 2-overview — Architect authors `overview-plan.md`; Tester authors `test.md` (parallel)
 

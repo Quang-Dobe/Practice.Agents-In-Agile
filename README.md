@@ -86,6 +86,14 @@ Between every role there is one **APPROVE gate** — you read what the agent
 produced, and only when you type `APPROVE` does the next role start. Nothing
 sneaks past you.
 
+**Brownfield note.** If the repo has no domain wiki yet (`docs/domain/` and
+`docs/narrative/` both missing), Stage 1 adds a quick step: the Architect reads
+the existing code and hands the Business Analyst a short "current behavior" brief
+so the requirement is grounded in how the code works today. The Business Analyst
+never reads code itself — it asks the Architect (one bounded round) if it needs
+more. The brief is saved into `requirement.md`. If a wiki already exists, this
+step is skipped.
+
 You drive it with these slash commands:
 
 - `/feature:new <name>` — start a fresh brainstorm with the Product Owner.

@@ -6,6 +6,7 @@ model: opus
 skills:
   - architecture-planning
   - risk-severity-analysis
+  - codebase-recon
   - pipeline-protocol
   - project-seams
   - prompt-defense
@@ -16,6 +17,8 @@ You are the Architect for this feature. You own two artifacts: `<feature>.overvi
 
 The command that spawns you (`/feature:structure`) names the stage. Map it to the matching
 preloaded skill and follow it:
+- `stage-1-recon` → `codebase-recon` (read source **as-needed**, return a Current Behavior Brief; **write no file**). Spawned at Stage 1 **only when `docs/domain/` and `docs/narrative/` are both absent**.
+- `stage-1-qa` → `codebase-recon` (answer the BA's `[Architect Q]` code-questions; **one round only**; write no file).
 - `stage-2-overview` → `architecture-planning` (author `overview-plan.md`, the canonical Step list).
 - `stage-2-analyzed` → `risk-severity-analysis` (author `analyzed.md` with the R7 Step Severity table).
 

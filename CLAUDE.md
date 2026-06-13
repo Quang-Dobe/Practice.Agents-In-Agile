@@ -34,7 +34,7 @@ Five-role crew: Product Owner, Business Analyst, Architect, Software Engineer, T
 
 1. `/feature:new <NAME>` — Product Owner brainstorms intent (no files written), hands off to BA.
 2. `/feature:structure <NAME>` — four stages with one APPROVE gate per stage:
-   - stage-1: Business Analyst authors `<NAME>.requirement.md` (with `Challenges to PO framing` appendix).
+   - stage-1: Business Analyst authors `<NAME>.requirement.md` (with `Challenges to PO framing` appendix). **When both `docs/domain/` and `docs/narrative/` are absent**, the Architect first runs a read-only `codebase-recon` pass (reads source as-needed) and hands the BA a Current Behavior Brief — persisted as the `## Current Behavior (Architect recon)` appendix; the BA never reads source, and an optional bounded `[Architect Q]` round (≤1) lets it ask the Architect. If either wiki tree exists, the BA grounds on it and no recon runs.
    - stage-2-overview: **parallel** — Architect authors `<NAME>.overview-plan.md` (canonical Step A / B / … list) and Tester authors `<NAME>.test.md` (e2e/acceptance spec, Given/When/Then, from the requirement). One combined APPROVE covers both.
    - stage-2-analyzed: Architect authors `<NAME>.analyzed.md` including the per-step Severity table (`Step ID | Severity`; reads `test.md`).
    - stage-2-plan: Software Engineer authors mechanical `<NAME>.plan.md` (no Severity column there); its final step is the E2E validation gate.

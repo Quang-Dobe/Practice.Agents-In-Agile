@@ -121,7 +121,7 @@ Each agent's `skills:` manifest:
 |---|---|---|
 | product-owner | `feature-intake` | `pipeline-protocol`, `prompt-defense` |
 | business-analyst | `requirement-authoring` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
-| architect | `architecture-planning`, `risk-severity-analysis` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
+| architect | `architecture-planning`, `risk-severity-analysis`, `codebase-recon` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
 | software-engineer | `implementation-planning`, `step-execution`, `e2e-validation` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
 | tester | `acceptance-spec-authoring` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
 | workflow-step-planner | `open-question-drafting` | `project-seams`, `prompt-defense` |
@@ -134,7 +134,7 @@ Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** =
 |---|---|---|---|---|---|---|---|
 | **product-owner** | R only | R (opt) | — | — | R (raw requirement only) | — | **nothing** (writes no file) |
 | **business-analyst** | R + W | R (opt) | — | — | R raw + others' `status.md`; **W** `requirement.md` | — | `requirement.md` |
-| **architect** | R + W | R (soft) | R (soft) | — | R requirement/overview; **W** `overview-plan.md` + `analyzed.md` | R `architecture-rules` | `overview-plan.md`, `analyzed.md` |
+| **architect** | R + W | R (soft) | R (soft) | R (recon; both wiki trees absent) | R requirement/overview; **W** `overview-plan.md` + `analyzed.md` | R `architecture-rules` | `overview-plan.md`, `analyzed.md` |
 | **software-engineer** | R + W | R (soft) | R (soft) | **R + W** | R requirement/overview/analyzed/**test.md**; **W** `plan.md` | R `coding-rules` + `architecture-rules` | `plan.md` + **production code + unit tests + e2e tests** |
 | **tester** | R + W | R (opt) | — | — | R requirement; **W `test.md`** | R `test-rules` | `test.md` (e2e/acceptance spec); planning-only, no source, no runtime |
 | **workflow-step-planner** | R only | — | — | — | R plan/status/analyzed | R `architecture-rules` + `coding-rules` | **nothing** (surfaces questions only) |
@@ -142,6 +142,7 @@ Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** =
 - `docs/architecture.md` is read by business-analyst, architect, software-engineer, tester — not by product-owner (narrative-only carve-out) or workflow-step-planner.
 - Product-owner is the only role walled off from all engineering context (no domain, no architecture, no status).
 - Software-engineer is the only role that writes source (production + unit + e2e tests). Tester writes no source — it authors the requirement-keyed `test.md` e2e/acceptance spec; SE turns it into automated e2e tests at the final plan step.
+- **Stage-1 recon carve-out.** When `/feature:structure` Stage 1 finds **both** `docs/domain/` and `docs/narrative/` absent, the architect runs a read-only `codebase-recon` pass (`stage-1-recon`) and may read source **as-needed** to produce a Current Behavior Brief — the only path by which a planning role reads raw source, and it writes no file. The BA persists that brief as the `## Current Behavior (Architect recon)` appendix in `requirement.md`; the BA itself **never** reads source. An optional bounded `[Architect Q]` round (`stage-1-qa`, ≤1) lets the BA ask the architect instead. When either wiki tree exists, no recon runs and the architect's "Source code" access reverts to `—`.
 - "soft" = optional domain context; the agent emits a one-line advisory and proceeds if the tree is absent.
 
 ### Wiki runtime agents (domain / narrative pipeline)

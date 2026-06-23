@@ -238,7 +238,7 @@ and write automatically.
 
 - `.claude-user/agents/` — the AI roles (one Markdown file per role).
 - `.claude-user/commands/` — the slash commands you type.
-- `.claude-user/skills/` — the "rules of the trade" each agent reloads at runtime.
+- `.claude-user/skills/` — the "rules of the trade" each agent reloads at runtime. Includes `.claude-user/skills/repo-layout/SKILL.md`, the cross-cutting scan-scope contract; pair it with an opt-in `repo-layout.md` at the wiki scan root to declare exactly which folders the wiki agents should walk.
 - `.claude-user/templates/` — the document shapes each feature gets.
 - `.claude-user/hooks/` — a small Python script that runs on session start (the
   scaffold is stack-agnostic; downstream projects add their own hooks via

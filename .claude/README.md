@@ -43,7 +43,7 @@ Roles of the inputs and outputs:
 
 ## Boundary
 
-The root tier is read-only against narrative/domain inputs and repo source. Its write targets are: the root `docs/memory/` (rollup), each repo's `docs/memory/` (router T6 learnings), and `docs/architecture.md` (wiki-architect only). No write lands elsewhere.
+The root tier is read-only against narrative/domain inputs and repo source. Its write targets are: the root `docs/memory/` (rollup), each repo's `docs/memory/` (router T6 learnings), and `docs/architecture.md` (wiki-architect only). No write lands elsewhere. The root-tier kit is also the single writer of the workspace-root `repo-layout.md` scan contract (`/wiki:bootstrap` drafts it, `/wiki:enhance` reconciles it); the crew agents (`project-explorer`, `project-overview`, `project-update`) are read-only on it and use it to scope their walks.
 
 ## Who owns docs/memory/
 

@@ -6,6 +6,7 @@ model: inherit
 skills:
   - project-overview
   - project-explorer
+  - repo-layout
   - prompt-defense
 ---
 

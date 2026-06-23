@@ -7,6 +7,7 @@ skills:
   - project-update
   - project-overview
   - project-explorer
+  - repo-layout
   - prompt-defense
 ---
 

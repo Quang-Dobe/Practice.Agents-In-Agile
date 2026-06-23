@@ -37,7 +37,7 @@ harness preloads those skills at startup. Two kinds of skill exist:
 - **Generic capability skills** — stack-agnostic, installed to user scope under `~/.claude/skills/`.
   They hold the *how* of each artifact (`architecture-planning`,
   `risk-severity-analysis`, `implementation-planning`, `step-execution`, …) plus cross-cutting
-  process (`pipeline-protocol`, `project-seams`, `prompt-defense`). **Never edited per project.**
+  process (`pipeline-protocol`, `project-seams`, `prompt-defense`, `repo-layout`). **Never edited per project.**
 - **Project rule/pattern skills** — stack-specific, authored by the consuming repo under
   `.claude/skills/`. They hold *your* rules and framework patterns.
 
@@ -106,6 +106,7 @@ If you also want a PostToolUse build/test hook, add it to your project's
 - The user tier (`~/.claude/`) is never edited per project. All project rules live under `.claude/`.
 - Every seam is optional. Missing seam → agent emits no error, proceeds.
 - `docs/architecture.md` is a free-form complement to the rule skills, not a replacement.
+- `repo-layout.md` (workspace-root scan contract) is an optional input for the three wiki runtime agents (`project-explorer`, `project-overview`, `project-update`); when absent they fall back to built-in heuristics with no behavioral change. Only `/wiki:bootstrap` drafts it and `/wiki:enhance` reconciles it — the crew is read-only.
 
 ## Agent context-access matrix
 

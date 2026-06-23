@@ -5,6 +5,7 @@ tools: Read, Glob, Grep, Write, Edit
 model: inherit
 skills:
   - project-explorer
+  - repo-layout
   - prompt-defense
 ---
 

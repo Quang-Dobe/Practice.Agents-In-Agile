@@ -120,3 +120,17 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 
 - Windows + PowerShell 7+. Use `$env:VAR`, `$null`, backtick line-continuation.
 - Hooks are Python (`python .claude-user/hooks/*.py`) — Python must be on PATH.
+
+## Rules
+
+Tagged rules for this kit. When a rule shapes a response or an action, surface its tag (e.g. `[R-EXPLORE] →`) so the reasoning is auditable — same disclosure convention as the global engagement rules.
+
+### [R-EXPLORE] — code is the single source of knowledge
+
+**When it applies.** Any time the task requires *exploring the codebase* to learn how the system works — reading code, recovering domain knowledge, deriving business logic / rules / invariants, mapping bounded contexts, building or refreshing a wiki, or answering "what does this do / why".
+
+**The rule.** Read **code** as the single source of knowledge. Derive every behaviour, invariant, data shape, control-flow, event, command, and `file:line` fact from executable code only. Comments, docstrings, XML-doc, READMEs, and prose are **advisory seeds** for naming and plain-language description — they **lose every conflict** with code and never substitute for a code-derived fact. When a comment and the code disagree, follow the code and record the divergence; never assume logic from a comment.
+
+**On apply.** Add the `[R-EXPLORE]` tag to the response disclosure prefix whenever this rule shaped the exploration.
+
+**Operative homes (where the rule is enforced).** The wiki crew enforces this via the `project-explorer` skill `## Comment policy (code is the single source of truth)`, cited by reference from the `project-overview` and `project-update` skills. The Software Engineer's read-before-write exploration follows the same policy. This rule is the named, taggable umbrella over those skill-level contracts.

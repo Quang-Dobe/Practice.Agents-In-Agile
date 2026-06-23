@@ -22,6 +22,10 @@ malformed** (see `## Well-formedness`), the consuming agent **stops before any w
 `docs/memory/`, still answers the question, and reports the missing/malformed skill —
 this skill is what makes that stop-condition concrete.
 
+## Output root (nested mode)
+
+When the dispatch provides an `output_root`, the rollup writes `docs/memory/` under `<output_root>/docs/memory/` instead of the bare root `docs/memory/`; the per-child inputs to summarize are the direct children the dispatch names (each child's own `docs/…`). Absent `output_root` → today's root `docs/memory/`, byte-identical. The nested orchestrator sets this per the `wiki-orchestration` skill `## Output root (nested mode)`.
+
 ## Write confinement
 
 Every write this manual authorizes lands **only** under a `docs/memory/` tree — either the

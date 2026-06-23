@@ -28,16 +28,11 @@ only.
    missing/malformed, stop before writing and report it.
 5. **Discover repos (read-only).** Per the orchestration skill: depth-1 children except
    `docs/` and `.claude/`; classify each empty/existing.
-6. **Ask the two questions** (orchestration skill, `## Two-question protocol`): scope
+6. **Draft `repo-layout.md` (writer — gap-fill only).** Reload `~/.claude/skills/repo-layout/SKILL.md`. If a `repo-layout.md` already exists at the resolved root, leave it untouched (it is the human-reviewed contract; only `/wiki:enhance` reconciles it). If it is absent, draft one per the `repo-layout` skill `## Drafting heuristics (writer only)`: infer one `repos[]` entry per discovered repo with `roots` seeded from `.gitignore` + ecosystem manifests, print the inferred layout for the audit trail, and write `repo-layout.md` at the root. Proceed in the same run (no gate). This is the only point in bootstrap that writes the manifest.
+7. **Ask the two questions** (orchestration skill, `## Two-question protocol`): scope
    (all/some, with the suggested first batch) and execution (one agent / sub-agent per repo).
-7. **Per chosen repo → `ensureRepo(repo, "skip")`.** Empty repos get `/project:overview`
-   then `/project:explore`; existing repos are **skipped** (bootstrap never refreshes).
-   Sequential or parallel sub-agents per the execution answer.
-8. **Roll up to root `docs/memory/`.** Hand off to the `wiki-bootstrapper`: summarize-and-link
-   the **four** inputs per repo (`docs/architecture.md`, `docs/narrative/`, `docs/domain/`,
-   `docs/memory/`) into root `docs/memory/`. Per the `wiki-memory` skill the rollup is
-   create-or-additive and **ungated** (no gate) — safety net is append-only + dedup +
-   fence.
-9. **Missing-input advisories** (one line each, never block): absent `docs/architecture.md`;
+8. **Per chosen repo.** If the repo's manifest entry expands into a node tree (`wiki-orchestration` skill `## Node tree (nested mode)`), run the **nested walk** (`## Nested walk`) in `mode = "skip"`: bootstrap every empty leaf (`/project:overview` then `/project:explore`, each dispatched with `output_root = leaf home`), then build `docs/memory/` bottom-up at every branch and the root node via the `wiki-bootstrapper` (bootstrap does **not** author `architecture.md` — that is enhance's job). Otherwise run `ensureRepo(repo, "skip")` as today. Sequential or parallel sub-agents per the execution answer (leaves are independent — each writes only its own `docs/`).
+9. **Roll up to root `docs/memory/`.** In **multi-repo mode**, hand off to the `wiki-bootstrapper` to summarize-and-link the four inputs per repo entry as today. In **single-repo nested mode**, the root-node rollup from step 8 already IS the root `docs/memory/` — do not double-roll; this step only confirms the root-node memory exists. Per the `wiki-memory` skill the rollup is create-or-additive and ungated.
+10. **Missing-input advisories** (one line each, never block): absent `docs/architecture.md`;
    narrative-only / domain-only repo; zero qualifying repos; unavailable `project:*`.
-10. **No auto-commit.** Leave new/modified files as working-tree changes.
+11. **No auto-commit.** Leave new/modified files as working-tree changes.

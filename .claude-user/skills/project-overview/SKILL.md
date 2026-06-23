@@ -14,6 +14,16 @@ This skill is the operating manual the `project-overview` runtime agent reloads 
 - `<path>` (required) — local filesystem path to the target repository. No remote URLs; no cloning; no git invocation. The agent reads the path read-only.
 - `[branch-name]` (optional) — recording-only string. Written to the `branch_name` field in each generated file's frontmatter. The user is responsible for actually checking out the branch they want recorded before invoking the command — the agent does not switch branches.
 
+## Scan scope (repo-layout manifest)
+
+Before the repo walk (operating procedure step 3), the agent resolves scan scope via the `repo-layout` skill, identically to the sibling `project-explorer` skill `## Scan scope (repo-layout manifest)` (reused by reference). Walk up from `<path>` to the scan root, read the matching `repos[]` entry, and:
+
+- **Entry with `roots`** → walk ONLY the declared roots minus effective excludes; each root's `bc` label pins the narrative `<bc>/walkthrough.md` folder name.
+- **Entry without `roots`** → whole repo minus effective excludes.
+- **No manifest / no entry** → built-in heuristics + the matching advisory from the `repo-layout` skill `## Advisory literals`; narrative output is byte-identical to pre-manifest runs.
+
+The same safety net applies: an undeclared source-bearing dir is provisionally scanned + flagged, never silently skipped (the `repo-layout` skill `## Precision instrument + discovery safety net`).
+
 ## Idempotency guard
 
 Before reloading this skill (operating procedure step 2), the agent checks `docs/narrative/` of the **current working directory** (not `<path>`).
@@ -30,13 +40,17 @@ docs/narrative/ is not empty. project-overview is a one-shot bootstrapper. Re-ru
 
 and exits before the skill-load step (step 2 of `## Operating procedure`) continues. No repo walk, no candidate surfacing, no writes.
 
+## Output root (nested mode)
+
+When the dispatch provides an `output_root`, this skill writes its `docs/narrative/` tree under `<output_root>/docs/narrative/` and runs the `## Idempotency guard` against `<output_root>/docs/narrative/` instead of the bare `docs/narrative/` of the working directory; the scan `<path>` and all `file:line` citations are unaffected. Absent `output_root` → bare `docs/narrative/` of the working directory, byte-identical to today. The nested orchestrator sets this per the `wiki-orchestration` skill `## Output root (nested mode)`.
+
 ## Operating procedure
 
 Numbered steps 1-7. The agent must execute these in order; later sections in this skill fill in the precise contract for each step.
 
 1. **Idempotency guard.** Resolve `<path>`; check the current working directory's `docs/narrative/`. If it exists and is non-empty, refuse with the canonical message and exit before any further step runs. See `## Idempotency guard` above.
 2. **Skill load.** The agent reloads this `SKILL.md` and treats it as the operating manual for the rest of the run. The agent must not proceed past this step if the skill file is missing or malformed.
-3. **Repo walk.** The agent scans `<path>` for exposed endpoints, handlers, workers, and domain code signals via the reuse-by-reference rule in `## BC candidate surfacing (cite project-explorer)` below. Excludes test projects, generated files, `bin/`, `obj/`, `node_modules/`, `dist/` per the same exclusion globs as `project-explorer`.
+3. **Repo walk.** First resolve scan scope per `## Scan scope (repo-layout manifest)` above. Then the agent scans the in-scope source for exposed endpoints, handlers, workers, and domain code signals via the reuse-by-reference rule in `## BC candidate surfacing (cite project-explorer)` below. Excludes test projects, generated files, `bin/`, `obj/`, `node_modules/`, `dist/` per the same exclusion globs as `project-explorer`.
 4. **BC candidate surfacing.** The agent groups signals into bounded-context candidates per `## BC candidate surfacing (cite project-explorer)` below — same grouping rule as the sibling skill.
 5. **Print candidate report (non-blocking).** The agent prints the candidate report for the audit trail per `## Auto-write` below, then proceeds directly to output generation. No human approval is required; the agent does not halt.
 6. **Output generation.** After printing the candidate report, the agent writes `docs/narrative/architecture.md` and `docs/narrative/<bc>/walkthrough.md` per `## Output schema` below.
@@ -50,9 +64,13 @@ This section is the full contract for steps 4 and 5 of the `## Operating procedu
 
 - **Candidate report format reuse.** The candidate report format is reused verbatim from the `project-explorer` skill `## BC candidate surfacing` `### Candidate report format` — same numbered `### BC candidates` list with per-candidate nested bullets (`Rationale` naming the contributing folders / namespaces, `Aggregates detected` listing the aggregate root with `file:line` citation as an inline-code span), same `### Conflicts detected` H3 subsection (rendered as `(none)` when empty).
 
-- **Small-repo fallback detection reuse.** Small-repo fallback detection rules are reused verbatim from the `project-explorer` skill `## BC candidate surfacing` `### Small-repo fallback detection`. The same three independent triggers apply (total first-class source files < 20; only one top-level namespace or project; BC candidate count <= 1). When the fallback fires, the agent emits a single-folder narrative tree at `docs/narrative/module-map/walkthrough.md` (mirroring `module-map` as a fallback-mode token, exempt from the trace-to-source rule, same as the sibling skill).
+- **Small-repo fallback detection reuse.** Small-repo fallback detection rules are reused verbatim from the `project-explorer` skill `## BC candidate surfacing` `### Small-repo fallback detection`. The same three independent triggers apply (total first-class source files < 20; only one top-level namespace or project; BC candidate count <= 1). When the fallback fires, the agent emits a single-folder narrative tree at `docs/narrative/module-map/walkthrough.md` — or, when the scanned root carries a manifest `bc` label, at `docs/narrative/<bc>/walkthrough.md` (the manifest pin overrides the `module-map` token; the `repo-layout` skill `## Scope resolution`). `module-map` is used only when no `bc` pin applies; it is a fallback-mode token exempt from the trace-to-source rule, same as the sibling skill.
 
 The reuse is by reference, not by copy. Any edit to grouping rules, candidate report format, or fallback detection in the `project-explorer` skill is automatically inherited by this skill on next reload.
+
+## Comment policy (cite project-explorer)
+
+Code is the single source of truth for the narrative pass too. This skill reuses **by reference** the `project-explorer` skill `## Comment policy (code is the single source of truth)` in full: every endpoint, handler, worker, sequence-diagram node, and `file:line` citation written under `docs/narrative/` MUST be derived from executable code. Comments / docstrings / XML-doc are advisory seeds for plain-language prose only (the `## Intro` paragraphs, drill-down descriptions) — they lose every conflict with code, never supply or alter a `file:line` citation, and never decide a BC boundary. This composes with `## Mermaid sourcing rules`'s no-hallucination guard: a node the agent can only justify from a comment (not from code) is **not** derivable and falls to the `TODO: ` stub path. Any edit to the sibling section is inherited here on next reload.
 
 ## Output schema
 

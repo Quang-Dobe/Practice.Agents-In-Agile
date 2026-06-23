@@ -27,16 +27,10 @@ only.
    repo is bootstrappable (empty), emit the zero-repos advisory and stop. Otherwise proceed.
 5. **Discover repos** (orchestration skill): depth-1 children except `docs/` and `.claude/`;
    classify empty/existing.
-6. **Per repo (all repos, non-interactive):**
-   - **empty →** `ensureRepo`: `/project:overview <repo>` then `/project:explore <repo>`.
-   - **existing →** `/project:update <repo>` (refresh narrative + domain).
-   Sequential, or sub-agent per repo at the implementer's discretion (each writes only its
-   own subtree — no worktree needed).
-7. **Roll up** to root `docs/memory/` via the `wiki-bootstrapper`: summarize-and-link the
-   four inputs per repo (`docs/architecture.md`, `docs/narrative/`, `docs/domain/`,
-   `docs/memory/`). Ungated.
-8. **Author `docs/architecture.md`** via the `wiki-architect` agent (full regen, human
-   fences preserved). Ungated.
-9. **Advisories** (one line each, never block): absent inputs, narrative-only/domain-only
+6. **Per repo (all repos, non-interactive).** If the repo's manifest entry expands into a node tree (`wiki-orchestration` skill `## Node tree (nested mode)`), run the **nested walk** in `mode = "refresh"` (`## Nested walk` + `## Dirtiness (enhance refresh only)`): run `/project:update` on each leaf dispatched with `output_root = leaf home`; then, deepest-first, run the `wiki-bootstrapper` + `wiki-architect` at every branch and the root node (downstream idempotency makes unchanged nodes a zero-byte no-op, and a first enhance authors the missing `docs/architecture.md`; `## Dirtiness (enhance refresh only)`). Untouched subtrees are not rewritten. Otherwise: empty repo → `ensureRepo` (`/project:overview` then `/project:explore`); existing repo → `/project:update <repo>`. Sequential or sub-agent per repo (each writes only its own subtree).
+7. **Reconcile `repo-layout.md` (writer).** Reload `~/.claude/skills/repo-layout/SKILL.md`. After the per-repo runs, persist the new source-bearing dirs the crew flagged during their walks (as a new `roots` entry, or a new `repos[]` entry for a brand-new repo, seeded per `## Drafting heuristics (writer only)`); leave stale declared paths in place (flagged, never auto-deleted); preserve `<!-- human:begin --> ... <!-- human:end -->` content byte-for-byte. Apply the `repo-layout` skill `## Reconciliation`, `## Drafting heuristics (writer only)`, and `## Ownership (single writer, many readers)` sections. If no manifest exists, draft one exactly as `/wiki:bootstrap` does (`## Drafting heuristics (writer only)`). Print the reconciliation summary for the audit trail and proceed in the same run (no gate). This is the only point that writes the manifest. Nested mode does not change reconciliation: the manifest stays flat (`roots[]`), and the node tree is derived from it at read time — `repo-layout.md` is never rewritten with tree structure.
+8. **Roll up to root `docs/memory/`.** In **multi-repo mode**, hand off to the `wiki-bootstrapper` over the repo entries as today. In **single-repo nested mode**, the root-node rollup from step 6 already produced/refreshed the root `docs/memory/` (a clean re-enhance writes zero bytes via downstream idempotency) — do not double-roll.
+9. **Author `docs/architecture.md`.** In **multi-repo mode**, the `wiki-architect` authors the root `docs/architecture.md` over the repo entries as today (full regen, human fences preserved). In **single-repo nested mode**, the root-node `wiki-architect` run from step 6 already authored/refreshed the root `docs/architecture.md` — do not double-author. Ungated.
+10. **Advisories** (one line each, never block): absent inputs, narrative-only/domain-only
    repo, unavailable `project:*`, empty context map.
-10. **No auto-commit.**
+11. **No auto-commit.**

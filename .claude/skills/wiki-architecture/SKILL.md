@@ -12,6 +12,10 @@ overview. It is the **only** write path to that file; the `wiki-memory` and `/wi
 paths are forbidden from touching it. Reloaded by the `wiki-architect` agent at the start of
 every run.
 
+## Output root (nested mode)
+
+When the dispatch provides an `output_root`, this skill writes `docs/architecture.md` at `<output_root>/docs/architecture.md` instead of the bare root `docs/architecture.md`; the per-child inputs are the direct children the dispatch names. Human `<!-- human:begin --> ... <!-- human:end -->` fences are still preserved byte-for-byte. Absent `output_root` → today's root `docs/architecture.md`, byte-identical. The nested orchestrator sets this per the `wiki-orchestration` skill `## Output root (nested mode)`.
+
 ## Inputs (read-only)
 
 Per qualifying repo: `docs/narrative/` (human walkthrough), `docs/domain/` (Evans-canonical

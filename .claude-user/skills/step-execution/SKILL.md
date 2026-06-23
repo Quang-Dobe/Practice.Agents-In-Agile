@@ -21,6 +21,7 @@ Execute one implementation step from `plan.md`: edit the named files, author its
 ## Procedure
 1. Read the Step `<ID>` section in `plan.md` and the matching Severity row in `analyzed.md`.
 2. Execute the substeps **in order**, editing the named files. Author unit tests for the step's logic alongside the production code (layout per the project's `test-rules`). Stay inside the substeps — do not invent extra work. The Tester is not spawned per step; the SE owns all test code.
+   - **No comments by default.** Write production code **without** explanatory comments. Lean on self-documenting names, small functions, and clear structure instead. Add a comment **only** when the user explicitly asks, or when the project's `coding-rules` mandate one (e.g., a required license header or a documented public-API doc-comment standard). This default does not override a stricter project `coding-rules`; when they disagree, `coding-rules` wins.
 3. If this is the **final** step (the E2E validation gate), additionally follow the `e2e-validation` skill.
 4. Self-verify the change before reporting — stack-agnostic gate, in order, stopping at the first failure: build → type-check → lint → unit tests → secret/debug scan → diff review. Run concrete commands via the project `test-runner` agent when present; if the project ships no build/test, note that and rely on the diff review.
 5. Return a brief chat summary: files changed and what to verify before the user types `APPROVE`.

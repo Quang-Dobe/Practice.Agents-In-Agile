@@ -15,6 +15,17 @@ description: Operating manual for the project-update runtime agent that owns all
 
 The enhancer is fully agent-driven: every change — including a newly discovered bounded context — is written automatically with no approval gate and no interactive pause. There is no `--bypass-approval` flag (it was removed when the gate was removed); the only thing that stops a run is the `## Pre-flight refuse condition` below.
 
+## Scan scope + reconciliation (repo-layout manifest)
+
+Both passes resolve scan scope via the `repo-layout` skill before walking, identically to the bootstrap siblings (the `project-explorer` skill `## Scan scope (repo-layout manifest)` and the `project-overview` skill `## Scan scope (repo-layout manifest)`). Walk up from `[path]` to the scan root, read the matching `repos[]` entry, and scan declared roots minus effective excludes (allowlist) — or whole repo minus excludes when the entry omits `roots` — or built-in heuristics + the matching advisory when no manifest/entry exists. Output stays byte-identical to pre-manifest runs when no manifest is present (the `repo-layout` skill `## Backward compatibility`).
+
+**Reader-side reconciliation (this agent does NOT write the manifest).** During the diff/walk, the enhancer reconciles the manifest against the filesystem per the `repo-layout` skill `## Reconciliation` reader half:
+
+- **Undeclared source-bearing dir** (a path that survives the effective excludes and contains first-class source, but is not under any declared root) → **provisionally include it in this run's scan** and emit the new-root advisory from the `repo-layout` skill `## Advisory literals`. This composes with the existing `new-namespace` bucket in `## Path -> BC classifier` `### Classification buckets`: such a path is classified `new-namespace` and auto-creates its BC this run as it does today; the new behavior is the additional **printed advisory** naming the dir as a `repo-layout.md` gap. It is never silently skipped — the allowlist narrows known noise, never new code.
+- **Declared path that no longer exists on disk** → emit the stale advisory. This is informational only; the enhancer does not delete or rewrite the manifest (single-writer rule: only `/wiki:enhance` persists manifest changes).
+
+The enhancer remains read-only on `repo-layout.md`. Persisting flagged candidates and stale entries is the writer's job (`/wiki:enhance`), per the `repo-layout` skill `## Ownership (single writer, many readers)`.
+
 ## Pre-flight refuse condition
 
 Before any skill load or diff step runs, the agent checks `docs/domain/` of the current working directory (not `[path]`). If `docs/domain/` is missing or empty, the agent refuses with the literal message:
@@ -24,6 +35,10 @@ docs/domain/ is missing or empty. Run /project:explore first to bootstrap, then 
 ```
 
 and exits before the skill-load step. This mirrors `project-explorer`'s refusal-points-at-sibling pattern in reverse: `project-explorer` refuses when `docs/domain/` is non-empty (pointing at this enhancer); this enhancer refuses when `docs/domain/` is missing/empty (pointing back at `project-explorer`).
+
+## Output root (nested mode)
+
+When the dispatch provides an `output_root`, this skill targets `<output_root>/docs/narrative/` and `<output_root>/docs/domain/` for its `## Pre-flight refuse condition`, its tree-presence advisories, and all writes — instead of the bare `docs/` of the working directory; the scan `<path>` and all `file:line` citations are unaffected. Absent `output_root` → bare `docs/` of the working directory, byte-identical to today. The nested orchestrator sets this per the `wiki-orchestration` skill `## Output root (nested mode)`.
 
 ## Tree-presence advisories
 
@@ -207,7 +222,7 @@ Every file in the diff output is bucketed into exactly one of three classes:
 |---|---|---|
 | `BC-affecting` | Survives the exclusion globs AND lives under a known BC folder/namespace. | Add the owning BC to the re-walk set. |
 | `infra — no BC impact` | Excluded by the globs OR survives the globs but is not under any known BC. | No re-walk; logged for auditability. |
-| `new-namespace` | Survives the exclusion globs AND lives under a folder/namespace not mapped to any existing BC. | Auto-creates the new BC after printing the candidate report (see `## New-BC discovery (auto-write)`). |
+| `new-namespace` | Survives the exclusion globs AND lives under a folder/namespace not mapped to any existing BC. | Auto-creates the new BC after printing the candidate report (see `## New-BC discovery (auto-write)`). When a `repo-layout.md` manifest is present and the path is not under any declared root, also emit the new-root advisory per `## Scan scope + reconciliation (repo-layout manifest)`. |
 
 **Per-bucket count summary (auditability).** Immediately after the `Diff strategy:` audit line and before any subsequent step output, the agent prints the literal line:
 
@@ -469,6 +484,7 @@ The enhancer reloads, by name, the following contracts (five from the `project-e
 
 - `## Output schema` (including `### Files written`, `### Per-file content contract`, `### Small-repo fallback variant`, `### Write order`, `### Hallucination guard`) — the full file tree + per-file content rules + small-repo fallback variant + write order + hallucination guard the enhancer regenerates against.
 - `## Frontmatter contract` — the four-field YAML block (`source_repo`, `branch_name`, `generated_at`, `skill_version`); this feature adds `last_generated_sha` on top per `## Frontmatter refresh rules` above.
+- `## Comment policy (code is the single source of truth)` — code-only derivation for every regenerated logic / invariant / `file:line` fact; comments / docstrings / XML-doc are advisory seeds that lose every conflict with code. Both passes inherit it on reload (the domain pass via the `project-explorer` skill, the narrative pass via the `project-overview` skill `## Comment policy (cite project-explorer)`). An edit to the sibling section silently changes what the enhancer regenerates.
 - `## BC candidate surfacing` `### Grouping rule` — the namespace -> BC mapping the path classifier reuses (see `### Namespace -> BC mapping` above).
 - `## BC candidate surfacing` `### Reverse mapping (BC -> source paths)` — the BC-name -> source-path inversion the per-BC pre-check consumes (see `## Per-BC SHA pre-check` above). It is the **strict inverse** of `### Grouping rule` and **shares its single source of truth** — the same namespace/folder correspondence read backwards, never a forked copy. An edit to `### Grouping rule` silently changes the inverted path set and therefore the `<bc-source-paths>` fed to `git diff` and the pre-check's SKIP/regen decision; re-audit and re-derive the reverse mapping on any `### Grouping rule` edit.
 - `### Small-repo fallback detection` — the eight exclusion globs enumerated there are the verbatim source for `### Exclusion globs (verbatim)` above.

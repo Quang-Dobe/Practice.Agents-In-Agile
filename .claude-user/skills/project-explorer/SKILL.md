@@ -14,6 +14,20 @@ This skill is the operating manual the `project-explorer` runtime agent reloads 
 - `<path>` (required) — local filesystem path to the target repository. No remote URLs; no cloning; no git invocation. The agent reads the path read-only.
 - `[branch-name]` (optional) — recording-only string. Written to the `branch_name` field in each generated file's frontmatter. The user is responsible for actually checking out the branch they want recorded before invoking the command — the agent does not switch branches.
 
+## Scan scope (repo-layout manifest)
+
+Before the repo walk (operating procedure step 3), the agent resolves scan scope via the `repo-layout` skill. Walk up from `<path>` to the scan root and read the matching `repos[]` entry per the `repo-layout` skill `## Discovery (walk-up to the scan root)`.
+
+- **Entry found with `roots`** → walk ONLY the declared root subtrees minus effective excludes, per the `repo-layout` skill `## Scope resolution`. Each root's `bc` label pins its bounded-context name, overriding the `### Grouping rule` namespace-token inference for signals under that root.
+- **Entry found without `roots`** → walk the whole repo minus effective excludes (today's behavior, optionally tightened by extra excludes).
+- **No manifest, or no entry for this repo** → emit the matching advisory from the `repo-layout` skill `## Advisory literals` and walk with the built-in heuristics. Output is byte-identical to pre-manifest runs per the `repo-layout` skill `## Backward compatibility`.
+
+**Safety net (load-bearing).** Even when `roots` is an allowlist, an undeclared directory that contains first-class source (passes the language whitelist in `### Small-repo fallback detection`, not matched by effective excludes) is **provisionally scanned this run and flagged** with the new-root advisory — never silently skipped. See the `repo-layout` skill `## Precision instrument + discovery safety net`. Persisting the candidate to the manifest is the writer's job (`/wiki:enhance`), not this read-only agent's.
+
+## Output root (nested mode)
+
+When the dispatch provides an `output_root`, this skill writes its `docs/domain/` tree under `<output_root>/docs/domain/` and runs its idempotency guard against `<output_root>/docs/domain/` instead of the bare `docs/domain/` of the working directory; the scan `<path>` and all `file:line` citations are unaffected. Absent `output_root` → bare `docs/domain/` of the working directory, byte-identical to today. The nested orchestrator sets this per the `wiki-orchestration` skill `## Output root (nested mode)`.
+
 ## Idempotency guard
 
 Before reloading this skill (operating procedure step 2), the agent checks `docs/domain/` of the **current working directory** (not `<path>`).
@@ -36,7 +50,7 @@ Numbered steps 1-7. Mirror the Core Behaviour list in the feature's overview pla
 
 1. **Idempotency guard.** Resolve `<path>`; check the current working directory's `docs/domain/`. If it exists and is non-empty, refuse with a canonical message pointing the user at the sibling `project-update` and exit before any further step runs. See `## Idempotency guard` above.
 2. **Skill load.** The agent reloads this `SKILL.md` and treats it as the operating manual for the rest of the run. The agent must not proceed past this step if the skill file is missing or malformed.
-3. **Repo walk.** The agent scans `<path>` for the code signals enumerated in `## Code signals` below — aggregates, repositories, events, services, value objects, and ubiquitous-language tokens. .NET signals are first-class; other stacks are best-effort. Excludes test projects, generated files, `bin/`, `obj/`, `node_modules/`, `dist/`.
+3. **Repo walk.** First resolve scan scope per `## Scan scope (repo-layout manifest)` above (declared roots + effective excludes when a manifest entry exists; built-in heuristics otherwise). Then the agent scans the in-scope source for the code signals enumerated in `## Code signals` below — aggregates, repositories, events, services, value objects, and ubiquitous-language tokens. .NET signals are first-class; other stacks are best-effort. Excludes test projects, generated files, `bin/`, `obj/`, `node_modules/`, `dist/`.
 4. **BC candidate surfacing.** The agent groups the signals into bounded-context candidates using repo namespacing / top-level project boundaries / folder structure. Names must trace to a real namespace or folder path; no invented taxonomy. See `## BC candidate surfacing` below.
 5. **Print candidate report (non-blocking).** The agent prints the candidate BC list (with rationale, detected aggregates, and the small-repo-fallback flag if triggered) to the user for the audit trail, then proceeds directly to output generation. No human approval is required; the agent does not halt. See `## BC candidate surfacing` below.
 6. **Output generation.** After printing the candidate report, the agent writes the full Evans-canonical tree under `docs/domain/`. _The full per-file content contract (which fields each file carries, the `file:line` invariant back-reference rule, the small-repo-fallback variant, the write order) is specified in `### Per-file content contract` below._
@@ -97,6 +111,20 @@ Concrete observable code patterns per DDD category. See `./research.md#ddd-code-
 ## Ubiquitous-language heuristic
 
 Heuristic for extracting candidate glossary terms from code. See `./research.md#ubiquitous-language-extraction-heuristic` for the named heuristic and step-by-step recipe.
+
+## Comment policy (code is the single source of truth)
+
+**Code is the only source of truth for behaviour.** Every aggregate, invariant, event, command, repository, service row, and every `file:line` citation in the output tree MUST be derived from executable code — control flow, types, signatures, call graph, and data shape. The agent reads code to learn what the system *does*; it does not read a comment to learn what the system does.
+
+**Comments / docstrings / XML-doc are advisory seeds, never authority.** A comment, docstring, `///` XML-doc, or attribute description MAY be used as a **seed** for a plain-language glossary definition or a per-aggregate description — the same advisory status `## Soft input: docs/narrative/`'s narrative text holds. It MUST NOT be used to:
+
+- assert an invariant, event, command, repository, or service that the code does not exhibit;
+- supply or alter a `file:line` citation (the citation always points at the code construct, never at the comment line);
+- decide a bounded-context boundary (that traces to namespace / folder per `## BC candidate surfacing` `### Grouping rule`, never to a comment).
+
+**Comments lose every conflict with code.** When a comment and the code disagree (a stale `// returns null on failure` over a method that now throws, a doc-comment naming an old aggregate), the agent follows the **code** and records the divergence per `## Conflict resolution` (`./research.md#what-to-do-when-code-as-source-of-truth-conflicts-with-itself`). A comment never silently overrides a code-derived fact.
+
+**Relationship to the hallucination guard.** This policy is the comment-side companion to `### Hallucination guard` (which governs narrative soft input) and the `## Soft input: docs/narrative/` `### Hallucination guard (narrative variant)`: input that is not executable code (narrative prose, comments, docstrings) seeds naming and description only; it never adds a row to the output schema and never invents a citation.
 
 ## Soft input: docs/narrative/
 
@@ -160,7 +188,7 @@ All `file:line` citations in the output tree use paths relative to the `<path>` 
 
 ### Small-repo fallback variant
 
-When the small-repo fallback flag is `true`, the writer emits the same file shape with exactly **one** `<bounded-context>/` folder named `module-map`. All other rules in `### Per-file content contract` still apply inside `module-map`. The `context-map.md` body begins with the single line `Fallback active: single-BC module-map. See \`module-map/\` for module-by-module breakdown.` (replacing the numbered BC list that multi-BC mode would emit). The `## Conflicts detected` and `## Skipped candidates` H2 sections at the bottom of `context-map.md` are emitted as in multi-BC mode.
+When the small-repo fallback flag is `true`, the writer emits the same file shape with exactly **one** `<bounded-context>/` folder named `module-map` — or named with the scanned root's manifest `bc` label when the root is pinned (the pin overrides the `module-map` token; see `### Hallucination guard`). Throughout this section `module-map` denotes that single fallback folder name; substitute the `bc` label when the root is pinned. All other rules in `### Per-file content contract` still apply inside that folder. The `context-map.md` body begins with the single line `Fallback active: single-BC module-map. See \`module-map/\` for module-by-module breakdown.` (replacing the numbered BC list that multi-BC mode would emit). The `## Conflicts detected` and `## Skipped candidates` H2 sections at the bottom of `context-map.md` are emitted as in multi-BC mode.
 
 ### Write order
 
@@ -176,13 +204,13 @@ The agent writes top-level files first, then each `<bounded-context>/` folder. W
    5. `<bounded-context>/repositories.md`
    6. `<bounded-context>/services.md`
 
-In small-repo fallback mode the single `module-map/` folder follows the same per-BC ordering.
+In small-repo fallback mode the single fallback folder (`module-map`, or the root's manifest `bc` label when pinned) follows the same per-BC ordering.
 
 ### Hallucination guard
 
 Every multi-BC `<bounded-context>/` folder name MUST match a real namespace token or folder path observed during the repo walk (per `## BC candidate surfacing` `### Grouping rule`). Names with no source MUST NOT be emitted; the writer logs each omission in `context-map.md` under the `## Skipped candidates` H2 section as `<candidate-name>: <reason for omission>`. The `## Skipped candidates` section renders as `(none)` when the writer rejected nothing.
 
-The guard rule applies in multi-BC mode only. In small-repo fallback mode the single folder is emitted with the literal name `module-map` regardless of whether the target repo has a namespace or folder by that name — `module-map` is an explicit fallback-mode token, not a discovered BC, and is exempt from the trace-to-source rule.
+The guard rule applies in multi-BC mode only. In small-repo fallback mode the single folder is emitted with the literal name `module-map` regardless of whether the target repo has a namespace or folder by that name — `module-map` is an explicit fallback-mode token, not a discovered BC, and is exempt from the trace-to-source rule. **Exception (manifest `bc` pin):** when the scanned root carries a `bc` label in `repo-layout.md` (the `repo-layout` skill `## Scope resolution`), the single fallback folder is named with the `bc` label instead of `module-map` — the manifest pin overrides the fallback token. `module-map` is used only when no `bc` pin applies to the root.
 
 ## Frontmatter contract
 

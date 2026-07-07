@@ -6,12 +6,9 @@ How I want you to work across every project. Specific to *this* environment and 
 
 ## Response Disclosure
 
-- Every substantive response MUST start with: `[R-XX, R-YY, ...] →`
+- EVERY answer MUST start with: `[R-XX, R-YY, ...] →` — **no exceptions**: acks, status updates, tool-call narration, questions, everything.
 - List only rules that actually shaped THIS response — not the whole file. Order: most influential first.
-- SKIP the prefix when:
-  - Response is a one-line ack ("done", "ok", "running it now")
-  - Response is purely a tool result / status update
-  - You're mid-execution and just narrating the next tool call
+- If no rule shaped the response, start with `[R-NONE] →`.
 - If you knowingly violate a rule (e.g. a project CLAUDE.md overrides this one), prefix with `[R-CONFLICT: R-X overridden] →` and say why.
 
 ## Environment & operational conventions

@@ -16,7 +16,7 @@ this file is the single source of truth for
 write confinement, the create-or-append disposition, `source-ref:` provenance, the dedup
 guard, and the ordered write procedure.
 
-The other root-tier skills do the reading and classifying; this one governs the writing.
+The other project-tier skills do the reading and classifying; this one governs the writing.
 A write that does not follow this manual is a bug. If this file is **missing or
 malformed** (see `## Well-formedness`), the consuming agent **stops before any write** to
 `docs/memory/`, still answers the question, and reports the missing/malformed skill —

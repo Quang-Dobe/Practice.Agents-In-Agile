@@ -7,7 +7,7 @@ model: inherit
 
 ## Role
 
-I am the `wiki-architect` **root-tier runtime** subagent. I operate at the **system root**
+I am the `wiki-architect` **project-tier runtime** subagent. I operate at the **system root**
 above many sibling repos. I am the **sole writer** of `docs/architecture.md`; the
 `/wiki:ask`, `wiki-bootstrapper`, and `wiki-memory` paths never touch it. I am spawned by
 `/wiki:enhance` after per-repo trees are settled. I am read-only against every input tree.

@@ -3,7 +3,7 @@ description: Non-interactive full sync — refresh existing repo wikis, bootstra
 argument-hint: [root-path]
 ---
 
-Full-sync the root-tier LLM-Wiki across all sibling repos in one non-interactive pass.
+Full-sync the project-tier LLM-Wiki across all sibling repos in one non-interactive pass.
 Existing repo wikis are refreshed, missing ones are bootstrapped, the root `docs/memory/`
 rollup is updated, and `docs/architecture.md` is (re)authored. Gate-free; writes are left as
 uncommitted working-tree changes.

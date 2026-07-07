@@ -1,21 +1,21 @@
-# `.claude/` — Root-tier LLM Wiki toolset
+# `project/.claude/` — Project-tier LLM Wiki toolset
 
-`.claude/` is the **root-tier** toolset, distinct from the per-repo `.claude-user/` kit. Where `.claude-user/` is drop-copied **into** a single repository and operates against that one repo, `.claude/` is drop-copied to the **system root** that sits **one level above** many sibling repos and operates **across** all of them. It builds and serves a cross-repo "LLM Wiki": a `docs/memory/` store that summarizes and links back to (never duplicates) the knowledge already produced per repo — the root `docs/architecture.md` plus every sibling repo's `docs/narrative/` and `docs/domain/`. The `/wiki:ask` command then answers in-domain questions **inline in the main thread** (no sub-agent) from that wiki using a fixed, auditable retrieval order, falling through per-repo `docs/memory/` learnings then raw repo source as the last resorts, appending new source-read learnings to that repo's `docs/memory/`.
+`project/.claude/` is the **project-tier** toolset, distinct from the root-tier `root/.claude/` crew kit. Where `root/.claude/` is installed to user scope and operates inside a single repository, `project/.claude/` is drop-copied to the **system root** that sits **one level above** many sibling repos and operates **across** all of them. It builds and serves a cross-repo "LLM Wiki": a `docs/memory/` store that summarizes and links back to (never duplicates) the knowledge already produced per repo — the root `docs/architecture.md` plus every sibling repo's `docs/narrative/` and `docs/domain/`. The `/wiki:ask` command then answers in-domain questions **inline in the main thread** (no sub-agent) from that wiki using a fixed, auditable retrieval order, falling through per-repo `docs/memory/` learnings then raw repo source as the last resorts, appending new source-read learnings to that repo's `docs/memory/`.
 
 This tier also ships `/present:build`, a gate-free command that turns a feature's planning artifacts into a browsable HTML dossier at `docs/<feature>/present/`. It runs in **project mode** (grounds diagrams on `docs/domain/` + `docs/narrative/`) when either tree is present, or **root mode** (grounds on `docs/architecture.md` + `docs/memory/`) otherwise; project mode wins if both signal. See `## /present:build — feature dossier` below.
 
 ## Drop-copy instruction
 
-Copy this `.claude/` folder **verbatim** to the system root that contains your sibling repos. At that root it is the `.claude`-equivalent: a Claude Code session whose working directory is the system root will discover its commands, agents, and skills exactly the way a per-repo session discovers `.claude-user/`.
+Copy this `project/.claude/` folder **verbatim** (as `.claude/`) to the system root that contains your sibling repos. At that root it is the `.claude`-equivalent: a Claude Code session whose working directory is the system root will discover its commands, agents, and skills exactly the way a per-repo session discovers `root/.claude/`.
 
 ```powershell
 # From the system root that contains repo-a/, repo-b/, ... and docs/
-Copy-Item -Recurse .\path-to-scaffold\.claude .\.claude
+Copy-Item -Recurse .\path-to-scaffold\project\.claude .\.claude
 ```
 
 ## Drop-target layout
 
-Once copied, the root tier operates against this layout. Everything except `docs/memory/` is **read-only input**:
+Once copied, the project tier operates against this layout. Everything except `docs/memory/` is **read-only input**:
 
 ```
 <system-root>/
@@ -45,7 +45,7 @@ Roles of the inputs and outputs:
 
 ## Boundary
 
-The root tier is read-only against narrative/domain inputs and repo source. Its write targets are: the root `docs/memory/` (rollup), each repo's `docs/memory/` (router T6 learnings), and `docs/architecture.md` (wiki-architect only). No write lands elsewhere. The root-tier kit is also the single writer of the workspace-root `repo-layout.md` scan contract (`/wiki:bootstrap` drafts it, `/wiki:enhance` reconciles it); the crew agents (`project-explorer`, `project-overview`, `project-update`) are read-only on it and use it to scope their walks.
+The project tier is read-only against narrative/domain inputs and repo source. Its write targets are: the root `docs/memory/` (rollup), each repo's `docs/memory/` (router T6 learnings), and `docs/architecture.md` (wiki-architect only). No write lands elsewhere. The project-tier kit is also the single writer of the workspace-root `repo-layout.md` scan contract (`/wiki:bootstrap` drafts it, `/wiki:enhance` reconciles it); the crew agents (`project-explorer`, `project-overview`, `project-update`) are read-only on it and use it to scope their walks.
 
 ## `/present:build` — feature dossier
 

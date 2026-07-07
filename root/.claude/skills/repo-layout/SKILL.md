@@ -7,7 +7,7 @@ consumed_by: project-explorer agent, project-overview agent, project-update agen
 
 ## Purpose
 
-This skill is the single source of truth for one question: **which folders of a repo are codebase worth exploring?** It defines an opt-in central manifest, `repo-layout.md`, that a workspace places at its wiki scan root to declare per-repo code roots (an allowlist), extra excludes, and bounded-context labels. The crew agents load this skill and honor the declared scope; the root-tier wiki commands are the only writers. When no manifest is present, every consumer falls back to today's built-in heuristics and behaves byte-identically to runs before this skill existed. In nested mode it also makes a single declared root addressable on its own (leaf-scope mode), so an orchestrator can fan a per-leaf crew run scoped to exactly that root.
+This skill is the single source of truth for one question: **which folders of a repo are codebase worth exploring?** It defines an opt-in central manifest, `repo-layout.md`, that a workspace places at its wiki scan root to declare per-repo code roots (an allowlist), extra excludes, and bounded-context labels. The crew agents load this skill and honor the declared scope; the project-tier wiki commands are the only writers. When no manifest is present, every consumer falls back to today's built-in heuristics and behaves byte-identically to runs before this skill existed. In nested mode it also makes a single declared root addressable on its own (leaf-scope mode), so an orchestrator can fan a per-leaf crew run scoped to exactly that root.
 
 The skill cites — never copies — two contracts owned by the `project-explorer` skill: the built-in language whitelist + eight exclusion globs (`### Small-repo fallback detection`) and the namespace/folder → BC mapping (`### Grouping rule`). Those remain the single source of truth for "what counts as first-class source" and "how a path maps to a BC"; this skill layers scope selection on top.
 
@@ -15,7 +15,7 @@ The skill cites — never copies — two contracts owned by the `project-explore
 
 **Unifying rule — the scan root.** The manifest is one file named `repo-layout.md` living at the **wiki scan root**: the directory the wiki is pointed at.
 
-- **Multi-repo mode** (root-tier kit): the cross-repo root that holds the depth-1 sibling repos plus `docs/` and `.claude/`. The manifest declares one entry per sibling repo.
+- **Multi-repo mode** (project-tier kit): the cross-repo root that holds the depth-1 sibling repos plus `docs/` and `.claude/`. The manifest declares one entry per sibling repo.
 - **Single-repo / monorepo mode** (standalone crew): the repo's own root. The manifest carries a single `repos:` entry with `path: .` whose `roots:` enumerate the sub-projects inside that one repo.
 
 One rule, both modes.
@@ -129,7 +129,7 @@ WRITER (exactly one):  /wiki:bootstrap drafts repo-layout.md  ->  /wiki:enhance 
 READERS (never write): project-explorer · project-overview · project-update · wiki-orchestration
 ```
 
-A single writer means no concurrent-write race on the central file. Crew agents are strictly read-only on the manifest, preserving the existing "each command writes only its own output tree" invariant. A standalone single-repo user who never runs the root-tier kit either hand-authors `repo-layout.md` at the repo root or runs with no manifest (built-in heuristics + the no-manifest advisory).
+A single writer means no concurrent-write race on the central file. Crew agents are strictly read-only on the manifest, preserving the existing "each command writes only its own output tree" invariant. A standalone single-repo user who never runs the project-tier kit either hand-authors `repo-layout.md` at the repo root or runs with no manifest (built-in heuristics + the no-manifest advisory).
 
 ## Drafting heuristics (writer only)
 

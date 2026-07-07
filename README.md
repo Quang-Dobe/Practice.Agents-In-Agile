@@ -5,7 +5,7 @@ user profile (`~/.claude/`) via `install.ps1` and every repository you open gets
 small crew of specialised AI assistants that walk a feature from a rough idea,
 through structured planning, all the way to code — and a second group of agents that
 build and maintain a living "map of the codebase" you can read like a wiki.
-A third, optional kit (`.claude/`) sits one level **above** your repositories and
+A third, optional kit (`project/.claude/`) sits one level **above** your repositories and
 turns all those per-repo maps into one cross-repo "LLM Wiki" you can ask questions.
 
 This repository is the kit itself. It does not contain any application code.
@@ -164,7 +164,7 @@ Full beginner-friendly walkthrough: [`docs/workflow-domain-wiki.md`](docs/workfl
 ### 3. The LLM Wiki — "one wiki across many repos"
 
 The two workflows above live **inside** a single repository. The third one lives
-**one level above** them: copy the `.claude/` folder to the parent directory that
+**one level above** them: copy the `project/.claude/` folder (as `.claude/`) to the parent directory that
 contains all your sibling repos, and three `/wiki:*` commands build a cross-repo
 knowledge base there. It never copies content — it **summarizes and links back**
 to the per-repo wikis the domain pipeline already produced.
@@ -211,26 +211,27 @@ The three commands:
 `docs/memory/` is **co-owned**: you may edit, curate, and delete freely; the
 agent only ever appends — it never rewrites your text.
 
-Full details: [`.claude/README.md`](.claude/README.md).
+Full details: [`project/.claude/README.md`](project/.claude/README.md).
 
 ### 4. The Present Dossier — "browsable HTML view of a feature"
 
-Once a feature has planning artifacts, `/present:build <feature>` (part of the `.claude/` kit) renders them into a browsable HTML dossier at `docs/<feature>/present/` — one tab per artifact (Introduction, Workflow, E2E Test, Analyzed, Code Structure), with diagrams drawn for the Workflow and Code Structure tabs. It grounds on whichever wiki tree is present (per-repo `docs/domain`/`docs/narrative`, or the root `docs/architecture.md`/`docs/memory`) and is gate-free and idempotent. Details: [`.claude/README.md`](.claude/README.md#presentbuild--feature-dossier).
+Once a feature has planning artifacts, `/present:build <feature>` (part of the `project/.claude/` kit) renders them into a browsable HTML dossier at `docs/<feature>/present/` — one tab per artifact (Introduction, Workflow, E2E Test, Analyzed, Code Structure), with diagrams drawn for the Workflow and Code Structure tabs. It grounds on whichever wiki tree is present (per-repo `docs/domain`/`docs/narrative`, or the root `docs/architecture.md`/`docs/memory`) and is gate-free and idempotent. Details: [`project/.claude/README.md`](project/.claude/README.md#presentbuild--feature-dossier).
 
 ---
 
 ## How to use this kit in your own project
 
 1. Install the kit to your user profile: from this repo run `pwsh -File ./install.ps1`
-   (copies `.claude-user/` → `~/.claude/`). One-time — every repo you open then has the crew.
+   (copies `root/.claude/` → `~/.claude/`). One-time — every repo you open then has the crew.
 2. Make sure you are on Windows + PowerShell 7+ (or adapt the hook scripts).
 3. Make sure Python is on your PATH — a small hook script uses it.
 4. Open the project in Claude Code.
 5. Pick the workflow you want:
    - To plan and build a new feature: run `/feature:new my-feature-name`.
    - To create a wiki of an existing codebase: run `/project:overview <path-to-that-codebase>` first (optional but recommended — gives you a plain-language tour at `docs/narrative/`), then `/project:explore <path-to-that-codebase>` to produce the canonical schema at `docs/domain/`.
-   - To build one wiki across many repos: copy `.claude/` to the folder that
-     contains your repos, then run `/wiki:bootstrap` there (see `.claude/README.md`).
+   - To build one wiki across many repos: copy `project/.claude/` (as `.claude/`) to the
+     folder that contains your repos, then run `/wiki:bootstrap` there (see
+     `project/.claude/README.md`).
 
 That's the whole setup. In the feature pipeline, the rest is the agents asking
 you questions and waiting for `APPROVE`; the domain-wiki agents run on their own
@@ -240,15 +241,15 @@ and write automatically.
 
 ## What lives where
 
-- `.claude-user/agents/` — the AI roles (one Markdown file per role).
-- `.claude-user/commands/` — the slash commands you type.
-- `.claude-user/skills/` — the "rules of the trade" each agent reloads at runtime. Includes `.claude-user/skills/repo-layout/SKILL.md`, the cross-cutting scan-scope contract; pair it with an opt-in `repo-layout.md` at the wiki scan root to declare exactly which folders the wiki agents should walk.
-- `.claude-user/templates/` — the document shapes each feature gets.
-- `.claude-user/hooks/` — a small Python script that runs on session start (the
+- `root/.claude/agents/` — the AI roles (one Markdown file per role).
+- `root/.claude/commands/` — the slash commands you type.
+- `root/.claude/skills/` — the "rules of the trade" each agent reloads at runtime. Includes `root/.claude/skills/repo-layout/SKILL.md`, the cross-cutting scan-scope contract; pair it with an opt-in `repo-layout.md` at the wiki scan root to declare exactly which folders the wiki agents should walk.
+- `root/.claude/templates/` — the document shapes each feature gets.
+- `root/.claude/hooks/` — a small Python script that runs on session start (the
   scaffold is stack-agnostic; downstream projects add their own hooks via
-  `.claude/settings.json`).
-- `.claude/` — a **separate** root-tier LLM-Wiki kit (works across many repos, not
-  part of the crew above). See `.claude/README.md` and the `/wiki:*` commands. Also
+  their own `.claude/settings.json`).
+- `project/.claude/` — a **separate** project-tier LLM-Wiki kit (works across many repos, not
+  part of the crew above). See `project/.claude/README.md` and the `/wiki:*` commands. Also
   ships `/present:build`, which renders a feature's dossier at `docs/<feature>/present/`.
 - `docs/<feature>/` — everything the feature pipeline produces, one folder
   per feature.
@@ -281,4 +282,4 @@ language. Read them in order if you are new:
 
 - [Feature Pipeline — Idea to Code, step by step](docs/workflow-feature-pipeline.md)
 - [Domain Wiki Pipeline — Build and maintain a living map of your codebase](docs/workflow-domain-wiki.md)
-- [LLM Wiki — One wiki across many repos](.claude/README.md) (reference-style, written for operators)
+- [LLM Wiki — One wiki across many repos](project/.claude/README.md) (reference-style, written for operators)

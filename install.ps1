@@ -1,20 +1,20 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-    Installs the USER-tier crew (agents + concern skills + templates + commands) from this
-    scaffold's .claude-user/ into user scope (~/.claude/), where the harness can discover agents
+    Installs the root-tier crew (agents + concern skills + templates + commands) from this
+    scaffold's root/.claude/ into user scope (~/.claude/), where the harness can discover agents
     and resolve the thin agents' `skills:` manifests by name.
 
 .DESCRIPTION
     The feature crew is thin: each agent declares a `skills:` manifest and the harness preloads
     those concern-named skills at startup. Skill NAMES only resolve when the skills live on a
-    discovery root (~/.claude/skills/ or a repo's .claude/skills/). .claude-user/ is NOT a
+    discovery root (~/.claude/skills/ or a repo's .claude/skills/). root/.claude/ is NOT a
     discovery root, so the generic tier must be installed to ~/.claude/. This script does that.
 
     Add-only for agents/skills/commands/templates: re-running copies ONLY files that are missing
     at the target. Existing target files are left untouched (never overwritten, never deleted), so
     local edits survive a re-run. New folders/files added to the scaffold flow through. It never
-    deletes a repo's own project-tier .claude/ content.
+    deletes a repo's own repo-tier .claude/ content.
     NOTE: because existing files are skipped, edits to an ALREADY-installed scaffold file do not
     propagate on re-run — delete the target file first (or hand-merge) to pick up such a change.
 
@@ -23,11 +23,11 @@
       templates) is fully user-scope-ready after this runs.
     - The WIKI kit (project-explorer / project-overview / project-update + their skills and
       project/* commands) resolves its skills BY NAME via each agent's `skills:` manifest — no
-      internal `.claude-user/...` path reads remain, so it works unchanged at user scope.
+      internal `root/.claude/...` path reads remain, so it works unchanged at user scope.
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
-    [string]$Source = (Join-Path $PSScriptRoot '.claude-user'),
+    [string]$Source = (Join-Path $PSScriptRoot 'root/.claude'),
     [string]$Target = (Join-Path $HOME '.claude'),
     # Report-only: run the per-file loop and print [add]/[skip] for every file, but write nothing.
     # Unlike -WhatIf (which short-circuits the loop and shows folder-level ops only).
@@ -38,7 +38,7 @@ $ErrorActionPreference = 'Stop'
 
 if (-not (Test-Path $Source)) { throw "Source not found: $Source" }
 
-Write-Host "Installing USER tier:`n  from $Source`n  to   $Target" -ForegroundColor Cyan
+Write-Host "Installing root tier:`n  from $Source`n  to   $Target" -ForegroundColor Cyan
 
 # Subtrees that must live on the user-scope discovery root.
 $subtrees = @('agents', 'skills', 'commands', 'templates')
@@ -74,7 +74,7 @@ foreach ($sub in $subtrees) {
     }
 }
 
-# CONVENTIONS.md is reference docs for project-tier authors.
+# CONVENTIONS.md is reference docs for repo-tier authors.
 $conv = Join-Path $Source 'CONVENTIONS.md'
 if ((Test-Path $conv) -and ($DryRun -or $PSCmdlet.ShouldProcess((Join-Path $Target 'CONVENTIONS.md'), 'Copy CONVENTIONS.md'))) {
     if (-not $DryRun) { Copy-Item -Path $conv -Destination (Join-Path $Target 'CONVENTIONS.md') -Force }

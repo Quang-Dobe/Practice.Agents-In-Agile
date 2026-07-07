@@ -7,7 +7,7 @@ consumed_by: wiki:bootstrap command, wiki:enhance command
 
 ## Purpose
 
-The auditable core both root-tier wiki entrypoints share: how to bring each sibling repo to
+The auditable core both project-tier wiki entrypoints share: how to bring each sibling repo to
 a usable per-repo wiki state (`ensureRepo`), how `/wiki:bootstrap` asks its two operator
 questions, and how either command fans work across repos. It writes nothing itself — it
 drives the crew's `project:*` slash commands and then hands the rollup to the
@@ -50,7 +50,7 @@ The single per-repo routine both commands call.
   - `mode = "refresh"` (enhance) → run `/project:update <repo>`.
 
 If the crew `project:*` commands are **unavailable** (only `.claude/` installed, not the
-`.claude-user/` crew), emit the one-line advisory and **skip orchestration** for that repo,
+`root/.claude/` crew), emit the one-line advisory and **skip orchestration** for that repo,
 proceeding to rollup with whatever trees already exist:
 ```
 Advisory: project:overview/explore/update not available — skipping per-repo orchestration for <repo>; rolling up existing trees only.

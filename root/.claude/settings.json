@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude-user/hooks/session-start-banner.py"
+            "command": "python root/.claude/hooks/session-start-banner.py"
           }
         ]
       }

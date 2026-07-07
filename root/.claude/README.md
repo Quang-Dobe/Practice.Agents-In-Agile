@@ -1,10 +1,10 @@
-# `.claude-user/` — User-tier feature + domain-wiki crew
+# `root/.claude/` — Root-tier feature + domain-wiki crew
 
-`.claude-user/` is the **user-tier** toolset, distinct from the root-tier `.claude/` kit. Where `.claude/` is drop-copied to the **system root** above many sibling repos and operates **across** all of them, `.claude-user/` is installed **once** to user scope (`~/.claude/`) and operates **inside** whichever single repository the session is opened in. It ships two independent pipelines: a five-role **feature crew** (Product Owner → Business Analyst → Architect + Tester → Software Engineer) that walks a feature from raw idea to approved plan to code behind explicit `APPROVE` gates, and a three-agent **domain-wiki pipeline** (`project-overview` / `project-explorer` / `project-update`) that bootstraps and then diff-maintains a living wiki under the consuming repo's `docs/narrative/` and `docs/domain/` with no gates at all.
+`root/.claude/` is the **root-tier** toolset, distinct from the project-tier `project/.claude/` kit. Where `project/.claude/` is drop-copied to the **system root** above many sibling repos and operates **across** all of them, `root/.claude/` is installed **once** to user scope (`~/.claude/`) and operates **inside** whichever single repository the session is opened in. It ships two independent pipelines: a five-role **feature crew** (Product Owner → Business Analyst → Architect + Tester → Software Engineer) that walks a feature from raw idea to approved plan to code behind explicit `APPROVE` gates, and a three-agent **domain-wiki pipeline** (`project-overview` / `project-explorer` / `project-update`) that bootstraps and then diff-maintains a living wiki under the consuming repo's `docs/narrative/` and `docs/domain/` with no gates at all.
 
 ## Install instruction
 
-Do **not** drop-copy this folder per repo. `.claude-user/` is not a discovery root — agent `skills:` manifests resolve skill **names** only from `~/.claude/skills/` or a repo's own `.claude/skills/`. Install it once to user scope via the script at the repo root:
+Do **not** drop-copy this folder per repo. `root/.claude/` is not a discovery root — agent `skills:` manifests resolve skill **names** only from `~/.claude/skills/` or a repo's own `.claude/skills/`. Install it once to user scope via the script at the repo root:
 
 ```powershell
 # From the scaffold repo root
@@ -24,10 +24,10 @@ After install, every repo you open gets the crew. The crew reads the repo and wr
 ├── commands/{feature,project,workflow}/   ← the slash commands you type
 ├── skills/                                ← 15 concern-named skills (the actual "how")
 ├── templates/                             ← feature document shapes
-└── CONVENTIONS.md                         ← seam contract for project-tier authors
+└── CONVENTIONS.md                         ← seam contract for repo-tier authors
 
 <your-repo>/                          ← any repo you open in Claude Code
-├── .claude/skills/*-rules/               ← OPTIONAL project-tier rule skills (yours)
+├── .claude/skills/*-rules/               ← OPTIONAL repo-tier rule skills (yours)
 ├── docs/<FEATURE>/                       ← feature pipeline output (gated)
 ├── docs/narrative/                       ← wiki output: plain-language tour (gate-free)
 └── docs/domain/                          ← wiki output: DDD canonical schema (gate-free)
@@ -50,7 +50,7 @@ Roles of the outputs:
 
 ## Boundary
 
-The feature pipeline writes `docs/<FEATURE>/` plus the source code its steps produce. `/project:overview` writes only `docs/narrative/`; `/project:explore` writes only `docs/domain/`; `/project:update` writes both. Neither pipeline touches the other's files, with **one documented seam**: `/workflow:step-handoff` invokes `/project:update` at session close to keep the wiki in sync (it no-ops or refuses gracefully when both wiki trees are missing). Nothing in this tier writes inside `.claude-user/` or the consuming repo's `.claude/`.
+The feature pipeline writes `docs/<FEATURE>/` plus the source code its steps produce. `/project:overview` writes only `docs/narrative/`; `/project:explore` writes only `docs/domain/`; `/project:update` writes both. Neither pipeline touches the other's files, with **one documented seam**: `/workflow:step-handoff` invokes `/project:update` at session close to keep the wiki in sync (it no-ops or refuses gracefully when both wiki trees are missing). Nothing in this tier writes inside `root/.claude/` or the consuming repo's `.claude/`.
 
 ## Who owns what
 
@@ -88,10 +88,10 @@ The product-owner writes nothing; the workflow-step-planner only drafts open que
 | `commands/project/explore.md` | One-shot schema bootstrap (refuses on non-empty tree). |
 | `commands/project/update.md` | Diff-aware dual-pass refresh (refuses when both trees missing). |
 | `skills/` — 9 capability skills | `feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`, `open-question-drafting`. |
-| `skills/` — 4 cross-cutting skills | `pipeline-protocol` (gates + handoff), `project-seams` (optional project-tier rules), `prompt-defense`, `repo-layout` (opt-in scan-scope contract; read-only for the crew). |
+| `skills/` — 4 cross-cutting skills | `pipeline-protocol` (gates + handoff), `project-seams` (optional repo-tier rules), `prompt-defense`, `repo-layout` (opt-in scan-scope contract; read-only for the crew). |
 | `skills/` — 3 wiki skills | `project-overview`, `project-explorer`, `project-update` (single-owner, mirror their agents). |
 | `templates/feature.*.md` | Document shapes for the six feature artifacts. |
-| `templates/project-rules.template.md` | Copy-me example for a project-tier rule skill. |
+| `templates/project-rules.template.md` | Copy-me example for a repo-tier rule skill. |
 | `hooks/session-start-banner.py` | Session-start banner (wired via `settings.json`). |
 | `settings.json` | Hook registration for this scaffold repo only (not installed). |
 | `CONVENTIONS.md` | Two-tier model + agent→skill map + how a repo authors rule skills. |

@@ -3,7 +3,7 @@ description: Ask the root LLM-Wiki a question; classifies and answers inline in 
 argument-hint: <question>
 ---
 
-Ask the root-tier LLM-Wiki a question. The question is classified and answered **inline
+Ask the project-tier LLM-Wiki a question. The question is classified and answered **inline
 in the main thread** — no sub-agent is spawned. An in-domain question is answered from
 the wiki using the fixed retrieval order (root `docs/memory/*` → `docs/architecture.md`
 → repos' `docs/narrative/` → repos' `docs/domain/` → repos' `docs/memory/` → repo source,

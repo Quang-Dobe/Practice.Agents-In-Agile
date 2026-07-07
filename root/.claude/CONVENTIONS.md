@@ -1,9 +1,9 @@
 # Project-Level Rules & Skills Convention
 
-The user tier — installed to **user scope (`~/.claude/`) via `install.ps1`, unchanged** (not
+The root tier — installed to **user scope (`~/.claude/`) via `install.ps1`, unchanged** (not
 copied per-project) — is **stack-agnostic**. It ships no language-, framework-, or
 architecture-specific rules. Each consuming project supplies its own rules in **its own `.claude/`
-tree** — never inside the user tier. That keeps the kit pristine and reusable across every repo you open.
+tree** — never inside the root tier. That keeps the kit pristine and reusable across every repo you open.
 
 The crew reads these project-supplied artifacts as **optional seams**. When a seam is absent, the
 agent proceeds without it and **never blocks**.
@@ -26,7 +26,7 @@ agent proceeds without it and **never blocks**.
   docs/
     architecture.md            <- optional free-form architecture seam
 
-# user tier (this scaffold) lives at ~/.claude/, installed once via install.ps1 — NOT copied into the project
+# root tier (this scaffold) lives at ~/.claude/, installed once via install.ps1 — NOT copied into the project
 ```
 
 ## Two tiers: generic (USER) vs project (REPO)
@@ -103,7 +103,7 @@ If you also want a PostToolUse build/test hook, add it to your project's
 
 ## Invariants
 
-- The user tier (`~/.claude/`) is never edited per project. All project rules live under `.claude/`.
+- The root tier (`~/.claude/`) is never edited per project. All project rules live under `.claude/`.
 - Every seam is optional. Missing seam → agent emits no error, proceeds.
 - `docs/architecture.md` is a free-form complement to the rule skills, not a replacement.
 - `repo-layout.md` (workspace-root scan contract) is an optional input for the three wiki runtime agents (`project-explorer`, `project-overview`, `project-update`); when absent they fall back to built-in heuristics with no behavioral change. Only `/wiki:bootstrap` drafts it and `/wiki:enhance` reconciles it — the crew is read-only.

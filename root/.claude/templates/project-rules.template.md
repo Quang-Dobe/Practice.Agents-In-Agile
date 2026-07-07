@@ -16,7 +16,7 @@ See `~/.claude/CONVENTIONS.md` for the full convention + agent→skill map.
 
 # <Concern> Rules — <Project Name>
 
-> Authored per project. The user-tier crew reads this skill as an **optional seam**:
+> Authored per project. The root-tier crew reads this skill as an **optional seam**:
 > if absent, the crew proceeds without it. Long rulesets: keep this file a thin loader and put
 > the full text in a sibling `.md` the loader points to.
 

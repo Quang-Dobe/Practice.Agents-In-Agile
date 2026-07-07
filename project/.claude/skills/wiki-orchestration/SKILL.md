@@ -49,8 +49,8 @@ The single per-repo routine both commands call.
     refreshes existing trees).
   - `mode = "refresh"` (enhance) → run `/project:update <repo>`.
 
-If the crew `project:*` commands are **unavailable** (only `.claude/` installed, not the
-`root/.claude/` crew), emit the one-line advisory and **skip orchestration** for that repo,
+If the crew `project:*` commands are **unavailable** (only this wiki kit installed, the
+root-tier crew absent from `~/.claude/`), emit the one-line advisory and **skip orchestration** for that repo,
 proceeding to rollup with whatever trees already exist:
 ```
 Advisory: project:overview/explore/update not available — skipping per-repo orchestration for <repo>; rolling up existing trees only.

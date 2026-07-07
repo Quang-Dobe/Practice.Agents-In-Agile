@@ -8,11 +8,11 @@ Do **not** drop-copy this folder per repo. `root/.claude/` is not a discovery ro
 
 ```powershell
 # From the scaffold repo root
-pwsh -File .\install.ps1            # add-only: copies missing files, never overwrites
-pwsh -File .\install.ps1 -DryRun    # report-only: prints [add]/[skip] per file, writes nothing
+pwsh -File .\install.ps1            # per-file mirror: replaces files at the same relative path
+pwsh -File .\install.ps1 -WhatIf    # preview: lists what would be written, writes nothing
 ```
 
-Re-running is safe: existing target files are kept untouched (local edits survive), new scaffold files flow through. Edits to an already-installed file do **not** propagate — delete the target file first or hand-merge.
+Re-running syncs the target with the scaffold: each scaffold file replaces its same-path counterpart, so edits propagate. Folders are merged, never wiped — target-only files (your own skills, agents, ...) survive. Local edits to *installed scaffold files* are overwritten; make changes in this repo instead.
 
 ## Install-target layout
 

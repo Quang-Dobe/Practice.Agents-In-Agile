@@ -133,4 +133,11 @@ Tagged rules for this kit. When a rule shapes a response or an action, surface i
 
 **On apply.** Add the `[R-EXPLORE]` tag to the response disclosure prefix whenever this rule shaped the exploration.
 
+**Presentation style (when answering anything).** Applies to every answer, not only code-exploration ones:
+
+- Use simple words.
+- Short params — list them out instead of dense one-shot inline args.
+- Prefer visualization — diagrams first, before prose.
+- Additional background on a topic (research beyond what's actually in this repo) renders as a small italic aside, not mixed into the main explanation.
+
 **Operative homes (where the rule is enforced).** The wiki crew enforces this via the `project-explorer` skill `## Comment policy (code is the single source of truth)`, cited by reference from the `project-overview` and `project-update` skills. The Software Engineer's read-before-write exploration follows the same policy. This rule is the named, taggable umbrella over those skill-level contracts.

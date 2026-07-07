@@ -22,6 +22,14 @@ How the feature is exposed (CLI, hosted service, API endpoint, library, batch jo
 
 ASCII tree of the projects, modules, or folders the feature touches. Show where new code lands and what it depends on. If the feature only touches existing modules, list those modules and the role each plays.
 
+## 4a. Affected Bounded Contexts
+
+> Scope key consumed by the project's `present-overview-plan` (if installed). List the domain-wiki bounded contexts this feature touches; absent → present draws nothing scoped and notes it.
+
+| Bounded context | Why this feature touches it |
+|---|---|
+| <bc> | <one line> |
+
 ## 5. Core Behaviour (MVP)
 
 Numbered list of what happens end-to-end on the happy path. One sentence per step.

@@ -5,7 +5,7 @@ argument-hint: <feature-name>
 
 Explicit four-stage orchestrator. Main Claude (you) spawns one specialist per stage via the `Agent` tool.
 
-`$ARGUMENTS` is the feature name. If empty, error: `specify a feature name, e.g. /feature:structure payments-export`.
+`$ARGUMENTS` carries the feature name plus an optional `--present[=true|false]` flag (boolean, **default true**). Strip the flag first; the remaining token is the feature name. If the feature name is empty, error: `specify a feature name, e.g. /feature:structure payments-export`. `--present false` (or `--present=false`) disables the present-dossier seam for this run; otherwise it is on.
 
 ## Stage-to-checkbox mapping
 
@@ -38,21 +38,23 @@ Explicit four-stage orchestrator. Main Claude (you) spawns one specialist per st
    - `tester` with `description: Tester: author <name>.test.md` and a `prompt` containing the feature name, `stage: stage-2-overview` (→ follow its `acceptance-spec-authoring` skill), and the directive to read `docs/narrative/` if present (advisory if absent; never blocks). The Tester reads only `requirement.md` (+ narrative + `test-rules`) — black-box, no source.
 2. Relay **both** drafts together. Mark `[Waiting for Approval]`.
 3. Wait for a single `APPROVE` covering both artifacts. If the user requests edits to one, re-spawn only that agent, re-present, then wait for the shared APPROVE.
-4. After APPROVE: flip Step 1 **and** Step 2 in `<name>.requirement.md` from `[ ]` to `[X]`.
+4. After APPROVE — do BOTH, in order:
+   a. Flip Step 1 **and** Step 2 in `<name>.requirement.md` from `[ ]` to `[X]`.
+   b. **Present build** (unless `--present false`): invoke `/present:build <name> requirement overview-plan test`. Call it **unconditionally** — do NOT pre-judge whether grounding exists; `/present:build` self-detects mode and no-ops on its own. Skip only if `/present:build` does not resolve (kit not installed). This is a mechanical step, not optional.
 
 ## Stage 2-analyzed — Architect authors `<name>.analyzed.md` (with per-step Severity table per R7)
 
 1. Spawn the `architect` subagent again via the `Agent` tool with `description: Architect: author <name>.analyzed.md` and a `prompt` containing: the feature name and `stage: stage-2-analyzed` (→ follow its `risk-severity-analysis` skill), the directive to read the approved `<name>.test.md` (to inform Severity), and to read `docs/narrative/` + `docs/domain/` if present (symmetric advisory; never blocks).
 2. Relay the draft. Mark `[Waiting for Approval]`. Confirm to the user that the `## N. Step Severity` section is present and is a 2-column table (`Step ID | Severity`) with one row per implementation step in `overview-plan.md`.
 3. Wait for `APPROVE`.
-4. After APPROVE: flip Step 3 in `<name>.requirement.md` to `[X]`.
+4. After APPROVE — do BOTH: (a) flip Step 3 in `<name>.requirement.md` to `[X]`; (b) **present build** (unless `--present false`): invoke `/present:build <name> analyzed` **unconditionally** (it self-gates; skip only if `/present:build` does not resolve). Mechanical step, not optional.
 
 ## Stage 2-plan — Software Engineer authors `<name>.plan.md` (mechanical; final step is the E2E gate)
 
 1. Spawn the `software-engineer` subagent via the `Agent` tool with `description: SE: author <name>.plan.md` and a `prompt` containing: the feature name, `stage: stage-2-plan` (→ follow its `implementation-planning` skill), the R7 reminder (`plan.md` has no Severity column — that lives in `analyzed.md`), the directive that the **final** step of `plan.md` MUST be the E2E validation gate (author automated e2e tests from `<name>.test.md`, run via the project `test-runner`, done-when all green), and to read `docs/narrative/` + `docs/domain/` if present (symmetric advisory; never blocks).
 2. Relay the draft. Mark `[Waiting for Approval]`. Confirm to the user that `plan.md` contains no Severity column, that Step IDs match `overview-plan.md` exactly, and that the final step is the E2E validation gate referencing `test.md`.
 3. Wait for `APPROVE`.
-4. After APPROVE: flip Step 4 in `<name>.requirement.md` to `[X]`.
+4. After APPROVE — do BOTH: (a) flip Step 4 in `<name>.requirement.md` to `[X]`; (b) **present build** (unless `--present false`): invoke `/present:build <name> plan` **unconditionally** (it self-gates; skip only if `/present:build` does not resolve). Mechanical step, not optional.
 
 ## After Stage 2-plan — mechanically initialize `<name>.status.md`
 
@@ -65,7 +67,20 @@ No agent involved. Main Claude (you) does this directly.
    - `**Current step:**` — the first implementation step (`Step A`) from `<name>.overview-plan.md`.
    - `Snapshot` — one paragraph summarizing what the four planning artifacts contain and what the next implementation move is.
    - `Step status table` — Steps 1-4 marked `**APPROVED <today>**`, plus one row per implementation step (`Step A`, `Step B`, …) from `overview-plan.md`, all pending.
-3. Recommend `/workflow:step-start <name>` to begin implementation.
+3. **Present dossier verify** (unless `--present false`): confirm `docs/<name>/present/present.html` now exists. If `/present:build` resolves and it does NOT exist, invoke `/present:build <name>` once and re-check.
+4. **Report the present outcome** in your closing summary — one of: `present: built`, `present: skipped (no kit)`, `present: skipped (no grounding)`, or `present: off (--present false)`. A silent miss must never pass unnoticed.
+5. Recommend `/workflow:step-start <name>` to begin implementation.
+
+## Present dossier — flag + contract (the triggers are the inline steps above)
+
+The present builds are triggered **inline**, inside each stage's *After APPROVE* step and the `status.md`-init section — deliberately framed as the same kind of mechanical step as flipping a checkbox or writing `status.md`, which never get skipped. This section is only the contract those steps obey:
+
+- **`--present` flag** — default **true**. `--present false` → skip every inline present build this run. (The flag is already stripped from `$ARGUMENTS` during feature-name parsing at the top.)
+- **Unconditional call.** When `--present` is on, call `/present:build` for the stage's units **without** pre-checking grounding yourself. `/present:build` self-detects **project** (`docs/domain/` / `docs/narrative/`) or **root** (`repo-layout.md` / `docs/memory/` / `docs/architecture.md`) mode and silently no-ops when neither exists. Skip the call **only** if `/present:build` does not resolve (kit absent).
+- **Unit map:** stage-2-overview → `requirement overview-plan test` · stage-2-analyzed → `analyzed` · stage-2-plan → `plan`.
+- **Deterministic backstop.** A `Stop` hook (`present-guard`, shipped in the present kit's `.claude/`) blocks the turn from ending whenever a feature has finished planning but `present/present.html` is missing — it forces the build even if the inline steps were skipped (e.g. a stale command snapshot). Opt out per feature with a `docs/<feature>/.no-present` marker.
+
+**Final verification (mandatory).** After stage-2-plan, if `--present` is on and `/present:build` resolves: confirm `docs/<name>/present/present.html` now exists. If it does **not**, run `/present:build <name>` once more and re-check before reporting the pipeline complete. **Report the present outcome** (built / skipped-no-kit / skipped-no-grounding) in your closing summary so a silent miss can never pass unnoticed.
 
 ## Notes
 

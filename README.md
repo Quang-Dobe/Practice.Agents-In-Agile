@@ -213,6 +213,10 @@ agent only ever appends — it never rewrites your text.
 
 Full details: [`.claude/README.md`](.claude/README.md).
 
+### 4. The Present Dossier — "browsable HTML view of a feature"
+
+Once a feature has planning artifacts, `/present:build <feature>` (part of the `.claude/` kit) renders them into a browsable HTML dossier at `docs/<feature>/present/` — one tab per artifact (Introduction, Workflow, E2E Test, Analyzed, Code Structure), with diagrams drawn for the Workflow and Code Structure tabs. It grounds on whichever wiki tree is present (per-repo `docs/domain`/`docs/narrative`, or the root `docs/architecture.md`/`docs/memory`) and is gate-free and idempotent. Details: [`.claude/README.md`](.claude/README.md#presentbuild--feature-dossier).
+
 ---
 
 ## How to use this kit in your own project
@@ -244,7 +248,8 @@ and write automatically.
   scaffold is stack-agnostic; downstream projects add their own hooks via
   `.claude/settings.json`).
 - `.claude/` — a **separate** root-tier LLM-Wiki kit (works across many repos, not
-  part of the crew above). See `.claude/README.md` and the `/wiki:*` commands.
+  part of the crew above). See `.claude/README.md` and the `/wiki:*` commands. Also
+  ships `/present:build`, which renders a feature's dossier at `docs/<feature>/present/`.
 - `docs/<feature>/` — everything the feature pipeline produces, one folder
   per feature.
 - `docs/domain/` — the living wiki the domain pipeline produces and updates.

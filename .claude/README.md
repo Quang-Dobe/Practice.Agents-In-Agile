@@ -2,6 +2,8 @@
 
 `.claude/` is the **root-tier** toolset, distinct from the per-repo `.claude-user/` kit. Where `.claude-user/` is drop-copied **into** a single repository and operates against that one repo, `.claude/` is drop-copied to the **system root** that sits **one level above** many sibling repos and operates **across** all of them. It builds and serves a cross-repo "LLM Wiki": a `docs/memory/` store that summarizes and links back to (never duplicates) the knowledge already produced per repo — the root `docs/architecture.md` plus every sibling repo's `docs/narrative/` and `docs/domain/`. The `/wiki:ask` command then answers in-domain questions **inline in the main thread** (no sub-agent) from that wiki using a fixed, auditable retrieval order, falling through per-repo `docs/memory/` learnings then raw repo source as the last resorts, appending new source-read learnings to that repo's `docs/memory/`.
 
+This tier also ships `/present:build`, a gate-free command that turns a feature's planning artifacts into a browsable HTML dossier at `docs/<feature>/present/`. It runs in **project mode** (grounds diagrams on `docs/domain/` + `docs/narrative/`) when either tree is present, or **root mode** (grounds on `docs/architecture.md` + `docs/memory/`) otherwise; project mode wins if both signal. See `## /present:build — feature dossier` below.
+
 ## Drop-copy instruction
 
 Copy this `.claude/` folder **verbatim** to the system root that contains your sibling repos. At that root it is the `.claude`-equivalent: a Claude Code session whose working directory is the system root will discover its commands, agents, and skills exactly the way a per-repo session discovers `.claude-user/`.
@@ -45,6 +47,10 @@ Roles of the inputs and outputs:
 
 The root tier is read-only against narrative/domain inputs and repo source. Its write targets are: the root `docs/memory/` (rollup), each repo's `docs/memory/` (router T6 learnings), and `docs/architecture.md` (wiki-architect only). No write lands elsewhere. The root-tier kit is also the single writer of the workspace-root `repo-layout.md` scan contract (`/wiki:bootstrap` drafts it, `/wiki:enhance` reconciles it); the crew agents (`project-explorer`, `project-overview`, `project-update`) are read-only on it and use it to scope their walks.
 
+## `/present:build` — feature dossier
+
+Given `<feature> [unit...]`, spawns the `present-builder` agent to render one `docs/<feature>/present/present-<unit>.html` per unit (`requirement`, `overview-plan`, `test`, `analyzed`, `plan`), then rebuilds the `present.html` index (tabs limited to units that exist). Diagram units (`overview-plan`, `plan`) additionally follow `present-draw-diagram`. Gate-free, idempotent (rewrites only changed bytes), fence-preserving. Refuses with a one-line message if neither project grounding (`docs/domain`/`docs/narrative`) nor root grounding (`repo-layout.md`/`docs/memory`/`docs/architecture.md`) is present.
+
 ## Who owns docs/memory/
 
 `docs/memory/` is **co-owned** under a strict, asymmetric contract. The human is the curator/owner with full edit, curate, and delete authority. The agent is an append-only contributor: it may create new topic files and append new entries (gated by the same-source-ref dedup guard) but **never** overwrites or edits existing human or prior text. This asymmetry applies **only** to `docs/memory/` — `docs/narrative/` and `docs/domain/` remain fully agent-controlled. For the authoritative ownership table and the `<!-- human:begin --> / <!-- human:end -->` fence rules, see the `## Co-ownership contract` and `## Fence convention` sections in `skills/wiki-memory/SKILL.md`.
@@ -72,3 +78,13 @@ Use this exact shape (one line, comma-separated, never a YAML list) for every sk
 | `.claude/skills/wiki-memory/SKILL.md` | Append-only / dedup / provenance / fence write-path operating manual lazy-loaded by `/wiki:ask` on a T6 source read and reloaded by the `wiki-bootstrapper`. |
 | `.claude/skills/wiki-orchestration/SKILL.md` | Shared ensureRepo + 2-question + execution-model core for bootstrap/enhance. |
 | `.claude/skills/wiki-architecture/SKILL.md` | Synthesis + context-map + fence-preservation manual for the architect. |
+| `.claude/commands/present/build.md` | Mode-gates (project/root), resolves units, spawns `present-builder`, rebuilds the `present.html` index. |
+| `.claude/agents/present-builder.md` | Thin runtime agent: loads the matching `present-<unit>` skill(s) and writes `docs/<feature>/present/present-<unit>.html`. |
+| `.claude/skills/present-requirement/SKILL.md` | Projects the requirement's Goal into the Introduction tab. |
+| `.claude/skills/present-overview-plan/SKILL.md` | Projects the overview-plan into the Workflow tab (Workflow + Component Design diagrams via `present-draw-diagram`). |
+| `.claude/skills/present-test/SKILL.md` | Projects acceptance cases + scope into the E2E Test tab. |
+| `.claude/skills/present-analyzed/SKILL.md` | Projects steps, severity, decisions, residual flags into the Analyzed tab. |
+| `.claude/skills/present-plan/SKILL.md` | Projects the plan into the Code Structure tab (blueprint pre-code, real file content post-implementation). |
+| `.claude/skills/present-draw-diagram/SKILL.md` | Shared SVG diagram renderer (dark-mode design system, animated flow particles) used by the diagram units. |
+| `.claude/templates/present*.html`, `present.css` | HTML/CSS shells the present-* skills fill in. |
+| `.claude/hooks/present-guard.py` | Stop hook: blocks turn end if a feature finished planning but its dossier is missing, forcing `/present:build` (wired via `.claude/settings.json`). |

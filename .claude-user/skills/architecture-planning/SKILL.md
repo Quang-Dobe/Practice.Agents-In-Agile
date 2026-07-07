@@ -23,6 +23,10 @@ Author the overview plan: the architecture approach plus the **canonical** imple
 3. The Next Steps list (`Step A`, `Step B`, …) MUST be the **canonical** step list that downstream Architect-analyzed, Software Engineer, and Tester all reference. **Do not rename or renumber these steps after this point.**
 4. Save via `Write`. Hand off per `pipeline-protocol`: "Stage 2-overview complete. Awaiting user APPROVE on `<feature>.overview-plan.md`."
 
+## Authoring checklist
+
+- Fill "## 4a. Affected Bounded Contexts" by matching the feature's concepts to docs/domain/ bounded contexts when the wiki exists; leave a single note row when it does not.
+
 ## Design discipline (fit, don't invent)
 - Study existing organization, naming, and patterns first; design the feature to fit naturally into them.
 - Choose the simplest architecture that meets the requirement. Avoid speculative abstractions unless the repo already uses them.

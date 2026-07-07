@@ -46,6 +46,7 @@ Roles of the outputs:
 - **Gates only in the feature pipeline.** Every planning stage and implementation step waits for a literal `APPROVE`. The three wiki agents are fully agent-driven: they print their bounded-context decisions for the audit trail, then write automatically.
 - **Local filesystem paths only.** The wiki commands refuse remote URLs in v1.
 - **Fences are load-bearing.** Hand edits inside generated `docs/narrative/` and `docs/domain/` files survive regeneration only inside `<!-- human:begin --> / <!-- human:end -->` fences, byte-for-byte, in both trees.
+- **`repo-layout.md` is opt-in and read-only for the crew.** A workspace-root scan contract (single-writer: `/wiki:bootstrap` drafts, `/wiki:enhance` reconciles) that the three wiki agents read via the `repo-layout` skill to scope their walk to declared code roots. Absent → today's heuristics, byte-identical.
 
 ## Boundary
 
@@ -87,7 +88,7 @@ The product-owner writes nothing; the workflow-step-planner only drafts open que
 | `commands/project/explore.md` | One-shot schema bootstrap (refuses on non-empty tree). |
 | `commands/project/update.md` | Diff-aware dual-pass refresh (refuses when both trees missing). |
 | `skills/` — 9 capability skills | `feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`, `open-question-drafting`. |
-| `skills/` — 3 cross-cutting skills | `pipeline-protocol` (gates + handoff), `project-seams` (optional project-tier rules), `prompt-defense`. |
+| `skills/` — 4 cross-cutting skills | `pipeline-protocol` (gates + handoff), `project-seams` (optional project-tier rules), `prompt-defense`, `repo-layout` (opt-in scan-scope contract; read-only for the crew). |
 | `skills/` — 3 wiki skills | `project-overview`, `project-explorer`, `project-update` (single-owner, mirror their agents). |
 | `templates/feature.*.md` | Document shapes for the six feature artifacts. |
 | `templates/project-rules.template.md` | Copy-me example for a project-tier rule skill. |

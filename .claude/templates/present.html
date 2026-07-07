@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{FEATURE}} — Feature Dossier</title>
+<link rel="stylesheet" href="present.css"></head>
+<body class="index">
+<nav class="tabs"><!-- present:begin:tabs -->
+<button data-src="present-requirement.html" class="active">Introduction</button>
+<!-- present:end:tabs --></nav>
+<iframe id="view" src="present-requirement.html"></iframe>
+<script>
+document.querySelectorAll('nav.tabs button').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('nav.tabs button').forEach(function(x){x.classList.remove('active')});
+    b.classList.add('active');document.getElementById('view').src=b.dataset.src;});
+});
+</script>
+</body></html>

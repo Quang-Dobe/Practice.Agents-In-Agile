@@ -1,0 +1,15 @@
+:root{--bg:#0d1117;--panel:#161b22;--line:#2b3340;--ink:#e6edf3;--muted:#9aa7b5;--accent:#58a6ff;
+  --mono:ui-monospace,'Cascadia Code',monospace;--sans:system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}
+body.unit{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;padding:28px 32px}
+body.index{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+h1{font-size:20px;border-bottom:1px solid var(--line);padding-bottom:8px;margin:0 0 16px}
+code{font-family:var(--mono);background:#21262d;padding:1px 5px;border-radius:5px;font-size:13px}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:#1c2330;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;padding:0 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+nav.tabs button{background:none;border:none;color:var(--muted);padding:12px 15px;cursor:pointer;border-bottom:2px solid transparent;font-family:var(--sans);font-size:14px}
+nav.tabs button.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+iframe#view{width:100%;height:calc(100vh - 47px);border:none;background:var(--bg)}
+.empty{color:var(--muted);font-style:italic}

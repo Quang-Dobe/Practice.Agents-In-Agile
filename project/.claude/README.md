@@ -87,4 +87,3 @@ Use this exact shape (one line, comma-separated, never a YAML list) for every sk
 | `.claude/skills/present-plan/SKILL.md` | Projects the plan into the Code Structure tab (blueprint pre-code, real file content post-implementation). |
 | `.claude/skills/present-draw-diagram/SKILL.md` | Shared SVG diagram renderer (dark-mode design system, animated flow particles) used by the diagram units. |
 | `.claude/templates/present*.html`, `present.css` | HTML/CSS shells the present-* skills fill in. |
-| `.claude/hooks/present-guard.py` | Stop hook: blocks turn end if a feature finished planning but its dossier is missing, forcing `/present:build` (wired via `.claude/settings.json`). |

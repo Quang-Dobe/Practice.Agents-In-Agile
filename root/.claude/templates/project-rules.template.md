@@ -20,6 +20,14 @@ See `~/.claude/CONVENTIONS.md` for the full convention + agent→skill map.
 > if absent, the crew proceeds without it. Long rulesets: keep this file a thin loader and put
 > the full text in a sibling `.md` the loader points to.
 
+## Also load
+
+<!-- OPTIONAL, unnumbered. Delete if you have no open-concern skills.
+     Open concerns are NOT auto-discovered — this list is what wires them in (depth 1).
+     Each entry must exist at <your-project>/.claude/skills/<concern>/SKILL.md. -->
+
+- `<open-concern>`
+
 ## 1. Scope
 
 What this ruleset governs and what it explicitly does not. One paragraph.

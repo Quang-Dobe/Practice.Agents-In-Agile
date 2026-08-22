@@ -19,6 +19,8 @@ For each concern this agent references, check `<repo>/.claude/skills/<concern>/S
 ## Open project skills
 A repo may add more concern skills (e.g. `dotnet-patterns`, `react-patterns`, `db-rules`). Honor any concern in this agent's reference list using the same present-or-proceed rule. Cite sections precisely (`per coding-rules §3.2`); a same-named project skill **overrides** a generic one (project scope outranks user scope).
 
+**Chained load — depth 1.** After loading a reserved skill, read its `## Also load` section if it has one. Load each concern listed there from `<repo>/.claude/skills/<concern>/SKILL.md`, same present-or-proceed rule. Stop there: a chained skill's own `## Also load` is ignored. This is the only path by which an open concern reaches a root agent, because the root `skills:` manifest is never edited per project.
+
 ## Project agents (invoke by role, never by hardcoded name)
 | Role | Job |
 |---|---|

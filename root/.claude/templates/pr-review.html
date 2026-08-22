@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<!--
+  TEMPLATE CONTRACT — pr-review.html
+
+  This file is a TEMPLATE, not a finished page. A renderer fills every
+  token below by exact string substitution, then copies each repeat block
+  once per item. Nothing outside a token may depend on a value.
+
+  PAGE TOKENS (fill once):
+    {{STEM}}                 source review file name
+    {{FEATURE}}               feature this review belongs to
+    {{GENERATED_AT}}           when the page was generated
+    {{COUNT_LOCATED}}          count of findings with code evidence
+    {{COUNT_NOT_LOCATABLE}}    count of findings with no single code site
+    {{COUNT_NOT_FOUND}}        count of findings not matched to code
+
+  RAIL BLOCK — one copy per finding, in reading order. Starts after the
+  HTML comment "pr-review:rail", ends before "/pr-review:rail".
+    {{ANCHOR}}   card id this link jumps to (no leading #)
+    {{ID}}        finding id, shown on the rail
+    {{TITLE}}      short title, shown on the rail
+    {{STATUS}}      open | fixed | rejected — drives the rail dot color
+
+  CARD BLOCK — one copy per finding, same order as the rail. Starts after
+  "pr-review:cards", ends before "/pr-review:cards".
+    {{ID}}               finding id, e.g. <stem>#PR-01
+    {{ANCHOR}}            id placed on the card element (jump target)
+    {{TITLE}}              short one-line problem label, <=60 chars
+    {{CONCERN}}             the rule concern this finding is filed under
+    {{STATUS}}              open | fixed | rejected
+    {{DETAILS_OPEN}}        literally "open" or "" — never write "open" yourself
+    {{REVIEWER_LINE}}       who raised it, and where — may be ""
+    {{QUOTE}}                the reviewer's exact words
+    {{EVIDENCE_STATE}}       Located | Not code-locatable | Not found
+    {{EVIDENCE_DETAIL}}      where the evidence lives, or why it does not
+    {{SNIPPET}}              code at the evidence site — "" unless Located
+    {{ROOT_CAUSE}}           why it happens, or "not established — no code
+                            evidence" when EVIDENCE_STATE is not Located
+    {{PROPOSED_FIX}}         a suggested change, not a verified fact
+
+  HINT BLOCK — nested inside one card block, zero or more copies. Starts
+  after "pr-review:hints", ends before "/pr-review:hints". Delete the
+  whole row when a card has no hints (a CSS :empty rule also hides a
+  leftover empty row).
+    {{HINT_TERM}}   one hard word from the card
+    {{HINT_TIP}}     its plain-English meaning, shown on hover/focus
+
+  MAY RENDER EMPTY: {{REVIEWER_LINE}}, {{SNIPPET}}. Each sits in its own
+  element with a CSS :empty rule, so an empty value collapses out of view
+  instead of leaving a blank box.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PR Review — {{STEM}}</title>
+<style>
+  :root {
+    /* Dark is the base look: no data-theme, no OS preference known. */
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1c2229;
+    --border: #2b3340;
+    --text: #e6edf3;
+    --muted: #8b96a3;
+    --accent: #58a6ff;
+    --code-bg: #21262d;
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+
+    --open-text: #79c0ff;    --open-bg: #132638;    --open-border: #388bfd;
+    --fixed-text: #3fb950;   --fixed-bg: #10261a;   --fixed-border: #2ea043;
+    --rejected-text: #f85149; --rejected-bg: #2b1214; --rejected-border: #a40e26;
+
+    --located-text: #3fb950;  --located-bg: #10261a;  --located-border: #2ea043;
+    --notloc-text: #d29922;   --notloc-bg: #241c0d;   --notloc-border: #9e6a03;
+    --notfound-text: #8b96a3; --notfound-bg: #20262e; --notfound-border: #3a4352;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #ffffff;
+      --panel: #f6f8fa;
+      --panel-2: #eef1f4;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #59636e;
+      --accent: #0969da;
+      --code-bg: #eef1f4;
+      --shadow: 0 2px 10px rgba(31, 35, 40, 0.08);
+
+      --open-text: #0969da;    --open-bg: #ddf4ff;    --open-border: #54aeff;
+      --fixed-text: #1a7f37;   --fixed-bg: #dafbe1;   --fixed-border: #2da44e;
+      --rejected-text: #cf222e; --rejected-bg: #ffebe9; --rejected-border: #ff8182;
+
+      --located-text: #1a7f37;  --located-bg: #dafbe1;  --located-border: #2da44e;
+      --notloc-text: #9a6700;   --notloc-bg: #fff8c5;   --notloc-border: #d4a72c;
+      --notfound-text: #59636e; --notfound-bg: #eef1f4; --notfound-border: #d0d7de;
+    }
+  }
+
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --panel: #f6f8fa;
+    --panel-2: #eef1f4;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --muted: #59636e;
+    --accent: #0969da;
+    --code-bg: #eef1f4;
+    --shadow: 0 2px 10px rgba(31, 35, 40, 0.08);
+
+    --open-text: #0969da;    --open-bg: #ddf4ff;    --open-border: #54aeff;
+    --fixed-text: #1a7f37;   --fixed-bg: #dafbe1;   --fixed-border: #2da44e;
+    --rejected-text: #cf222e; --rejected-bg: #ffebe9; --rejected-border: #ff8182;
+
+    --located-text: #1a7f37;  --located-bg: #dafbe1;  --located-border: #2da44e;
+    --notloc-text: #9a6700;   --notloc-bg: #fff8c5;   --notloc-border: #d4a72c;
+    --notfound-text: #59636e; --notfound-bg: #eef1f4; --notfound-border: #d0d7de;
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1c2229;
+    --border: #2b3340;
+    --text: #e6edf3;
+    --muted: #8b96a3;
+    --accent: #58a6ff;
+    --code-bg: #21262d;
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+
+    --open-text: #79c0ff;    --open-bg: #132638;    --open-border: #388bfd;
+    --fixed-text: #3fb950;   --fixed-bg: #10261a;   --fixed-border: #2ea043;
+    --rejected-text: #f85149; --rejected-bg: #2b1214; --rejected-border: #a40e26;
+
+    --located-text: #3fb950;  --located-bg: #10261a;  --located-border: #2ea043;
+    --notloc-text: #d29922;   --notloc-bg: #241c0d;   --notloc-border: #9e6a03;
+    --notfound-text: #8b96a3; --notfound-bg: #20262e; --notfound-border: #3a4352;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    background: var(--bg);
+  }
+
+  body {
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+
+  a { color: var(--accent); }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 20px 20px 60px;
+  }
+
+  /* ---------- header ---------- */
+
+  .page-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .title-row h1 {
+    font-size: 1.35rem;
+    margin: 0;
+  }
+
+  .title-row h1 .muted { color: var(--muted); font-weight: 400; }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 6px;
+  }
+
+  .icon-btn {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .icon-btn:hover { background: var(--panel-2); }
+  .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .controls .group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .chip-btn {
+    background: var(--panel);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+
+  .chip-btn:hover { background: var(--panel-2); color: var(--text); }
+  .chip-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chip-btn[aria-pressed="true"] {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .counts {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  .count-pill {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 10px;
+    background: var(--panel);
+  }
+
+  .count-pill b { color: var(--text); }
+
+  /* ---------- layout: rail + cards ---------- */
+
+  .layout {
+    display: flex;
+    gap: 22px;
+    align-items: flex-start;
+  }
+
+  .rail {
+    width: 260px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 16px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    padding: 10px;
+  }
+
+  .rail-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin: 2px 8px 8px;
+    text-transform: uppercase;
+  }
+
+  .rail-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 6px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.85rem;
+  }
+
+  .rail-link:hover { background: var(--panel-2); }
+  .rail-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .rail-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .rail-link[data-status="open"] .rail-dot { background: var(--open-text); }
+  .rail-link[data-status="fixed"] .rail-dot { background: var(--fixed-text); }
+  .rail-link[data-status="rejected"] .rail-dot { background: var(--rejected-text); }
+
+  .rail-id { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; color: var(--muted); }
+  .rail-link-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .cards {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .empty-note {
+    display: none;
+    color: var(--muted);
+    padding: 24px;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    .rail {
+      position: static;
+      width: 100%;
+      max-height: none;
+    }
+  }
+
+  /* ---------- card ---------- */
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .card[data-status="open"] { border-left-color: var(--open-border); }
+  .card[data-status="fixed"] { border-left-color: var(--fixed-border); }
+  .card[data-status="rejected"] { border-left-color: var(--rejected-border); }
+
+  .card[data-status="fixed"] { opacity: 0.82; }
+  .card[data-status="fixed"] .quote { color: var(--muted); }
+
+  .card > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .card > summary::-webkit-details-marker { display: none; }
+  .card > summary:hover { background: var(--panel-2); }
+  .card > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .chevron {
+    display: inline-block;
+    transition: transform 120ms ease;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .card[open] > summary .chevron { transform: rotate(90deg); }
+
+  .sum-id {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .sum-title {
+    flex: 1 1 160px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .badge {
+    display: inline-block;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .concern-chip {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    background: var(--code-bg);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .status-badge[data-status="open"] { background: var(--open-bg); color: var(--open-text); border-color: var(--open-border); }
+  .status-badge[data-status="fixed"] { background: var(--fixed-bg); color: var(--fixed-text); border-color: var(--fixed-border); }
+  .status-badge[data-status="rejected"] { background: var(--rejected-bg); color: var(--rejected-text); border-color: var(--rejected-border); }
+
+  .evidence-badge[data-state="Located"] { background: var(--located-bg); color: var(--located-text); border-color: var(--located-border); }
+  .evidence-badge[data-state="Not code-locatable"] { background: var(--notloc-bg); color: var(--notloc-text); border-color: var(--notloc-border); }
+  .evidence-badge[data-state="Not found"] { background: var(--notfound-bg); color: var(--notfound-text); border-color: var(--notfound-border); }
+
+  .card-body {
+    padding: 4px 16px 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .section { margin-top: 16px; }
+
+  .section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 6px;
+  }
+
+  .reviewer-line { font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+  .reviewer-line:empty { display: none; margin: 0; }
+
+  .quote {
+    margin: 0;
+    padding: 8px 14px;
+    border-left: 3px solid var(--accent);
+    background: var(--code-bg);
+    border-radius: 0 6px 6px 0;
+  }
+
+  .evidence-detail { margin: 8px 0 0; }
+
+  .snippet {
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 0.85rem;
+    overflow-x: auto;
+    white-space: pre;
+    max-width: 100%;
+  }
+
+  .snippet:empty { display: none; margin: 0; padding: 0; border: none; }
+
+  .root-cause, .proposed-fix { margin: 0; }
+  .fix-label { color: var(--muted); font-weight: 400; }
+
+  /* ---------- hints ---------- */
+
+  .hints {
+    margin-top: 16px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .hints:empty { display: none; margin: 0; }
+
+  .hint-chip {
+    position: relative;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: help;
+  }
+
+  .hint-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .hint-chip::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: min(240px, 80vw);
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 9px;
+    font-size: 0.78rem;
+    line-height: 1.35;
+    white-space: normal;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 120ms ease;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .hint-chip:hover::after,
+  .hint-chip:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* ---------- misc ---------- */
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 420px) {
+    .sum-title { flex-basis: 100%; }
+  }
+
+  @media print {
+    .controls, .rail, .theme-toggle { display: none !important; }
+    .layout { display: block; }
+    .card { break-inside: avoid; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-header">
+    <div class="title-row">
+      <h1>PR Review <span class="muted">— {{STEM}}</span></h1>
+      <button type="button" class="icon-btn theme-toggle" id="theme-toggle">Switch theme</button>
+    </div>
+    <div class="meta-row">
+      <span>Feature: {{FEATURE}}</span>
+      <span>Made on: {{GENERATED_AT}}</span>
+    </div>
+
+    <div class="controls">
+      <div class="group">
+        <button type="button" class="icon-btn" id="expand-all">Expand all</button>
+        <button type="button" class="icon-btn" id="collapse-all">Collapse all</button>
+      </div>
+      <div class="group" id="filter-group" role="group" aria-label="Filter by status">
+        <button type="button" class="chip-btn" data-filter="all" aria-pressed="true">All</button>
+        <button type="button" class="chip-btn" data-filter="open" aria-pressed="false">Open</button>
+        <button type="button" class="chip-btn" data-filter="fixed" aria-pressed="false">Fixed</button>
+        <button type="button" class="chip-btn" data-filter="rejected" aria-pressed="false">Rejected</button>
+      </div>
+      <div class="counts">
+        <span class="count-pill">Found in code: <b>{{COUNT_LOCATED}}</b></span>
+        <span class="count-pill">No single spot: <b>{{COUNT_NOT_LOCATABLE}}</b></span>
+        <span class="count-pill">Not found: <b>{{COUNT_NOT_FOUND}}</b></span>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="rail" id="rail" aria-label="Findings">
+      <p class="rail-title">Findings</p>
+<!-- pr-review:rail -->
+      <a class="rail-link" href="#{{ANCHOR}}" data-status="{{STATUS}}" data-anchor="{{ANCHOR}}">
+        <span class="rail-dot"></span>
+        <span class="rail-id">{{ID}}</span>
+        <span class="rail-link-title">{{TITLE}}</span>
+      </a>
+<!-- /pr-review:rail -->
+    </nav>
+
+    <main class="cards" id="cards">
+<!-- pr-review:cards -->
+      <details class="card" id="{{ANCHOR}}" data-status="{{STATUS}}" {{DETAILS_OPEN}}>
+        <summary>
+          <span class="chevron">&#8250;</span>
+          <span class="sum-id">{{ID}}</span>
+          <span class="sum-title">{{TITLE}}</span>
+          <span class="concern-chip">{{CONCERN}}</span>
+          <span class="badge status-badge" data-status="{{STATUS}}">{{STATUS}}</span>
+          <span class="badge evidence-badge" data-state="{{EVIDENCE_STATE}}">{{EVIDENCE_STATE}}</span>
+        </summary>
+        <div class="card-body">
+          <div class="section">
+            <p class="section-title">What the reviewer said</p>
+            <p class="reviewer-line">{{REVIEWER_LINE}}</p>
+            <blockquote class="quote">{{QUOTE}}</blockquote>
+          </div>
+
+          <div class="section">
+            <p class="section-title">Where the code is</p>
+            <span class="badge evidence-badge" data-state="{{EVIDENCE_STATE}}">{{EVIDENCE_STATE}}</span>
+            <p class="evidence-detail">{{EVIDENCE_DETAIL}}</p>
+            <pre class="snippet">{{SNIPPET}}</pre>
+          </div>
+
+          <div class="section">
+            <p class="section-title">Why it happens</p>
+            <p class="root-cause">{{ROOT_CAUSE}}</p>
+          </div>
+
+          <div class="section">
+            <p class="section-title">How to fix it <span class="fix-label">(not verified)</span></p>
+            <p class="proposed-fix">{{PROPOSED_FIX}}</p>
+          </div>
+
+          <div class="hints">
+<!-- pr-review:hints -->
+            <span class="hint-chip" tabindex="0" data-tip="{{HINT_TIP}}">{{HINT_TERM}}</span>
+<!-- /pr-review:hints -->
+          </div>
+        </div>
+      </details>
+<!-- /pr-review:cards -->
+      <p class="empty-note" id="empty-note">Nothing matches this filter.</p>
+    </main>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var THEME_KEY = "pr-review-theme";
+
+  function getStoredTheme() {
+    try { return localStorage.getItem(THEME_KEY); } catch (e) { return null; }
+  }
+  function setStoredTheme(v) {
+    try { localStorage.setItem(THEME_KEY, v); } catch (e) {}
+  }
+
+  var stored = getStoredTheme();
+  if (stored === "light" || stored === "dark") root.setAttribute("data-theme", stored);
+
+  document.getElementById("theme-toggle").addEventListener("click", function () {
+    var current = root.getAttribute("data-theme");
+    var isLight = current === "light" ||
+      (!current && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches);
+    var next = isLight ? "dark" : "light";
+    root.setAttribute("data-theme", next);
+    setStoredTheme(next);
+  });
+
+  var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
+  var railLinks = Array.prototype.slice.call(document.querySelectorAll(".rail-link"));
+  var emptyNote = document.getElementById("empty-note");
+
+  document.getElementById("expand-all").addEventListener("click", function () {
+    cards.forEach(function (c) { c.open = true; });
+  });
+  document.getElementById("collapse-all").addEventListener("click", function () {
+    cards.forEach(function (c) { c.open = false; });
+  });
+
+  function applyFilter(name) {
+    var visible = 0;
+    cards.forEach(function (c) {
+      var show = name === "all" || c.getAttribute("data-status") === name;
+      c.classList.toggle("hidden", !show);
+      if (show) visible++;
+    });
+    railLinks.forEach(function (a) {
+      var show = name === "all" || a.getAttribute("data-status") === name;
+      a.classList.toggle("hidden", !show);
+    });
+    emptyNote.style.display = visible === 0 ? "block" : "none";
+  }
+
+  var filterBtns = Array.prototype.slice.call(document.querySelectorAll("#filter-group .chip-btn"));
+  filterBtns.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      filterBtns.forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+      btn.setAttribute("aria-pressed", "true");
+      applyFilter(btn.getAttribute("data-filter"));
+    });
+  });
+
+  function openAndScroll(anchor) {
+    var card = document.getElementById(anchor);
+    if (!card) return;
+    card.open = true;
+    card.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  railLinks.forEach(function (a) {
+    a.addEventListener("click", function (evt) {
+      evt.preventDefault();
+      var anchor = a.getAttribute("data-anchor");
+      history.replaceState(null, "", "#" + anchor);
+      openAndScroll(anchor);
+    });
+  });
+
+  if (location.hash) openAndScroll(location.hash.slice(1));
+})();
+</script>
+</body>
+</html>

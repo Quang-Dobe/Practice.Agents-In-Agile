@@ -1,5 +1,36 @@
 # <Feature title>
 
+> **This file holds the final requirement only.** Present tense, decided wording. No raw prose, no
+> options that were dropped, no record of how the wording changed. That history lives in
+> `<feature>.requirement-trace.md`.
+
+## Goal
+
+<2-4 sentences. What changes, for whom, and why it matters. Final wording only.>
+
+## In scope
+
+- <one deliverable per line>
+
+## Out of scope
+
+- <one excluded item per line — state what will NOT be built>
+
+## Success criteria
+
+- SC-1: <observable outcome anyone can check>
+- SC-2: <...>
+
+## Constraints
+
+- <hard limit: platform, data, compatibility, deadline, rule to obey>
+- <or `None.`>
+
+## Current behavior
+
+<Only when this feature changes something that already exists. 3-6 plain-language bullets, no file
+paths — downstream readers include the black-box Tester. Delete this whole section for greenfield work.>
+
 ## Rules
 
 - In `Your Requirements` path below there is a Requirements section describing what we need to do. Follow it STEP BY STEP.
@@ -23,6 +54,8 @@
 - Create / update markdown files STEP BY STEP.
 - START IMPLEMENTATION based on the plan once Steps 1-4 are APPROVED.
 
-## Original raw requirement
+---
 
-<verbatim copy of the user's pre-restructure raw prose, preserved as appendix>
+_Trace: `<feature>.requirement-trace.md` — the original raw prose, the PO framing challenges, the
+Q&A decisions, and the Architect recon brief. Read it to ask "why is this the requirement?"; never
+plan or test from it._

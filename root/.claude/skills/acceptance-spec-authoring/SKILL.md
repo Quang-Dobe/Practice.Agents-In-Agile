@@ -12,15 +12,15 @@ Author the end-to-end / acceptance test specification from the approved `require
 `docs/<feature>/<feature>.test.md`. Template: `~/.claude/templates/feature.test.md`.
 
 ## Read scope
-- `docs/<feature>/<feature>.requirement.md` (the approved source of acceptance criteria).
+- `docs/<feature>/<feature>.requirement.md` (the approved source of acceptance criteria). Its `## Success criteria` (`SC-n`) rows are your primary hooks; `## In scope`, `## Out of scope`, and `## Current behavior` bound what you may assume.
 - The test template.
 - Optional `docs/narrative/` (product context) and project `test-rules` via `project-seams`.
 
-Do **not** read source code, `docs/domain/`, `docs/architecture.md`, `overview-plan.md`, `analyzed.md`, or `plan.md` — the spec is black-box and requirement-derived. Implementation steps do not exist yet when this is authored.
+Do **not** read source code, `docs/domain/`, `docs/architecture.md`, `overview-plan.md`, `analyzed.md`, `plan.md`, or `<feature>.requirement-trace.md` — the spec is black-box and requirement-derived, and the trace file is history, not requirement. Implementation steps do not exist yet when this is authored.
 
 ## Procedure
 1. Read the approved `requirement.md` and the test template.
-2. Write `docs/<feature>/<feature>.test.md` mirroring the template. One `E2E-n` block per acceptance case, each with `Covers` (the requirement criterion), `Given`, `When`, `Then`. Cover the happy path plus the key error/edge cases the requirement implies. Requirement-keyed only — no step IDs, no `file:line`, no implementation detail.
+2. Write `docs/<feature>/<feature>.test.md` mirroring the template. One `E2E-n` block per acceptance case, each with `Covers` (the `SC-n` it proves), `Given`, `When`, `Then`. Cover the happy path plus the key error/edge cases the requirement implies. Requirement-keyed only — no step IDs, no `file:line`, no implementation detail.
 3. Save via `Write`. Hand off per `pipeline-protocol`: "Stage 2-overview (test spec) complete. Awaiting the combined APPROVE on `<feature>.overview-plan.md` + `<feature>.test.md`."
 
 ## Boundary

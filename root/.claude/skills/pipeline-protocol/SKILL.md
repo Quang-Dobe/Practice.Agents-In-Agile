@@ -10,7 +10,7 @@ The single source of truth for the contract every feature-crew agent obeys. Capa
 ## Ownership (one artifact, one owner)
 | Artifact | Owner agent |
 |---|---|
-| `requirement.md` | business-analyst |
+| `requirement.md` (final requirement) + `requirement-trace.md` (its history) | business-analyst |
 | `overview-plan.md`, `analyzed.md` | architect |
 | `test.md` | tester |
 | `plan.md` + production code + unit tests + e2e tests | software-engineer |
@@ -38,5 +38,5 @@ You touch **only your own artifact(s)**. You never modify another role's file, t
 - The command that spawns you names the stage/target artifact. Map it to the matching preloaded capability skill and follow that skill. Do not enumerate stages or invent a procedure — the skills hold it.
 
 ## Stage-1 codebase recon (conditional)
-- Triggered only when `/feature:structure` Stage 1 finds **both** `docs/domain/` and `docs/narrative/` absent. The architect runs a read-only `codebase-recon` pass and returns a Current Behavior Brief (no file). The BA persists it as the `## Current Behavior (Architect recon)` appendix in `requirement.md`.
+- Triggered only when `/feature:structure` Stage 1 finds **both** `docs/domain/` and `docs/narrative/` absent. The architect runs a read-only `codebase-recon` pass and returns a Current Behavior Brief (no file). The BA persists the brief verbatim in `requirement-trace.md` (`## Current Behavior (Architect recon)`) and distils it into the short `## Current behavior` section of `requirement.md` — plain language, no `path:line`.
 - The BA **never reads source**. If the brief leaves code-level gaps, the BA raises numbered `[Architect Q]` questions; main Claude relays them to the architect (`stage-1-qa`) for **one** answer round only. No multi-round loop and no agent-to-agent channel — main Claude mediates every exchange.

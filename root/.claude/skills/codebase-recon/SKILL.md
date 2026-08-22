@@ -45,9 +45,11 @@ Two stages map here:
 3. Return answers to main Claude. **One round only** — no further back-and-forth.
 
 ## Persistence
-You write nothing. Main Claude passes your brief to the BA, which persists it as the
-`## Current Behavior (Architect recon)` appendix in `requirement.md`. Keep the brief clean enough to
-drop in as-is.
+You write nothing. Main Claude passes your brief to the BA, which persists it **verbatim** under
+`## Current Behavior (Architect recon)` in `<feature>.requirement-trace.md`, and separately distils
+3-6 plain-language bullets from it into the `## Current behavior` section of `requirement.md`. Keep
+the brief clean enough to drop in as-is, and keep every `path:line` citation — the trace file is
+where they belong.
 
 ## Boundary
 Read-only. You never write a file, never draft or edit `requirement.md` / `overview-plan.md` /

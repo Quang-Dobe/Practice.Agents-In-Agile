@@ -13,7 +13,7 @@
 
 ### E2E-1: <short title>
 
-- **Covers:** <requirement acceptance criterion this maps to>
+- **Covers:** <the `SC-n` success criterion in requirement.md this proves>
 - **Given** <initial context / preconditions>
 - **When** <action / event>
 - **Then** <observable expected outcome>

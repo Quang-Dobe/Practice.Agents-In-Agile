@@ -1,7 +1,7 @@
 ---
 name: project-overview
 description: Heuristics + operating manual for the project-overview runtime agent that bootstraps a human-readable narrative tree under docs/narrative/ from a fresh repository.
-version: 1
+version: 2
 consumed_by: project-overview agent
 ---
 
@@ -92,8 +92,87 @@ All `file:line` citations in the output tree use paths relative to the `<path>` 
 
 | File | Required content |
 |---|---|
-| `architecture.md` | One-pager narrative overview. Section list in order: `## Overview` (3-paragraph plain-words intro to the repo and its business purpose), `## File structure` (annotated tree of the top-level repo layout — directories + one-line descriptions), `## Dependencies` (bulleted list of top-level external dependencies — frameworks, runtimes, datastores — derived from `*.csproj` / `package.json` / `pom.xml` / equivalent), `## Exposed endpoints` (table of detected HTTP / gRPC / message-queue entry points with `file:line` citation column), `## Workers` (table of detected background workers / hosted services / scheduled jobs with `file:line` citation column), `## Logic overview` (one paragraph per detected BC summarising its responsibility in plain words), `## Skipped candidates` (removed-BC log target per `## Removed-BC logging (narrative)` below; body renders as `(none)` when bootstrap detected no skips). `(none)` for empty sections. All `file:line` citations relative to `<path>`. |
+| `architecture.md` | One-pager narrative overview. Section list in order: `## Overview` (3-paragraph plain-words intro to the repo and its business purpose), `## File structure` (annotated tree of the top-level repo layout — directories + one-line descriptions), `## Dependencies` (bulleted list of top-level external dependencies — frameworks, runtimes, datastores — derived from `*.csproj` / `package.json` / `pom.xml` / equivalent), `## Exposed endpoints` (table of detected HTTP / gRPC / message-queue entry points with `file:line` citation column), `## Workers` (table of detected background workers / hosted services / scheduled jobs with `file:line` citation column), `## Outbound dependencies`, `## Stores owned`, `## Config-swapped seams`, `## Out-of-scope mediators` (the four integration-inventory tables — see `## Integration inventory contract` below), `## Logic overview` (one paragraph per detected BC summarising its responsibility in plain words), `## Skipped candidates` (removed-BC log target per `## Removed-BC logging (narrative)` below; body renders as `(none)` when bootstrap detected no skips). `(none)` for empty sections. All `file:line` citations relative to `<path>`. |
 | `<bounded-context>/walkthrough.md` | Per-BC narrative walkthrough. Section list in order: `## Sequence diagram` (exactly one Mermaid sequence diagram of the BC's main flow — see `## Mermaid sourcing rules` for derived-vs-stub policy), `## Intro` (3-paragraph plain-words intro to what this BC does, who its actors are, and what its key invariants are), one `## Drill-down: <name>` section per detected endpoint / handler / worker inside the BC (each contains a 1-2 paragraph technical explanation with `file:line` citations as inline-code spans). `(none)` for empty sections. Single file per BC — no fan-out. |
+
+### Integration inventory contract
+
+Four tables, always emitted, `(none)` when empty. They exist for one reason: a **rollup** above this
+repo has to draw the system, and under leaf-scope confinement it can see only what these tables say.
+Prose in `## Logic overview` cannot be joined on; these can.
+
+`## Dependencies` is **not** one of them and does not replace them. That section lists packages —
+what the build pulls in. These list **runtime edges** — what this process actually reaches, and the
+configuration that decides where.
+
+**1. `## Outbound dependencies`** — every call that leaves this process.
+
+```
+| Target | Client or interface | Route or protocol | Config key | Cited at |
+|---|---|---|---|---|
+| a sibling service | `IAgentClient` / `HttpAgentClient` | `POST /api/agent/chat` | `Agent:BaseUrl` | `Shared/DependencyInjection.cs:55` |
+```
+
+- **`Config key` is mandatory.** Write the key exactly as code reads it. If the target is hard-coded,
+  write `none — hard-coded`. If a vendor SDK owns the address and only a credential is configured,
+  name the credential key and add `(SDK default endpoint)`. **Never leave the cell vague.** A rollup
+  that receives "with a database URL" instead of a key name cannot label the edge, and the diagram
+  ends up saying `key not named` where a real key exists in the code you were already reading.
+- Name the target as concretely as the code allows. When the code genuinely does not name it — a base
+  address that is purely a config value — say so in the `Target` cell rather than guessing a service.
+- Include datastores, caches, brokers, model hosts, telemetry collectors and identity providers. Every
+  one is an edge somebody needs to see.
+
+**2. `## Stores owned`** — persistent state this repo, and only this repo, connects to.
+
+```
+| Store | Engine | Objects | Config key | Cited at |
+|---|---|---|---|---|
+| the conversation record | PostgreSQL | tables `conversation`, `message` | `ConnectionStrings:PostgresDb` | `Shared/DependencyInjection.cs:29` |
+```
+
+Name the actual tables, views, collections or indexes. `Objects` is what makes two rows for the same
+engine legibly different, and a rollup uses it to decide whether two repos share an instance or
+merely share a product.
+
+**3. `## Config-swapped seams`** — the highest-value table here, and the one no other section captures.
+
+```
+| Config key | With it set | With it absent | Cited at |
+|---|---|---|---|
+| `Authz:BaseUrl` | `AuthzClient` — real HTTP call | `UnconfiguredAuthzClient` — throws `authz.notConfigured`, no call leaves the process | `Infrastructure/Identity/IdentityRegistration.cs:19` |
+```
+
+One row per **config branch**: any key whose presence or absence changes what the process does at
+startup. Name both implementations as written — `Unconfigured*`, `Stub*`, `Fake*`, `Mock*`, an
+in-memory store, a hermetic double. This is the difference between what the system does and what it
+does when somebody forgot an environment variable, and it is invisible in every other section.
+
+**A key that fails fast is a row, not an omission.** There are two shapes and the table must tell
+them apart, because which one a service chose is a real design decision:
+
+| Shape | `With it absent` cell begins | Means |
+|---|---|---|
+| swap | the stand-in's name | the process starts and answers, without leaving itself |
+| fail-fast | the literal words `fail-fast —` | the process refuses to start at all |
+
+Write `(none)` only when the repo has **no** config branch of either shape. A repo whose every key
+throws on absence has a table full of `fail-fast —` rows, and that is the most informative thing it
+can say about itself: nothing degrades quietly here. Two repos in the same system, one all swaps and
+one all fail-fast, differ in a way no other section records.
+
+**4. `## Out-of-scope mediators`** — outbound calls this repo makes through code you could not read.
+
+```
+| Library | What it mediates | Why out of scope |
+|---|---|---|
+| `AskNanci.ServiceDefaults` | OpenTelemetry export, health endpoints | declared but not a scanned root |
+```
+
+A shared library referenced here whose own source sits outside the scan scope, and that mediates a
+real outbound call. **Record the gap; do not follow it** — following it would break leaf-scope
+confinement. Without this table the edge simply vanishes: five hosts can each reach a collector
+through one shared library and no repo's narrative mentions a collector at all.
 
 ### Stubs summary contract
 
@@ -106,7 +185,7 @@ Every file the agent emits under `docs/narrative/` carries a five-field YAML fro
 - **`source_repo`** — the `<path>` argument resolved to an absolute path, normalized to POSIX-style forward slashes (the agent normalizes Windows backslashes to forward slashes). Trailing slashes are stripped. UNC paths and symlinks are passed through as the OS resolves them; this contract does not enforce a specific transformation beyond slash normalization.
 - **`branch_name`** — the `[branch-name]` argument as a YAML scalar when supplied (e.g., `branch_name: main`). When the argument is omitted, the value is the bare YAML `null` token (which parses as the YAML null value), NOT the quoted string `"null"`.
 - **`generated_at`** — ISO-8601 UTC timestamp with second precision and the literal `Z` suffix, e.g., `2026-05-18T10:30:00Z`. Sub-second precision is not used. The timezone is always UTC.
-- **`skill_version`** — integer matching the `version` field of this `SKILL.md`'s YAML frontmatter (currently `1`). If a future revision of this skill bumps the `version` field, the writer stamps the new integer; the contract has no auto-track magic.
+- **`skill_version`** — integer matching the `version` field of this `SKILL.md`'s YAML frontmatter (currently `2`). If a future revision of this skill bumps the `version` field, the writer stamps the new integer; the contract has no auto-track magic.
 - **`last_generated_sha`** — added for parity with the field `project-update` introduces on `docs/domain/`. v1 emits this field on every file under `docs/narrative/` when `<path>` is a git working tree, stamped to current HEAD SHA at the time of the run. When `<path>` is not a git working tree, the field is **omitted entirely** from the frontmatter block (same tolerate-missing convention as `project-update`'s no-git path — see the `project-update` skill `## Hybrid diff strategy` `### last_generated_sha tolerate-missing`).
 
 Example frontmatter block emitted at the top of every file under `docs/narrative/` (git working tree case):
@@ -116,7 +195,7 @@ Example frontmatter block emitted at the top of every file under `docs/narrative
 source_repo: C:/repos/eShopOnContainers
 branch_name: main
 generated_at: 2026-05-18T10:30:00Z
-skill_version: 1
+skill_version: 2
 last_generated_sha: 4f3a2b1c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a
 ---
 ```

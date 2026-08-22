@@ -35,7 +35,7 @@ root `docs/memory/` (rollup) **or** a per-repo `<repo>/docs/memory/` (learnings)
 - The write target is `<docs/memory-root>/<slug>.md`, where `<docs/memory-root>` is either
   the root `docs/memory/` or a single repo's `<repo>/docs/memory/`. Nothing else is ever
   created or modified.
-- **Never** write to `docs/architecture.md` (that file is owned solely by the
+- **Never** write to `docs/references.md` (that file is owned solely by the
   `wiki-architect` agent / `wiki-architecture` skill, never this path).
 - **Never** write into any repo's `docs/narrative/` or `docs/domain/` tree.
 - **Never** write into repo source (any `repo-*/src/**` or other repo file).
@@ -76,7 +76,7 @@ timestamp and **no** triggering-question field — exactly the two required fiel
 ### Topic routing — which file
 
 The entry appends to the topic **slug that classified the question** — the matched
-`docs/memory/` topic title or `docs/architecture.md` heading from the `/wiki:ask`
+`docs/memory/` topic title or `docs/references.md` heading from the `/wiki:ask`
 classification manifest. Slug derivation: the
 bounded-context / heading name lowercased into a slug (e.g. `Billing` → `billing`).
 

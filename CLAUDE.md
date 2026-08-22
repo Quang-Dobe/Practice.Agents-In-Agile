@@ -80,9 +80,15 @@ All three domain-wiki agents are **fully agent-driven**: they print their bounde
 Both commands accept a local filesystem path only — remote URLs are refused in v1.
 Neither command writes outside its own output tree (`/project:overview` writes only `docs/narrative/`; `/project:explore` and `/project:update` write only `docs/domain/`).
 
-**Called from outside.** These three commands are also invoked by the wrapping kit as one pass of a bigger sync. That caller writes trees of its own (`docs/memory/`, `docs/architecture.md`) which the crew never touches — so never assume a `docs/` folder the crew did not write is stale.
+**Called from outside.** These three commands are also invoked by the wrapping kit as one pass of a bigger sync. That caller writes trees of its own (`docs/memory/`, `docs/references.md`) which the crew never touches — so never assume a `docs/` folder the crew did not write is stale.
 
 **Migration story (no-op for existing trees).** Nothing existing moves. The canonical schema continues to live at `docs/domain/` exactly as before; no rename, no folder shift, no path change to any frontmatter field. The only visible difference for a downstream repo is the *appearance* of a new tree at `docs/narrative/` *if and only if* the user opts in by invoking `/project:overview`. Repos that never invoke the new command are byte-identical before and after this change. The fences inside `docs/narrative/` are now load-bearing on the diff path (no longer inert).
+
+**Drawing is a separate command.** `/diagram:build [root] [--effort low|medium|high] [--html]` reads
+`docs/references.md` and writes only diagram files — `references.diagram.excalidraw` and
+`references.diagram.png` always, plus `references.diagram.svg` and `references-diagram.html` under
+`--html`. Effort defaults to `low`. `/wiki:enhance` draws nothing; it finishes by recommending the
+command and listing its options.
 
 Walkthrough: `docs/workflow-llm-wiki.md`
 
@@ -119,7 +125,7 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 - `root/.claude/hooks/` — `session-start-banner.py`
 - `docs/<FEATURE>/` — feature pipeline artifacts: `<FEATURE>.requirement.md` (final requirement, flat), `.requirement-trace.md` (how it was reached), `.overview-plan.md`, `.plan.md`, `.analyzed.md`, `.status.md`. Raw requirements also start here — stage-1 rewrites `requirement.md` in place, so the raw prose survives only in `.requirement-trace.md`.
 - `docs/domain/` — the LLM wiki's canonical DDD schema tree, owned by the project-explorer / project-update agents. Bootstrapped once, then diff-updated on every subsequent run.
-- `docs/narrative/` — human-readable narrative tree owned by the `project-overview` agent at bootstrap and by `/project:update` on every subsequent code change. One file per bounded context (`<bc>/walkthrough.md`) plus a top-level `architecture.md`.
+- `docs/narrative/` — human-readable narrative tree owned by the `project-overview` agent at bootstrap and by `/project:update` on every subsequent code change. One file per bounded context (`<bc>/walkthrough.md`) plus a top-level `references.md`.
 - `root/.claude/agents/project-overview.md` — runtime agent definition for the narrative bootstrap. Mirrors the `project-explorer` / `project-update` sibling pattern.
 - `root/.claude/commands/pr-review/` — `analyze.md`, `learn.md`
 - `root/.claude/agents/pr-review-analyst.md` — read-only agent for the PR review loop
@@ -132,7 +138,7 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 
 - **Thin agents + concern-named skills.** Feature-crew agents hold no procedure — only identity, a `skills:` manifest, and an ownership boundary. The *how* lives in concern-named skills (one capability per skill); the *which-agent-at-which-stage* lives in the commands. One agent loads many skills, and a skill may be shared by many agents. (The three **wiki** skills still mirror their owning agent name — `project-explorer` skill ↔ `project-explorer` agent — because each is a single-owner runtime skill.)
 - **Stack-agnostic by design.** This scaffold ships **no** stack- or architecture-specific skills (no `.NET` rules, no language-bound test runner, no per-language edit hook). The generic tier is installed to user scope **unchanged**; the consuming project supplies rules in **its own `.claude/` tree** — never inside `root/.claude/`. Project skills use **reserved** concerns (`architecture-rules`, `coding-rules`, `test-rules`) plus an **open** set (`dotnet-patterns`, `react-patterns`, …); see `root/.claude/CONVENTIONS.md`. The crew reads these optional seams (proceeds, never blocks, when absent):
-  - `docs/architecture.md` — free-form architecture notes.
+  - `docs/references.md` — free-form architecture notes.
   - Concern-named rule skills under `.claude/skills/`: `architecture-rules` (architect, step-planner, SE), `coding-rules` (SE), `test-rules` (tester).
   - Optional project agents `.claude/agents/rules-checker.md` and `.claude/agents/test-runner.md`.
   - Full convention + agent→skill map: **`root/.claude/CONVENTIONS.md`**. Author a rule skill by copying `root/.claude/templates/project-rules.template.md` into `.claude/skills/<concern>-rules/SKILL.md`.

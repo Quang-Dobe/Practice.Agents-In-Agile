@@ -10,7 +10,7 @@ One-line summary of what this topic covers. Summarize and link — never paste l
 
 Bulleted links back to the source files this topic summarizes. The **links are the load-bearing artifact** — each bullet is a stable, repo-relative path under the shared system root. No verbatim copies live here.
 
-- [docs/architecture.md](../architecture.md) — cross-repo relationship overview
+- [docs/references.md](../references.md) — cross-repo relationship overview
 - [repo-a/docs/narrative/architecture.md](../../repo-a/docs/narrative/architecture.md) — human-readable walkthrough
 - [repo-a/docs/domain/<bc>/aggregate.md](../../repo-a/docs/domain/<bc>/aggregate.md) — Evans-canonical schema
 

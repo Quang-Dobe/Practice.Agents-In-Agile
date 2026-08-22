@@ -7,8 +7,9 @@ argument-hint: <feature> [unit...]
 
 1. **Mode gate (replaces D11).** Detect the grounding mode in the working dir:
    - **project mode** — `docs/domain/` OR `docs/narrative/` exists non-empty.
-   - **root mode** — none of those, but `repo-layout.md` OR `docs/memory/` OR `docs/architecture.md` exists.
-   - **neither** — print `present skipped: no grounding (project: docs/domain+docs/narrative | root: repo-layout.md / docs/memory / docs/architecture.md) — run /project:overview + /project:explore, or /wiki:bootstrap.` and stop. Do not create `docs/<feature>/present/`.
+   - **root mode** — none of those, but `repo-layout.md` OR `docs/memory/` OR `docs/references.md` OR a hand-written `docs/architecture.md` exists.
+     Both architecture files count, and they are different things: `docs/references.md` is the wiki's **generated** cross-repo rollup, `docs/architecture.md` is the **human-authored** free-form seam the root-tier feature crew reads (the root tier's `project-seams` skill). Prefer `references.md` when both are present; it is derived from the wiki and stays in step with the code.
+   - **neither** — print `present skipped: no grounding (project: docs/domain+docs/narrative | root: repo-layout.md / docs/memory / docs/references.md / docs/architecture.md) — run /project:overview + /project:explore, or /wiki:bootstrap.` and stop. Do not create `docs/<feature>/present/`.
    When **both** project and root signals exist, **project mode wins** (per-BC wiki is richer than the root rollup). Carry the detected mode + its grounding paths into every `present-builder` spawn so the diagram unit (`present-overview-plan`) reads the right source.
 2. Verify `docs/<feature>/` exists with at least one planning artifact. If not, error: `feature '<feature>' not found at docs/<feature>/`.
 3. Resolve the unit list: explicit units from `$ARGUMENTS`, else every unit whose source artifact exists (`requirement`→requirement.md, `overview-plan`→overview-plan.md, `test`→test.md, `analyzed`→analyzed.md, `plan`→plan.md).

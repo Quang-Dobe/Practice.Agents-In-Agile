@@ -63,7 +63,7 @@ When the caller's repo entry expands into a node tree (`## Node tree (nested mod
 A `repos[]` entry that declares **≥2 roots resolving to ≥2 distinct leaf homes** is expanded into a **node tree** instead of a single `ensureRepo` run. `buildNodeTree(entry)`:
 
 - **Leaf** — one declared root, located at its **leaf home** (the `repo-layout` skill `## Leaf-home derivation`). A leaf has its own source → narrative + domain.
-- **Branch** — a directory (relative to the entry's `path`) that is a proper ancestor of **≥2** leaf homes and is not itself a leaf home. No own source → rollup only (memory + architecture.md).
+- **Branch** — a directory (relative to the entry's `path`) that is a proper ancestor of **≥2** leaf homes and is not itself a leaf home. No own source → rollup only (memory + references.md).
 - **Root node** — the entry's `path`. Always a rollup node. If `path` is also a declared root (own source at the root) it is additionally a leaf.
 - **Collapse** — a directory that is the ancestor of exactly **one** leaf is NOT a node; that leaf attaches to the nearest branch/root above it.
 
@@ -89,9 +89,9 @@ For an entry expanded into a node tree, the walk replaces the single `ensureRepo
 1. **Leaves first.** For each leaf, run `ensureRepo(leaf, mode)` by dispatching the crew **agent directly** (`project-overview` then `project-explorer` for bootstrap; `project-update` for enhance) — not the bare slash command, which has no `output_root` arg — with **`output_root` = the leaf home** (per `## Output root (nested mode)`), scan `<path>` = the leaf home, and the locked skill-reload instruction. The `repo-layout` leaf match scopes each run to that one root; `## Leaf-scope confinement (nested mode)` keeps sibling-root changes out of scope. Leaves are therefore independent and MAY fan out in parallel — each writes only its own `docs/`.
 2. **Branches + root, deepest-first.** For each rollup node (deeper branches before shallower; root last), dispatching the rollup agent with **`output_root` = the node home** (per `## Output root (nested mode)`):
    - run the `wiki-bootstrapper` over the node's **direct children** → writes `<node>/docs/memory/`.
-   - **enhance only:** also run the `wiki-architect` over the node's direct children → writes `<node>/docs/architecture.md`.
+   - **enhance only:** also run the `wiki-architect` over the node's direct children → writes `<node>/docs/references.md`.
 
-   A rollup node reads each direct child's four inputs (`docs/architecture.md`, `docs/narrative/`, `docs/domain/`, `docs/memory/`). A **leaf** child contributes narrative + domain; a **branch** child contributes architecture.md + memory. Missing trees are tolerated (the existing four-input rule in `## After per-repo work — rollup hand-off`). Rollup recursion is bottom-up: a branch summarizes its leaves; the root summarizes branch memories + direct leaves, linking (never copying) per-child memory.
+   A rollup node reads each direct child's four inputs (`docs/references.md`, `docs/narrative/`, `docs/domain/`, `docs/memory/`). A **leaf** child contributes narrative + domain; a **branch** child contributes references.md + memory. Missing trees are tolerated (the existing four-input rule in `## After per-repo work — rollup hand-off`). Rollup recursion is bottom-up: a branch summarizes its leaves; the root summarizes branch memories + direct leaves, linking (never copying) per-child memory.
 
 ## Dirtiness (enhance refresh only)
 
@@ -100,7 +100,7 @@ A nested `/wiki:enhance` runs `/project:update` on every leaf and the rollup age
 - `/project:update` on an unchanged leaf emits the locked `No changes detected. 0 files written.` and writes nothing (the `project-update` skill `## Idempotency exit`).
 - `wiki-bootstrapper` is append-only + dedup; `wiki-architect` preserves human fences and writes only changed bytes. A rollup over unchanged children writes **zero** bytes.
 
-Consequences: a **first** enhance authors `docs/architecture.md` at every rollup node (bootstrap created only `docs/memory/`); editing one leaf rewrites that leaf and its ancestor rollups only; untouched leaves and untouched rollups write nothing. No node is skipped at the agent level — skipping is unnecessary because every unchanged write is a byte-compare no-op.
+Consequences: a **first** enhance authors `docs/references.md` at every rollup node (bootstrap created only `docs/memory/`); editing one leaf rewrites that leaf and its ancestor rollups only; untouched leaves and untouched rollups write nothing. No node is skipped at the agent level — skipping is unnecessary because every unchanged write is a byte-compare no-op.
 
 ## Two-question protocol (bootstrap only)
 
@@ -126,14 +126,14 @@ Both commands, once per-repo trees are settled:
 
 1. Hand off to the `wiki-bootstrapper` to **summarize-and-link** into the **root**
    `docs/memory/`. Inputs are now **four** read-only trees per repo plus the root file:
-   `docs/architecture.md`, each repo's `docs/narrative/`, `docs/domain/`, **and**
+   `docs/references.md`, each repo's `docs/narrative/`, `docs/domain/`, **and**
    `docs/memory/` (per-repo learnings). The rollup links per-repo memory; it never copies
    entry bodies.
 2. `/wiki:enhance` **additionally** hands off to the `wiki-architect` to (re)author
-   `docs/architecture.md` (see the `wiki-architecture` skill). `/wiki:bootstrap` does
-   **not** author architecture.md.
+   `docs/references.md` (see the `wiki-architecture` skill). `/wiki:bootstrap` does
+   **not** author references.md.
 
-**Nested mode.** When a `repos[]` entry was expanded into a node tree (`## Node tree (nested mode)`), its per-node rollups (`## Nested walk` step 2) already produced `docs/memory/` (+ architecture.md on enhance) at every branch and at the entry's root node. In **single-repo mode** the entry's root node IS the scan root, so its rollup IS the root `docs/memory/` rollup — there is no separate cross-repo rollup; this hand-off is a no-op beyond confirming the root-node memory exists. In **multi-repo mode**, each repo entry's tree rolls up internally first, then the cross-repo scan root rolls up the repo entries as today (each repo contributes its root-node four inputs).
+**Nested mode.** When a `repos[]` entry was expanded into a node tree (`## Node tree (nested mode)`), its per-node rollups (`## Nested walk` step 2) already produced `docs/memory/` (+ references.md on enhance) at every branch and at the entry's root node. In **single-repo mode** the entry's root node IS the scan root, so its rollup IS the root `docs/memory/` rollup — there is no separate cross-repo rollup; this hand-off is a no-op beyond confirming the root-node memory exists. In **multi-repo mode**, each repo entry's tree rolls up internally first, then the cross-repo scan root rolls up the repo entries as today (each repo contributes its root-node four inputs).
 
 ## Invariants
 
@@ -143,4 +143,4 @@ Both commands, once per-repo trees are settled:
 - **No auto-commit.** Leave all writes as working-tree changes.
 - **Confinement is delegated.** This skill writes nothing; each downstream agent enforces
   its own write confinement (`wiki-memory` → `docs/memory/` trees; `wiki-architecture` →
-  `docs/architecture.md`; crew `project:*` → narrative/domain).
+  `docs/references.md`; crew `project:*` → narrative/domain).

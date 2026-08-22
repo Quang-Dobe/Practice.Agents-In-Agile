@@ -1,0 +1,581 @@
+<!-- generated_by: wiki-diagram -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>{{SYSTEM_NAME}} Architecture Diagram</title>
+<script>
+  (function () {
+    try {
+      var stored = localStorage.getItem("arch-diagram-theme");
+      if (stored === "dark" || stored === "light") {
+        document.documentElement.setAttribute("data-theme", stored);
+      }
+    } catch (e) {
+      // ignore: private window or blocked site data
+    }
+  })();
+</script>
+<style>
+  :root {
+    --ground: #0e1420;
+    --surface: #161d2b;
+    --border: #253044;
+    --text: #e6edf7;
+    --muted: #8b9bb4;
+    --accent: #f0a500;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ground: #f7f8fa;
+      --surface: #ffffff;
+      --border: #d7dce4;
+      --text: #1b2430;
+      --muted: #5b6b80;
+      --accent: #a9660a;
+      --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+  }
+
+  :root[data-theme="light"] {
+    --ground: #f7f8fa;
+    --surface: #ffffff;
+    --border: #d7dce4;
+    --text: #1b2430;
+    --muted: #5b6b80;
+    --accent: #a9660a;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0e1420;
+    --surface: #161d2b;
+    --border: #253044;
+    --text: #e6edf7;
+    --muted: #8b9bb4;
+    --accent: #f0a500;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 2rem 1.5rem 1rem;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .eyebrow {
+    color: var(--accent);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    margin: 0 0 0.4rem;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    display: inline-block;
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 0.2rem;
+  }
+
+  .meta {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin: 0.6rem 0 0;
+  }
+
+  #theme-toggle {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-family: inherit;
+  }
+
+  #theme-toggle:hover {
+    border-color: var(--accent);
+  }
+
+  main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0.5rem 1.5rem 2rem;
+  }
+
+  .diagram-frame {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 1.25rem;
+  }
+
+  .diagram-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .diagram-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .diagram-btn {
+    background: var(--ground);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    min-width: 2.25rem;
+  }
+
+  .diagram-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+  }
+
+  .diagram-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .diagram-readout {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-family: var(--mono);
+    min-width: 3.5rem;
+    text-align: right;
+  }
+
+  .diagram-viewport {
+    position: relative;
+    overflow: hidden;
+    height: min(72vh, 820px);
+    background: var(--ground);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .diagram-viewport:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .diagram-viewport.is-dragging {
+    cursor: grabbing;
+  }
+
+  .diagram-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+
+  .diagram-canvas svg {
+    display: block;
+  }
+
+  .diagram-help {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 0.6rem 0 0;
+  }
+
+  .placeholder {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  section.data-table {
+    max-width: 1000px;
+    margin: 1.5rem auto 0;
+    padding: 0 1.5rem;
+  }
+
+  section.data-table h2 {
+    font-size: 1.1rem;
+    margin: 0 0 0.6rem;
+  }
+
+  section.data-table[hidden] {
+    display: none;
+  }
+
+  .table-frame {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+
+  .table-frame table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  .table-frame th,
+  .table-frame td {
+    padding: 0.65rem 1rem;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table-frame tr:last-child td {
+    border-bottom: none;
+  }
+
+  .table-frame th {
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .table-frame td {
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+
+  .table-frame td code,
+  .table-frame th code {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    white-space: nowrap;
+  }
+
+  footer {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 2rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <p class="eyebrow">ARCHITECTURE</p>
+    <h1>{{SYSTEM_NAME}}</h1>
+    <p class="meta">{{GENERATED_AT}} · Generated from docs/references.md</p>
+  </div>
+  <button id="theme-toggle" type="button">Toggle theme</button>
+</header>
+
+<main>
+  <div class="diagram-frame">
+    <div class="diagram-toolbar">
+      <div class="diagram-buttons">
+        <button id="diagram-zoom-out" class="diagram-btn" type="button" aria-label="Zoom out">−</button>
+        <button id="diagram-zoom-in" class="diagram-btn" type="button" aria-label="Zoom in">+</button>
+        <button id="diagram-fit" class="diagram-btn" type="button">Fit</button>
+        <button id="diagram-100" class="diagram-btn" type="button">1:1</button>
+      </div>
+      <span class="diagram-readout" id="diagram-zoom-readout">100%</span>
+    </div>
+    <div class="diagram-viewport" id="diagram-viewport" tabindex="0">
+      <div class="diagram-canvas" id="diagram-canvas">
+        <!-- diagram:begin:svg -->
+        <p class="placeholder">No diagram has been drawn yet.</p>
+        <!-- diagram:end:svg -->
+      </div>
+    </div>
+    <p class="diagram-help">Scroll or pinch to zoom. Click and drag, or use one finger, to pan. Buttons and arrow keys also work.</p>
+  </div>
+
+  <section class="data-table" id="sec-boundaries">
+    <h2>Boundaries</h2>
+    <div class="table-frame">
+      <!-- table:begin:boundaries -->
+      <!-- table:end:boundaries -->
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  This page is made new each time it runs, so any edit you make to it will be lost.
+</footer>
+
+<script>
+  (function () {
+    var STORAGE_KEY = "arch-diagram-theme";
+    var root = document.documentElement;
+
+    function writeStoredTheme(value) {
+      try {
+        localStorage.setItem(STORAGE_KEY, value);
+      } catch (e) {
+        // ignore: private window or blocked site data
+      }
+    }
+
+    var toggle = document.getElementById("theme-toggle");
+    toggle.addEventListener("click", function () {
+      var current = root.getAttribute("data-theme");
+      var isDark = current
+        ? current === "dark"
+        : window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var next = isDark ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      writeStoredTheme(next);
+    });
+  })();
+</script>
+<script>
+  (function () {
+    try {
+      ["sec-boundaries"].forEach(function (id) {
+        var section = document.getElementById(id);
+        if (section && !section.querySelector("table")) {
+          section.setAttribute("hidden", "");
+        }
+      });
+    } catch (e) {
+      // ignore: unexpected DOM shape
+    }
+  })();
+</script>
+<script>
+  (function () {
+    try {
+      var viewport = document.getElementById("diagram-viewport");
+      var canvas = document.getElementById("diagram-canvas");
+      var svg = canvas ? canvas.querySelector("svg") : null;
+      var zoomInBtn = document.getElementById("diagram-zoom-in");
+      var zoomOutBtn = document.getElementById("diagram-zoom-out");
+      var fitBtn = document.getElementById("diagram-fit");
+      var oneToOneBtn = document.getElementById("diagram-100");
+      var readout = document.getElementById("diagram-zoom-readout");
+
+      var MIN_SCALE = 0.05;
+      var MAX_SCALE = 8;
+      var FIT_PADDING = 0.96;
+      var WHEEL_STEP = 1.1;
+      var BUTTON_STEP = 1.25;
+      var PAN_STEP = 40;
+
+      var state = { scale: 1, x: 0, y: 0 };
+      var hasInteracted = false;
+      var diagramSize = null;
+
+      function setControlsEnabled(enabled) {
+        [zoomInBtn, zoomOutBtn, fitBtn, oneToOneBtn].forEach(function (btn) {
+          if (btn) btn.disabled = !enabled;
+        });
+      }
+
+      function getDiagramSize() {
+        if (!svg) return null;
+        try {
+          var vb = svg.viewBox && svg.viewBox.baseVal;
+          if (vb && vb.width > 0 && vb.height > 0) {
+            return { width: vb.width, height: vb.height };
+          }
+        } catch (e) {
+          // ignore: viewBox not usable, fall through to attributes
+        }
+        var w = parseFloat(svg.getAttribute("width"));
+        var h = parseFloat(svg.getAttribute("height"));
+        if (w > 0 && h > 0) return { width: w, height: h };
+        return null;
+      }
+
+      diagramSize = getDiagramSize();
+
+      if (!diagramSize) {
+        setControlsEnabled(false);
+        if (readout) readout.textContent = "--";
+        return;
+      }
+
+      function clampScale(s) {
+        return Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
+      }
+
+      function applyTransform() {
+        canvas.style.transform = "translate(" + state.x + "px," + state.y + "px) scale(" + state.scale + ")";
+        if (readout) readout.textContent = Math.round(state.scale * 100) + "%";
+      }
+
+      function fit() {
+        var vw = viewport.clientWidth;
+        var vh = viewport.clientHeight;
+        var scale = clampScale(Math.min(vw / diagramSize.width, vh / diagramSize.height) * FIT_PADDING);
+        state.scale = scale;
+        state.x = (vw - diagramSize.width * scale) / 2;
+        state.y = (vh - diagramSize.height * scale) / 2;
+        applyTransform();
+      }
+
+      function setOneToOne() {
+        var vw = viewport.clientWidth;
+        var vh = viewport.clientHeight;
+        state.scale = clampScale(1);
+        state.x = (vw - diagramSize.width) / 2;
+        state.y = (vh - diagramSize.height) / 2;
+        applyTransform();
+      }
+
+      function zoomAt(clientX, clientY, factor) {
+        var rect = viewport.getBoundingClientRect();
+        var px = clientX - rect.left;
+        var py = clientY - rect.top;
+        var newScale = clampScale(state.scale * factor);
+        var ratio = newScale / state.scale;
+        state.x = px - (px - state.x) * ratio;
+        state.y = py - (py - state.y) * ratio;
+        state.scale = newScale;
+        applyTransform();
+      }
+
+      function zoomCentered(factor) {
+        var rect = viewport.getBoundingClientRect();
+        zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, factor);
+      }
+
+      fit();
+
+      viewport.addEventListener("wheel", function (e) {
+        e.preventDefault();
+        hasInteracted = true;
+        var factor = e.deltaY < 0 ? WHEEL_STEP : 1 / WHEEL_STEP;
+        zoomAt(e.clientX, e.clientY, factor);
+      }, { passive: false });
+
+      var dragging = false;
+      var lastX = 0;
+      var lastY = 0;
+
+      viewport.addEventListener("mousedown", function (e) {
+        dragging = true;
+        hasInteracted = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        viewport.classList.add("is-dragging");
+      });
+
+      window.addEventListener("mousemove", function (e) {
+        if (!dragging) return;
+        state.x += e.clientX - lastX;
+        state.y += e.clientY - lastY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        applyTransform();
+      });
+
+      window.addEventListener("mouseup", function () {
+        dragging = false;
+        viewport.classList.remove("is-dragging");
+      });
+
+      if (zoomInBtn) zoomInBtn.addEventListener("click", function () { hasInteracted = true; zoomCentered(BUTTON_STEP); });
+      if (zoomOutBtn) zoomOutBtn.addEventListener("click", function () { hasInteracted = true; zoomCentered(1 / BUTTON_STEP); });
+      if (fitBtn) fitBtn.addEventListener("click", function () { hasInteracted = false; fit(); });
+      if (oneToOneBtn) oneToOneBtn.addEventListener("click", function () { hasInteracted = true; setOneToOne(); });
+
+      viewport.addEventListener("keydown", function (e) {
+        if (e.key === "+" || e.key === "=") { hasInteracted = true; zoomCentered(BUTTON_STEP); e.preventDefault(); }
+        else if (e.key === "-" || e.key === "_") { hasInteracted = true; zoomCentered(1 / BUTTON_STEP); e.preventDefault(); }
+        else if (e.key === "0") { hasInteracted = false; fit(); e.preventDefault(); }
+        else if (e.key === "ArrowUp") { hasInteracted = true; state.y += PAN_STEP; applyTransform(); e.preventDefault(); }
+        else if (e.key === "ArrowDown") { hasInteracted = true; state.y -= PAN_STEP; applyTransform(); e.preventDefault(); }
+        else if (e.key === "ArrowLeft") { hasInteracted = true; state.x += PAN_STEP; applyTransform(); e.preventDefault(); }
+        else if (e.key === "ArrowRight") { hasInteracted = true; state.x -= PAN_STEP; applyTransform(); e.preventDefault(); }
+      });
+
+      var touchState = null;
+
+      function touchDistance(touches) {
+        var dx = touches[0].clientX - touches[1].clientX;
+        var dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      function touchMidpoint(touches) {
+        return {
+          x: (touches[0].clientX + touches[1].clientX) / 2,
+          y: (touches[0].clientY + touches[1].clientY) / 2
+        };
+      }
+
+      viewport.addEventListener("touchstart", function (e) {
+        hasInteracted = true;
+        if (e.touches.length === 1) {
+          touchState = { mode: "pan", x: e.touches[0].clientX, y: e.touches[0].clientY };
+        } else if (e.touches.length === 2) {
+          touchState = { mode: "pinch", dist: touchDistance(e.touches), mid: touchMidpoint(e.touches) };
+        }
+      }, { passive: true });
+
+      viewport.addEventListener("touchmove", function (e) {
+        if (!touchState) return;
+        if (touchState.mode === "pan" && e.touches.length === 1) {
+          state.x += e.touches[0].clientX - touchState.x;
+          state.y += e.touches[0].clientY - touchState.y;
+          touchState.x = e.touches[0].clientX;
+          touchState.y = e.touches[0].clientY;
+          applyTransform();
+          e.preventDefault();
+        } else if (touchState.mode === "pinch" && e.touches.length === 2) {
+          var newDist = touchDistance(e.touches);
+          var factor = newDist / touchState.dist;
+          zoomAt(touchState.mid.x, touchState.mid.y, factor);
+          touchState.dist = newDist;
+          touchState.mid = touchMidpoint(e.touches);
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      viewport.addEventListener("touchend", function (e) {
+        if (e.touches.length === 0) touchState = null;
+        else if (e.touches.length === 1) touchState = { mode: "pan", x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }, { passive: true });
+
+      window.addEventListener("resize", function () {
+        if (!hasInteracted) fit();
+      });
+    } catch (e) {
+      // ignore: leave the static diagram usable
+    }
+  })();
+</script>
+</body>
+</html>

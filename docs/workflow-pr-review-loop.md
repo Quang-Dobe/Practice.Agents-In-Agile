@@ -239,7 +239,7 @@ and tells you where it goes. Skip it and you have a rule file nobody reads.
 | Goal | Plan and build a new feature. | Explain an existing codebase. | Turn review feedback into rules. |
 | You write first? | Yes — a rough requirement. | No. | Yes — your review notes. |
 | Where you run it | inside one repo | in the folder **above** your repos | inside one repo |
-| Output location | `docs/<feature>/` | `docs/memory/`, `docs/architecture.md`, and each repo's own wiki | `docs/<feature>/pr-review/` and your `.claude/skills/` |
+| Output location | `docs/<feature>/` | `docs/memory/`, `docs/references.md`, and each repo's own wiki | `docs/<feature>/pr-review/` and your `.claude/skills/` |
 | Cadence | Once per feature. | Bootstrap once, then on every code change. | Once per review round. |
 | APPROVE gates | Many — one per stage and per step. | None. | One, on `learn` only. |
 | Produces a `status.md`? | Yes. | No. | No. |

@@ -31,7 +31,7 @@ The wiki lives **one level above** your repos, in the folder that contains them.
 <the folder holding your repos>/
 ├── .claude/                     <- the kit you copied in
 ├── docs/
-│   ├── architecture.md               <- how the repos relate. the map.
+│   ├── references.md                 <- how the repos relate. the map.
 │   └── memory/*.md                   <- the rollup: one file per topic
 ├── repo-a/
 │   └── docs/
@@ -46,7 +46,7 @@ Two levels, on purpose:
 
 - **Per repo** — `docs/narrative/` reads like a tour, `docs/domain/` is the
   detailed model behind it. Both are produced for you; you never write them.
-- **Across repos** — `docs/architecture.md` is the map, and `docs/memory/`
+- **Across repos** — `docs/references.md` is the map, and `docs/memory/`
   **summarizes and links back** to each repo's own pages. It never copies them.
   One fact, one home.
 
@@ -114,7 +114,7 @@ It also drafts `repo-layout.md` at the top folder if there is none. That file
 declares which folders inside each repo hold real source, so scans skip build
 output and vendored code. It is printed for you before it is written.
 
-Bootstrap does **not** write `docs/architecture.md`. That is `enhance`'s job.
+Bootstrap does **not** write `docs/references.md`. That is `enhance`'s job.
 
 ---
 
@@ -131,7 +131,7 @@ One pass, no questions asked. It:
 - updates `repo-layout.md` — adds source folders that showed up, and flags ones
   that have gone stale without deleting them;
 - rewrites the rollup at `docs/memory/`;
-- rewrites the map at `docs/architecture.md`.
+- rewrites the map at `docs/references.md`.
 
 Only pages whose content actually changed get rewritten. Run it on an unchanged
 codebase and it writes nothing.
@@ -159,7 +159,7 @@ that can answer:
 | Order | Where it looks | Why it is this early |
 | ----- | -------------- | -------------------- |
 | 1 | root `docs/memory/` | already summarized across repos — cheapest answer |
-| 2 | `docs/architecture.md` | the cross-repo map |
+| 2 | `docs/references.md` | the cross-repo map |
 | 3 | each repo's `docs/narrative/` | the plain tour |
 | 4 | each repo's `docs/domain/` | the detailed model |
 | 5 | each repo's `docs/memory/` | what was learned about that repo before |
@@ -184,7 +184,7 @@ Ask a question, e.g. /wiki:ask "where is OrderPaid published?"
 
 | File | Who writes it |
 | ---- | ------------- |
-| `docs/architecture.md` | the agent, on every `enhance`. Full rewrite. |
+| `docs/references.md` | the agent, on every `enhance`. Full rewrite. |
 | `<repo>/docs/narrative/`, `<repo>/docs/domain/` | the agent. Fully agent-controlled. |
 | root `docs/memory/`, `<repo>/docs/memory/` | **shared.** See below. |
 | `repo-layout.md` | the agent drafts and reconciles it; you review it. |

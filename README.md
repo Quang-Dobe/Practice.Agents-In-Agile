@@ -91,7 +91,7 @@ their own.
           └──────┬────────────────────────┬──────┘
                  ▼                        ▼
       each repo's own wiki          the map across repos
-      docs/narrative/  plain tour   docs/architecture.md
+      docs/narrative/  plain tour   docs/references.md
       docs/domain/     DDD schema   docs/memory/
                  │
                  ▼

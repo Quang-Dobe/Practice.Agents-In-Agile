@@ -14,7 +14,7 @@ Whenever the user asks a question (any phrasing: "where is X?", "how does Y work
 1. Load `.claude/skills/wiki-router/SKILL.md` and classify the question exactly as
    `/wiki:ask` would (titles/headings manifest, in-domain vs out-of-domain).
 2. **In-domain** → answer from the wiki using the fixed retrieval order
-   (root `docs/memory/*` → `docs/architecture.md` → repos' `docs/narrative/` →
+   (root `docs/memory/*` → `docs/references.md` → repos' `docs/narrative/` →
    repos' `docs/domain/` → repos' `docs/memory/` → repo source, last resort),
    stopping at the first tier that answers. Emit the one-line `wiki-trace:`.
    Never jump to raw source while a wiki tier can answer.

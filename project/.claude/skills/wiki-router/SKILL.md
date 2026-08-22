@@ -10,7 +10,7 @@ consumed_by: /wiki:ask command
 Build the scope manifest from titles/headings ONLY — never file bodies:
 
 - the `# <Topic title>` line of every root `docs/memory/*.md`
-- the `#`/`##`/`###` heading lines of `docs/architecture.md`
+- the `#`/`##`/`###` heading lines of `docs/references.md`
 - the `# <Topic title>` line of every `<repo>/docs/memory/*.md`
 
 Body reads happen only after an in-domain decision, during tier retrieval — never here.
@@ -19,7 +19,7 @@ Body reads happen only after an in-domain decision, during tier retrieval — ne
 - **Out-of-domain** = no anchor. Decline with this **exact-case byte-for-byte** literal, emit the empty TRACE, open no tier, write nothing, stop:
 
 ```
-This question is outside the wiki's domain (the systems documented under docs/memory/, docs/architecture.md, and the sibling repos). No retrieval was performed.
+This question is outside the wiki's domain (the systems documented under docs/memory/, docs/references.md, and the sibling repos). No retrieval was performed.
 ```
 
 False-positives and false-negatives weigh **equally** — the manifest-anchor test is the deterministic call; no "search anyway when unsure" bias, and no "decline when unsure" bias either.
@@ -31,7 +31,7 @@ Walk EXACTLY this order. Between tiers apply the stop-check: *found a citable ar
 | Tier | Corpus |
 |---|---|
 | T1 | root `docs/memory/*` (curated rollup) |
-| T2 | `docs/architecture.md` (cross-repo overview) |
+| T2 | `docs/references.md` (cross-repo overview) |
 | T3 | repos' `docs/narrative/` (per-repo walkthroughs) |
 | T4 | repos' `docs/domain/` (Evans-canonical schema) |
 | T5 | repos' `docs/memory/` (per-repo learnings from prior source reads) |
@@ -40,7 +40,7 @@ Walk EXACTLY this order. Between tiers apply the stop-check: *found a citable ar
 ## TRACE — one line, every outcome
 
 ```
-wiki-trace: T1 -> T2 -> STOP@T2 (docs/architecture.md#billing)
+wiki-trace: T1 -> T2 -> STOP@T2 (docs/references.md#billing)
 ```
 
 - Literal greppable prefix `wiki-trace:`; consulted tiers in order, ` -> ` separated, starting at `T1`; `STOP@T<n>` at the answering tier; the citable artifact (repo-relative path, optional `#anchor`) in parentheses.

@@ -259,6 +259,8 @@ Skip it when:
 - The change is small enough that the planning ceremony costs more than the
   change itself.
 
-For the other workflow this kit provides — building and maintaining a
-living domain wiki of an existing codebase — see
-[`workflow-domain-wiki.md`](workflow-domain-wiki.md).
+For the other two walkthroughs, see
+[`workflow-llm-wiki.md`](workflow-llm-wiki.md) — building and maintaining a
+living wiki of an existing codebase — and
+[`workflow-pr-review-loop.md`](workflow-pr-review-loop.md) — turning PR review
+comments into rules the crew obeys next time.

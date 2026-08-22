@@ -234,13 +234,13 @@ and tells you where it goes. Skip it and you have a rule file nobody reads.
 
 ## How this differs from the other two workflows
 
-| Aspect | Feature pipeline | Domain wiki pipeline | PR review loop |
+| Aspect | Feature pipeline | LLM wiki | PR review loop |
 | ------ | ---------------- | -------------------- | -------------- |
 | Goal | Plan and build a new feature. | Explain an existing codebase. | Turn review feedback into rules. |
 | You write first? | Yes — a rough requirement. | No. | Yes — your review notes. |
-| Output location | `docs/<feature>/` | `docs/domain/`, `docs/narrative/` | `docs/<feature>/pr-review/` and your `.claude/skills/` |
+| Where you run it | inside one repo | in the folder **above** your repos | inside one repo |
+| Output location | `docs/<feature>/` | `docs/memory/`, `docs/architecture.md`, and each repo's own wiki | `docs/<feature>/pr-review/` and your `.claude/skills/` |
 | Cadence | Once per feature. | Bootstrap once, then on every code change. | Once per review round. |
-| Number of roles | Five. | Three. | One, and it is read-only. |
 | APPROVE gates | Many — one per stage and per step. | None. | One, on `learn` only. |
 | Produces a `status.md`? | Yes. | No. | No. |
 
@@ -254,4 +254,4 @@ It is also the only one of the three that writes into your repo's own
 
 For the other two walkthroughs, see
 [`workflow-feature-pipeline.md`](workflow-feature-pipeline.md) and
-[`workflow-domain-wiki.md`](workflow-domain-wiki.md).
+[`workflow-llm-wiki.md`](workflow-llm-wiki.md).

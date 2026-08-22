@@ -7,24 +7,20 @@ preloads those concern-named skills; the consuming repo supplies stack-specific 
 `.claude/`. **No application source code lives here.** (See `docs/enhance-agent-skills/` for the
 design rationale and `root/.claude/CONVENTIONS.md` for the two-tier model.)
 
-This repo holds **two sibling kits**:
+This file covers `root/.claude/` — the crew — and nothing else.
 
-- `root/.claude/` — the per-project feature + domain-wiki crew documented below.
-- `project/.claude/` — a separate **project-tier cross-repo LLM-Wiki** kit (`wiki-bootstrapper` + `wiki-architect` agents; `/wiki:bootstrap`, `/wiki:ask` — answered inline in the main thread, no sub-agent — and `/wiki:enhance`); writes `docs/memory/` (root rollup + per-repo learnings) and `docs/architecture.md`. Independent of the crew below; see `project/.claude/README.md`.
-  **Coupling (new):** `/wiki:bootstrap` and `/wiki:enhance` now invoke the crew's
-  `/project:overview`, `/project:explore`, and `/project:update` to produce/refresh
-  per-repo trees before rolling up. After `install.ps1` both kits live under `~/.claude/`, so
-  the slash commands resolve. If the crew is absent, the wiki commands emit a one-line
-  advisory and roll up existing trees only.
-
-Everything in this file describes the `root/.claude/` crew unless stated otherwise.
+> `project/.claude/` is a separate kit that wraps this one. It is **out of scope here**, and
+> documented in `project/.claude/README.md`. Two facts about it are load-bearing on the crew,
+> so they are stated where they apply below: its `/wiki:enhance` **calls** the crew's
+> `/project:overview`, `/project:explore`, and `/project:update`, and it is the only writer of
+> `repo-layout.md`. Change either seam and read that README first.
 
 This scaffold ships three independent workflows:
 
 1. **Feature pipeline** — five-role crew that drives a feature from raw idea to
    approved, step-by-step implementation plan and then through code-producing steps.
-2. **Domain wiki pipeline** — two runtime agents that bootstrap and then keep a
-   living DDD wiki under `docs/domain/` in sync with the codebase.
+2. **LLM wiki pipeline** — three runtime agents that bootstrap and then keep a
+   living wiki under `docs/narrative/` and `docs/domain/` in sync with the codebase.
 3. **PR review loop** — a read-only analyst agent that turns hand-written PR
    review notes into evidenced findings, then, after you fix the code, into
    rule sections inside this repo's own `.claude/skills/`.
@@ -48,7 +44,9 @@ Five-role crew: Product Owner, Business Analyst, Architect, Software Engineer, T
 
 Walkthrough: `docs/workflow-feature-pipeline.md`
 
-## Domain Wiki Pipeline
+## LLM Wiki Pipeline
+
+**Prefix warning.** These three commands read `project:`, but they are **root-tier** commands living in `root/.claude/commands/project/`. The prefix does not mean the project tier. The project tier's own wiki commands are `/wiki:*`, and they are out of scope here.
 
 Three runtime agents own everything under `docs/domain/` and `docs/narrative/`. The DDD canonical schema (bounded contexts, aggregates, events, commands, repositories, services, glossary, context map) lives under `docs/domain/` — owned by the `project-explorer` and `project-update` pair. The human-readable narrative tree (one-page repo overview + one walkthrough per bounded context) lives under `docs/narrative/` — owned by the new `project-overview` agent. All three are runtime-only and never produce planning artifacts. The pipeline runs in two passes: narrative first (so a non-tech reader can follow the business flow), then schema (with narrative as soft input where present).
 
@@ -75,18 +73,18 @@ All three domain-wiki agents are **fully agent-driven**: they print their bounde
    a one-line symmetric advisory when exactly one is missing and proceeds
    with the present-tree pass. The narrative diff-aware update is part of this command.
 
-**Scan scope — `repo-layout.md` (opt-in).** A central `repo-layout.md` at the wiki scan root (cross-repo root in multi-repo mode; the repo root in single-repo mode) declares per-repo code roots (a strict allowlist), extra excludes, and bounded-context labels. The three crew agents load the cross-cutting `repo-layout` skill and scan only the declared roots; absent manifest → today's heuristics (byte-identical). It is single-writer: `/wiki:bootstrap` drafts it and `/wiki:enhance` reconciles it (adding new source-bearing dirs, flagging stale paths); the crew is read-only on it. A new source-bearing dir not yet declared is provisionally scanned + flagged, never silently skipped.
+**Scan scope — `repo-layout.md` (opt-in).** A central `repo-layout.md` at the wiki scan root (cross-repo root in multi-repo mode; the repo root in single-repo mode) declares per-repo code roots (a strict allowlist), extra excludes, and bounded-context labels. The three crew agents load the cross-cutting `repo-layout` skill and scan only the declared roots; absent manifest → today's heuristics (byte-identical). **The crew never writes this file** — it is single-writer, and the writer is the wrapping kit. A new source-bearing dir not yet declared is provisionally scanned + flagged, never silently skipped.
 
-**Nested mode (auto-on).** When a `repo-layout.md` entry resolves to ≥2 leaf homes (sub-projects), `/wiki:bootstrap` and `/wiki:enhance` build a content-driven N-level tree instead of one flat wiki: each sub-project (leaf) gets its own `docs/narrative/` + `docs/domain/`; each grouping folder with ≥2 wiki children (and the root) gets a `docs/memory/` + `docs/architecture.md` rollup. Container folders over a single leaf collapse. The crew commands are unchanged — the orchestrator runs each node with `CWD = that node's folder`. Trade-off (accepted): an existing flat single-repo wiki regenerates into a tree on next run; clear old `docs/` to adopt.
+**Many wikis in one tree.** A caller may run these commands once per sub-project, each with `CWD` set to that sub-project's folder. The crew commands are unchanged by that — each run sees one repo and writes one pair of trees under its own `CWD`. Nothing here needs to know how many nodes the caller walks.
 
 Both commands accept a local filesystem path only — remote URLs are refused in v1.
 Neither command writes outside its own output tree (`/project:overview` writes only `docs/narrative/`; `/project:explore` and `/project:update` write only `docs/domain/`).
 
-**Project-tier wiki integration.** The project-tier `/wiki:enhance` command (`project/.claude/` kit) calls these crew commands as part of its full-sync pass. It also writes two additional trees that the crew commands do not touch: a per-repo `docs/memory/` (T6 write-back — learnings from source reads appended by `/wiki:ask`) and the root `docs/architecture.md` (generated by the `wiki-architect` agent via `/wiki:enhance`; human `<!-- human:begin/end -->` fences preserved byte-for-byte).
+**Called from outside.** These three commands are also invoked by the wrapping kit as one pass of a bigger sync. That caller writes trees of its own (`docs/memory/`, `docs/architecture.md`) which the crew never touches — so never assume a `docs/` folder the crew did not write is stale.
 
 **Migration story (no-op for existing trees).** Nothing existing moves. The canonical schema continues to live at `docs/domain/` exactly as before; no rename, no folder shift, no path change to any frontmatter field. The only visible difference for a downstream repo is the *appearance* of a new tree at `docs/narrative/` *if and only if* the user opts in by invoking `/project:overview`. Repos that never invoke the new command are byte-identical before and after this change. The fences inside `docs/narrative/` are now load-bearing on the diff path (no longer inert).
 
-Walkthrough: `docs/workflow-domain-wiki.md`
+Walkthrough: `docs/workflow-llm-wiki.md`
 
 ## PR Review Loop
 
@@ -120,7 +118,7 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 - `root/.claude/CONVENTIONS.md` — how a consuming project supplies its own rule skills + optional agents under its `.claude/` tree (the stack-specific seam this kit deliberately omits); also holds the per-agent context-access matrix
 - `root/.claude/hooks/` — `session-start-banner.py`
 - `docs/<FEATURE>/` — feature pipeline artifacts: `<FEATURE>.requirement.md` (final requirement, flat), `.requirement-trace.md` (how it was reached), `.overview-plan.md`, `.plan.md`, `.analyzed.md`, `.status.md`. Raw requirements also start here — stage-1 rewrites `requirement.md` in place, so the raw prose survives only in `.requirement-trace.md`.
-- `docs/domain/` — domain wiki output owned by the project-explorer / project-update agents. Bootstrapped once, then diff-updated on every subsequent run.
+- `docs/domain/` — the LLM wiki's canonical DDD schema tree, owned by the project-explorer / project-update agents. Bootstrapped once, then diff-updated on every subsequent run.
 - `docs/narrative/` — human-readable narrative tree owned by the `project-overview` agent at bootstrap and by `/project:update` on every subsequent code change. One file per bounded context (`<bc>/walkthrough.md`) plus a top-level `architecture.md`.
 - `root/.claude/agents/project-overview.md` — runtime agent definition for the narrative bootstrap. Mirrors the `project-explorer` / `project-update` sibling pattern.
 - `root/.claude/commands/pr-review/` — `analyze.md`, `learn.md`
@@ -128,7 +126,7 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 - `root/.claude/skills/pr-review-analysis/`, `root/.claude/skills/pr-review-learning/` — the two PR-review capability skills
 - `root/.claude/templates/pr-review.ledger.md`, `root/.claude/templates/pr-review.html` — ledger shape + card page shell
 - `docs/<FEATURE>/pr-review/` — your review notes, plus the generated ledger and card page per review file
-- `project/.claude/` — the sibling project-tier LLM-Wiki kit (out of scope for this file). Documented in `project/.claude/README.md`.
+- `project/.claude/` — the wrapping kit. **Out of scope for this file**; see `project/.claude/README.md`.
 
 ## Conventions
 
@@ -142,12 +140,12 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 - **Code is the single source of truth for the wiki crew.** `project-explorer`, `project-overview`, and `project-update` derive every logic / invariant / `file:line` fact from **code only** — never assume behaviour from a comment, docstring, or XML-doc. Comments may *seed* naming / plain-language descriptions but **lose every conflict** with code. Operative contract: the `project-explorer` skill `## Comment policy (code is the single source of truth)`, cited by reference from the other two.
 - The three domain-wiki agents (`project-explorer`, `project-update`, `project-overview`) are tooling for downstream repos; they are runtime, never planning, and never emit a `status.md`.
 - Human edits to generated `docs/domain/` and `docs/narrative/` files must live inside `<!-- human:begin --> ... <!-- human:end -->` fences to survive any future regeneration. Fences are load-bearing in BOTH trees: `docs/domain/` fences survive `/project:update`'s domain pass, and `docs/narrative/` fences survive its narrative pass byte-for-byte.
-- **`repo-layout.md` is the opt-in scan contract.** Lives at the wiki scan root, owned by the cross-cutting `repo-layout` skill. Single writer (`/wiki:bootstrap` drafts, `/wiki:enhance` reconciles); crew agents read-only. Human edits inside `<!-- human:begin --> ... <!-- human:end -->` survive reconciliation. Absent → built-in heuristics, byte-identical to pre-manifest runs.
+- **`repo-layout.md` is the opt-in scan contract.** Lives at the wiki scan root, read through the cross-cutting `repo-layout` skill. **Crew agents are read-only on it** — the wrapping kit is its only writer. Human edits inside `<!-- human:begin --> ... <!-- human:end -->` survive reconciliation. Absent → built-in heuristics, byte-identical to pre-manifest runs.
 
 ## When to use which workflow
 
 - New product feature, need to plan & build it → **Feature pipeline** (`/feature:new` then `/feature:structure`).
-- Onboarding a new repo, want a living domain wiki → **Domain wiki pipeline**. Run `/project:overview` first to produce a plain-language narrative under `docs/narrative/` (skip if you only want the canonical schema). Then run `/project:explore` once to produce the canonical schema under `docs/domain/` (it will read the narrative as soft input when present). Use `/project:update` whenever code changes to refresh both `docs/narrative/` and `docs/domain/` in one command.
+- Onboarding a new repo, want a living wiki → **LLM wiki pipeline**. Run `/project:overview` first to produce a plain-language narrative under `docs/narrative/` (skip if you only want the canonical schema). Then run `/project:explore` once to produce the canonical schema under `docs/domain/` (it will read the narrative as soft input when present). Use `/project:update` whenever code changes to refresh both `docs/narrative/` and `docs/domain/` in one command.
 - Both can be used in the same repo. The feature pipeline writes under `docs/<FEATURE>/`; the wiki pipeline writes under `docs/domain/`. They never touch each other's files.
   - **Carve-out (the single coupling seam).** The feature pipeline does not otherwise write the wiki trees, with exactly one exception: `/workflow:step-handoff` unconditionally invokes `/project:update` at session close. That invocation is subject to `/project:update`'s own missing-both-trees refusal. Because `/project:update` is fully agent-driven (no gate), it never blocks handoff finalization except on an unexpected error; it either succeeds (writes / clean no-op) or refuses for missing-both-trees (noted, handoff continues). Outside this one documented seam, the pipelines remain independent and the 'never touch each other's files' invariant holds.
 

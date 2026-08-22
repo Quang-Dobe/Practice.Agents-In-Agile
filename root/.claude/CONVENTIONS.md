@@ -61,10 +61,31 @@ All three are optional and independent. Author only the ones your project needs.
 
 Beyond the three reserved concerns, a repo may add **any** kebab-case concern skill
 (`dotnet-patterns`, `react-patterns`, `db-rules`, `a11y-rules`, …) under `.claude/skills/<concern>/`.
-The crew honors any concern in an agent's reference list using the same present-or-proceed rule
-(`project-seams`). Because project scope outranks user scope, a same-named project skill **overrides**
-a generic one — useful if a repo wants a stricter `risk-severity-analysis`. Note in your repo's own
-README which agent references each open concern.
+Because project scope outranks user scope, a same-named project skill **overrides** a generic one —
+useful if a repo wants a stricter `risk-severity-analysis`.
+
+### Wiring an open concern — required, it is not auto-discovered
+
+Only the three reserved concerns are auto-discovered. A root agent's reference list **is** its
+`skills:` manifest, and the root tier is never edited per project — so an open concern skill is
+**never read** unless you wire it. Pick one:
+
+| # | How | Cost |
+|---|---|---|
+| **1 — default** | **Name it from inside a reserved skill.** Add an `## Also load` section to `architecture-rules` / `coding-rules` / `test-rules` listing the open concerns. `project-seams` follows that list. | one line, no install, no root edit |
+| 2 | Ship `<repo>/.claude/agents/<agent>.md` that overrides the root agent, with the open concern in its own `skills:` manifest. | you must keep that agent copy in sync with the root one |
+| 3 | Drop the separate skill — fold its content into the reserved skill. | fewer files, one bigger file |
+
+Pattern 1, inside `<repo>/.claude/skills/coding-rules/SKILL.md`:
+
+```md
+## Also load
+- `dotnet-patterns`
+- `react-patterns`
+```
+
+**Depth is 1.** A reserved skill may name open concerns. An open concern loaded this way may **not**
+name more — its own `## Also load` is ignored. Keeps loading finite and easy to predict.
 
 ## Optional project agents
 
@@ -85,6 +106,42 @@ If you also want a PostToolUse build/test hook, add it to your project's
    (e.g. "per `coding-rules` Section 3.2"). Stable section numbers = stable citations.
 3. For a long ruleset, keep `SKILL.md` as a thin loader and put the full text in a sibling
    `.md` file the loader points to.
+
+## How to author a crew capability skill (root tier)
+
+A **capability skill** holds the *how* of one artifact or one concern for a crew agent
+(`architecture-planning`, `requirement-authoring`, `step-execution`, …). Home:
+`root/.claude/skills/<concern>/SKILL.md` in the scaffold repo → `~/.claude/skills/<concern>/` after
+`install.ps1`. Rule skills (section above) are the **project** tier — different home, different job.
+
+**Read this section before you create or edit any skill an agent names in its `skills:` manifest.**
+It outranks generic skill-writing guidance (e.g. `superpowers:writing-skills`) on tier, placement,
+naming, and manifest wiring. That guidance still governs file shape and description wording.
+
+1. **One concern per skill.** Name it for the concern, not the agent — `architecture-planning`, not
+   `architect-skill`. Kebab-case. Documented exception: the three wiki runtime skills mirror their
+   single owning agent (`project-explorer` skill ↔ `project-explorer` agent).
+2. **Stack-agnostic.** No language, framework, test runner, or repo-specific path. Anything
+   stack-specific belongs in the consuming repo's `.claude/skills/` (reserved + open concerns above).
+3. **Frontmatter:** `name` (matches the folder) and `description` (what it authors, which agent uses
+   it, which stage invokes it). Nothing else.
+4. **Body sections, in this order:**
+
+   | Section | Holds |
+   |---|---|
+   | `## Mission` | one sentence — what this skill produces |
+   | `## Owned artifact` | exact output path + its template, or "writes no file" |
+   | `## Read scope` | every input, one per line |
+   | `## Procedure` | numbered steps, last step = the hand-off line |
+   | `## Boundary` | what this skill must NOT do, and which skill owns that instead |
+
+5. **Agents stay thin.** The *how* lives in the skill; the *which-agent-at-which-stage* lives in the
+   command. An agent file carries only identity, `skills:`, and its ownership boundary.
+6. **Wire it up in the same change:** add the concern to the owning agent's `skills:` manifest, add
+   its row to the *Agent context-access matrix* below, then re-run `install.ps1`.
+7. **Reference project rules by concern name only** — never by path. Discovery is `project-seams`' job.
+8. **Reference sibling skills by name** (e.g. "full contract: `pipeline-protocol`"). Never copy another
+   skill's text — one rule, one home.
 
 ## How the crew consumes them
 
@@ -126,6 +183,7 @@ Each agent's `skills:` manifest:
 | software-engineer | `implementation-planning`, `step-execution`, `e2e-validation` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
 | tester | `acceptance-spec-authoring` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
 | workflow-step-planner | `open-question-drafting` | `project-seams`, `prompt-defense` |
+| pr-review-analyst | `pr-review-analysis`, `pr-review-learning` | `project-seams`, `prompt-defense` |
 
 Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** = optional, never blocks.
 
@@ -134,17 +192,20 @@ Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** =
 | Agent | `tools:` | `docs/narrative/` | `docs/domain/` | Source code | Feature docs `docs/<feature>/` | Rule skills `.claude/skills/` | Owns / writes |
 |---|---|---|---|---|---|---|---|
 | **product-owner** | R only | R (opt) | — | — | R (raw requirement only) | — | **nothing** (writes no file) |
-| **business-analyst** | R + W | R (opt) | — | — | R raw + others' `status.md`; **W** `requirement.md` | — | `requirement.md` |
+| **business-analyst** | R + W | R (opt) | — | — | R raw + others' `status.md`; **W** `requirement.md` + `requirement-trace.md` | — | `requirement.md`, `requirement-trace.md` |
 | **architect** | R + W | R (soft) | R (soft) | R (recon; both wiki trees absent) | R requirement/overview; **W** `overview-plan.md` + `analyzed.md` | R `architecture-rules` | `overview-plan.md`, `analyzed.md` |
 | **software-engineer** | R + W | R (soft) | R (soft) | **R + W** | R requirement/overview/analyzed/**test.md**; **W** `plan.md` | R `coding-rules` + `architecture-rules` | `plan.md` + **production code + unit tests + e2e tests** |
 | **tester** | R + W | R (opt) | — | — | R requirement; **W `test.md`** | R `test-rules` | `test.md` (e2e/acceptance spec); planning-only, no source, no runtime |
 | **workflow-step-planner** | R only | — | — | — | R plan/status/analyzed | R `architecture-rules` + `coding-rules` | **nothing** (surfaces questions only) |
+| **pr-review-analyst** | R only | R (soft) | R (soft) | **R** (evidence hunt) | R `docs/<feature>/pr-review/*.md` + `*.pr-review.ledger.md` | R all concerns via `project-seams` | **nothing** (returns findings + rule drafts) |
 
 - `docs/architecture.md` is read by business-analyst, architect, software-engineer, tester — not by product-owner (narrative-only carve-out) or workflow-step-planner.
 - Product-owner is the only role walled off from all engineering context (no domain, no architecture, no status).
+- **Requirement / trace split.** `requirement.md` holds the final requirement only — Goal, In scope, Out of scope, Success criteria, Constraints, and a short `Current behavior` when existing behavior changes. Everything about *how* that wording was reached (raw prose, PO framing challenges, Q&A decisions, the verbatim recon brief) lives in the sibling `requirement-trace.md`. Both are BA-owned and written in the same stage-1 run. Downstream agents (architect, tester, SE) read `requirement.md`; the trace file answers "why is this the requirement?" for a human and is never a planning input.
 - Software-engineer is the only role that writes source (production + unit + e2e tests). Tester writes no source — it authors the requirement-keyed `test.md` e2e/acceptance spec; SE turns it into automated e2e tests at the final plan step.
-- **Stage-1 recon carve-out.** When `/feature:structure` Stage 1 finds **both** `docs/domain/` and `docs/narrative/` absent, the architect runs a read-only `codebase-recon` pass (`stage-1-recon`) and may read source **as-needed** to produce a Current Behavior Brief — the only path by which a planning role reads raw source, and it writes no file. The BA persists that brief as the `## Current Behavior (Architect recon)` appendix in `requirement.md`; the BA itself **never** reads source. An optional bounded `[Architect Q]` round (`stage-1-qa`, ≤1) lets the BA ask the architect instead. When either wiki tree exists, no recon runs and the architect's "Source code" access reverts to `—`.
+- **Stage-1 recon carve-out.** When `/feature:structure` Stage 1 finds **both** `docs/domain/` and `docs/narrative/` absent, the architect runs a read-only `codebase-recon` pass (`stage-1-recon`) and may read source **as-needed** to produce a Current Behavior Brief — the only path by which a planning role reads raw source, and it writes no file. The BA persists that brief verbatim in `<feature>.requirement-trace.md` (`## Current Behavior (Architect recon)`) and distils it into the requirement's short plain-language `## Current behavior` section; the BA itself **never** reads source. An optional bounded `[Architect Q]` round (`stage-1-qa`, ≤1) lets the BA ask the architect instead. When either wiki tree exists, no recon runs and the architect's "Source code" access reverts to `—`.
 - "soft" = optional domain context; the agent emits a one-line advisory and proceeds if the tree is absent.
+- **pr-review-analyst** is the second role that reads raw source, after the stage-1 recon carve-out. Its reads are read-only and its output is a finding list, never a file. It gives no validity verdict on a review comment: it retrieves `file:line` evidence and the human judges. Rule text it drafts is written by main Claude into the **consuming repo's** `.claude/skills/` only, behind an `APPROVE` gate — never into the root tier.
 
 ### Wiki runtime agents (domain / narrative pipeline)
 

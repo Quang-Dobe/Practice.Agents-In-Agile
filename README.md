@@ -25,7 +25,7 @@ nothing advances until you type `APPROVE`.
          ║ APPROVE
          ▼
 ┌──────────────────┐
-│ Business Analyst │  writes requirement.md
+│ Business Analyst │  requirement.md (final) + requirement-trace.md (history)
 └────────┬─────────┘
          ║ APPROVE
          ▼
@@ -114,7 +114,70 @@ Walkthrough: [`docs/workflow-domain-wiki.md`](docs/workflow-domain-wiki.md)
 
 ---
 
-## 3. LLM Wiki — "One wiki across many repos"
+## 3. PR Review Loop — "Never get the same review twice"
+
+You write the review comments down. The kit finds the code behind each one,
+shows you a page you can work through, and — after you fix them — turns the
+lessons into rules the crew reads on your next feature.
+
+```
+   you paste review comments into
+   docs/<feature>/pr-review/round-1.md          (free prose, no format)
+      │  /pr-review:analyze --feature <f>
+      ▼
+┌──────────────────────────┐
+│  pr-review-analyst       │  splits the prose into findings
+│  (read-only)             │  finds the code behind each one
+└────────┬─────────────────┘  no verdict — you judge
+         ▼
+   round-1.pr-review.ledger.md   ← the record. you edit this.
+         ▼  rendered from the ledger, never the other way round
+   round-1.pr-review.html        ← the page you read
+
+   you fix the code, then set  status: fixed  in the ledger
+      │  /pr-review:learn --feature <f>
+      ▼
+   rule drafts shown  ══ APPROVE ══>  .claude/skills/coding-rules/SKILL.md
+                                      .claude/skills/architecture-rules/...
+                                      .claude/skills/test-rules/...
+         ▼
+   next feature: each rule file goes to the role that owns it — architecture
+   rules to the Architect, coding rules to the Engineer, test rules to the Tester
+```
+
+Commands:
+
+- `/pr-review:analyze --feature <name> [--review <stem>]` — build the ledger and
+  the page. Leave `--review` off to do every review file at once.
+- `/pr-review:learn --feature <name> [--review <stem>]` — turn your fixed
+  findings into rules. Nothing is written until you type `APPROVE`.
+
+Three things to know:
+
+1. **The kit never says a review is right or wrong.** It shows every comment and
+   the code behind it. You decide.
+2. **The ledger is the record, the page is just a view.** Edit the ledger; the
+   page re-renders itself on the next run.
+3. **Rules land in your repo, never in the kit.** So one project's style rule
+   never leaks into another project.
+
+The page is one file you open in a browser. It holds one card per finding:
+
+- Each card sits at its own `#PR-NN` anchor, so you can link to a single finding.
+- A card you still have to act on is **open**. A card you set to `fixed` or
+  `rejected` is **collapsed**, so the list shrinks as you work through it.
+- Collapsed, a card shows a short title, its concern, its status, and whether
+  the code was found. That is enough to skip it or open it.
+- Open, it adds the reviewer's exact words, the code site and snippet, the root
+  cause, and a suggested fix.
+- Hard words get a small chip at the bottom of the card. Hover or tab to it for
+  a plain meaning.
+- A side rail lists every finding. Buttons expand or collapse them all, or show
+  only one status.
+
+---
+
+## 4. LLM Wiki — "One wiki across many repos"
 
 Copy `project/.claude/` (as `.claude/`) to the folder that contains your repos.
 It summarizes and links back to the per-repo wikis — never copies content.

@@ -19,14 +19,17 @@ This repo holds **two sibling kits**:
 
 Everything in this file describes the `root/.claude/` crew unless stated otherwise.
 
-This scaffold ships two independent workflows:
+This scaffold ships three independent workflows:
 
 1. **Feature pipeline** — five-role crew that drives a feature from raw idea to
    approved, step-by-step implementation plan and then through code-producing steps.
 2. **Domain wiki pipeline** — two runtime agents that bootstrap and then keep a
    living DDD wiki under `docs/domain/` in sync with the codebase.
+3. **PR review loop** — a read-only analyst agent that turns hand-written PR
+   review notes into evidenced findings, then, after you fix the code, into
+   rule sections inside this repo's own `.claude/skills/`.
 
-The two pipelines are independent but share the same `docs/` root — with **one documented exception**: `/workflow:step-handoff` invokes `/project:update` at session close to keep the wiki in sync (see the carve-out under *When to use which workflow*).
+The three pipelines are independent but share the same `docs/` root — with **one documented exception**: `/workflow:step-handoff` invokes `/project:update` at session close to keep the wiki in sync (see the carve-out under *When to use which workflow*).
 
 ## Feature/Workflow Pipeline
 
@@ -34,7 +37,7 @@ Five-role crew: Product Owner, Business Analyst, Architect, Software Engineer, T
 
 1. `/feature:new <NAME>` — Product Owner brainstorms intent (no files written), hands off to BA.
 2. `/feature:structure <NAME>` — four stages with one APPROVE gate per stage:
-   - stage-1: Business Analyst authors `<NAME>.requirement.md` (with `Challenges to PO framing` appendix). **When both `docs/domain/` and `docs/narrative/` are absent**, the Architect first runs a read-only `codebase-recon` pass (reads source as-needed) and hands the BA a Current Behavior Brief — persisted as the `## Current Behavior (Architect recon)` appendix; the BA never reads source, and an optional bounded `[Architect Q]` round (≤1) lets it ask the Architect. If either wiki tree exists, the BA grounds on it and no recon runs.
+   - stage-1: Business Analyst authors **two** files — a flat `<NAME>.requirement.md` holding only the final requirement (Goal / In scope / Out of scope / Success criteria / Constraints, plus a short `Current behavior` when existing behavior changes), and a sibling `<NAME>.requirement-trace.md` holding the history behind it (raw prose, `Challenges to PO framing` table, Q&A decisions, verbatim recon brief). Downstream agents plan and test from `requirement.md`; the trace file is never a planning input. **When both `docs/domain/` and `docs/narrative/` are absent**, the Architect first runs a read-only `codebase-recon` pass (reads source as-needed) and hands the BA a Current Behavior Brief — persisted verbatim in the trace file and distilled into the requirement's `Current behavior` section; the BA never reads source, and an optional bounded `[Architect Q]` round (≤1) lets it ask the Architect. If either wiki tree exists, the BA grounds on it and no recon runs.
    - stage-2-overview: **parallel** — Architect authors `<NAME>.overview-plan.md` (canonical Step A / B / … list) and Tester authors `<NAME>.test.md` (e2e/acceptance spec, Given/When/Then, from the requirement). One combined APPROVE covers both.
    - stage-2-analyzed: Architect authors `<NAME>.analyzed.md` including the per-step Severity table (`Step ID | Severity`; reads `test.md`).
    - stage-2-plan: Software Engineer authors mechanical `<NAME>.plan.md` (no Severity column there); its final step is the E2E validation gate.
@@ -81,19 +84,44 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 
 **Migration story (no-op for existing trees).** Nothing existing moves. The canonical schema continues to live at `docs/domain/` exactly as before; no rename, no folder shift, no path change to any frontmatter field. The only visible difference for a downstream repo is the *appearance* of a new tree at `docs/narrative/` *if and only if* the user opts in by invoking `/project:overview`. Repos that never invoke the new command are byte-identical before and after this change. The fences inside `docs/narrative/` are now load-bearing on the diff path (no longer inert).
 
+## PR Review Loop
+
+Two root-tier commands turn PR review feedback into durable, repo-local rules.
+
+1. `/pr-review:analyze --feature <feature> [--review <stem>]` — reads the hand-written notes under `docs/<feature>/pr-review/`, spawns the read-only `pr-review-analyst` to segment them and attach `file:line` evidence, appends findings to `<stem>.pr-review.ledger.md`, then has a `sonnet` subagent render `<stem>.pr-review.html`. Gate-free. Gives **no** validity verdict — every finding is shown and the human judges.
+2. `/pr-review:learn --feature <feature> [--review <stem>]` — takes ledger rows where `status: fixed` and `promoted: no`, has the analyst draft one rule section each, shows every draft, and after `APPROVE` appends them to the **consuming repo's** `.claude/skills/<concern>/SKILL.md`. Never writes a rule into the root tier.
+
+Load-bearing rules of this pipeline:
+
+- **The ledger is upstream.** The HTML is always rendered from the ledger, never edited directly. A sweep re-renders whenever the ledger is newer than the page.
+- **The ledger owns finding IDs.** Input is free prose, so a later run never re-segments a finding already in the ledger — it re-matches on the verbatim quote text. Only new comments get new IDs.
+- **Evidence has three states**, not two: `Located`, `Not code-locatable`, `Not found`. Root cause is written **only** when the state is `Located`; otherwise the literal `not established — no code evidence`. A slot that must be filled invites fabrication.
+- **The stored snippet goes stale after the fix, on purpose.** It records what was wrong at review time.
+- **`evidence-detail` and the snippet may cover different widths.** `evidence-detail` names the full range the claim rests on; the snippet shows only what fits under the 12-line cap, centred on the anchor. A wider range than snippet is correct, not a mismatch.
+- **`status` drives what the page shows collapsed.** The page is one HTML file holding one card per finding, each at its own `#PR-NN` anchor. An `open` finding is expanded on first paint; `fixed` and `rejected` are collapsed. So the list shrinks as you work through it, and flipping `status` in the ledger is the only thing you need to do to change the page.
+- **Every finding carries a short `title`.** Max 60 characters, plain words, names the problem and not the fix. It is the only text a collapsed card shows, so a bad title makes a card unskippable.
+- **Hints are optional and bounded.** Zero to four per finding, each a hard word from that card with a plain meaning of at most 12 words. Zero is a correct answer — a hint invented to fill the row is noise.
+- **A new open concern must be wired** into a reserved skill's `## Also load` list. Only the three reserved concerns are auto-discovered; an unwired skill is a silent dead rule.
+- Design record: `docs/superpowers/specs/2026-08-05-pr-review-loop-design.md` — **untracked**. `docs/` is git-ignored, so this file is local to your clone and will not be there in a fresh one.
+
 ## Layout
 
-- `root/.claude/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, workflow-step-planner, project-explorer, project-update, project-overview)
-- `root/.claude/commands/` — slash commands under `feature/`, `project/`, `workflow/`
-- `root/.claude/skills/` — concern-named skills (one folder per skill). Feature-crew **capability** skills (`feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`, `open-question-drafting`) + **cross-cutting** skills (`pipeline-protocol`, `project-seams`, `prompt-defense`, `repo-layout`) + the three wiki skills (`project-explorer`, `project-overview`, `project-update`)
-- `root/.claude/templates/` — `feature.requirement.md`, `feature.overview-plan.md`, `feature.test.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`, `project-rules.template.md` (copy-me example for a project rule skill)
+- `root/.claude/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, workflow-step-planner, project-explorer, project-update, project-overview, pr-review-analyst)
+- `root/.claude/commands/` — slash commands under `feature/`, `pr-review/`, `project/`, `workflow/`
+- `root/.claude/skills/` — concern-named skills (one folder per skill). Feature-crew **capability** skills (`feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `codebase-recon`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`, `open-question-drafting`) + **cross-cutting** skills (`pipeline-protocol`, `project-seams`, `prompt-defense`, `repo-layout`) + the three wiki skills (`project-explorer`, `project-overview`, `project-update`) + the two pr-review skills (`pr-review-analysis`, `pr-review-learning`)
+- `root/.claude/templates/` — `feature.requirement.md`, `feature.requirement-trace.md`, `feature.overview-plan.md`, `feature.test.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`, `project-rules.template.md` (copy-me example for a project rule skill), `pr-review.ledger.md`, `pr-review.html`
 - `root/.claude/CLAUDE.md` — versioned **Global Engagement Rules** (general R-XX rules only, no kit docs; source of truth for `~/.claude/CLAUDE.md`). `install.ps1` replaces the profile copy on every run (previous version kept as `CLAUDE.md.bak` when content changes).
 - `root/.claude/CONVENTIONS.md` — how a consuming project supplies its own rule skills + optional agents under its `.claude/` tree (the stack-specific seam this kit deliberately omits); also holds the per-agent context-access matrix
 - `root/.claude/hooks/` — `session-start-banner.py`
-- `docs/<FEATURE>/` — feature pipeline artifacts: `<FEATURE>.requirement.md`, `.overview-plan.md`, `.plan.md`, `.analyzed.md`, `.status.md`. Raw requirements also start here.
+- `docs/<FEATURE>/` — feature pipeline artifacts: `<FEATURE>.requirement.md` (final requirement, flat), `.requirement-trace.md` (how it was reached), `.overview-plan.md`, `.plan.md`, `.analyzed.md`, `.status.md`. Raw requirements also start here — stage-1 rewrites `requirement.md` in place, so the raw prose survives only in `.requirement-trace.md`.
 - `docs/domain/` — domain wiki output owned by the project-explorer / project-update agents. Bootstrapped once, then diff-updated on every subsequent run.
 - `docs/narrative/` — human-readable narrative tree owned by the `project-overview` agent at bootstrap and by `/project:update` on every subsequent code change. One file per bounded context (`<bc>/walkthrough.md`) plus a top-level `architecture.md`.
 - `root/.claude/agents/project-overview.md` — runtime agent definition for the narrative bootstrap. Mirrors the `project-explorer` / `project-update` sibling pattern.
+- `root/.claude/commands/pr-review/` — `analyze.md`, `learn.md`
+- `root/.claude/agents/pr-review-analyst.md` — read-only agent for the PR review loop
+- `root/.claude/skills/pr-review-analysis/`, `root/.claude/skills/pr-review-learning/` — the two PR-review capability skills
+- `root/.claude/templates/pr-review.ledger.md`, `root/.claude/templates/pr-review.html` — ledger shape + card page shell
+- `docs/<FEATURE>/pr-review/` — your review notes, plus the generated ledger and card page per review file
 - `project/.claude/` — the sibling project-tier LLM-Wiki kit (out of scope for this file). Documented in `project/.claude/README.md`.
 
 ## Conventions

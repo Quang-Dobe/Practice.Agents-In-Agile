@@ -175,6 +175,8 @@ The page is one file you open in a browser. It holds one card per finding:
 - A side rail lists every finding. Buttons expand or collapse them all, or show
   only one status.
 
+Walkthrough: [`docs/workflow-pr-review-loop.md`](docs/workflow-pr-review-loop.md)
+
 ---
 
 ## 4. LLM Wiki — "One wiki across many repos"

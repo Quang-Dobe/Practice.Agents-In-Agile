@@ -46,6 +46,8 @@ Five-role crew: Product Owner, Business Analyst, Architect, Software Engineer, T
 4. `/workflow:step-approve <NAME>` — flip current step to `[X]` after user types APPROVE.
 5. `/workflow:step-handoff <NAME>` — end-of-session status update.
 
+Walkthrough: `docs/workflow-feature-pipeline.md`
+
 ## Domain Wiki Pipeline
 
 Three runtime agents own everything under `docs/domain/` and `docs/narrative/`. The DDD canonical schema (bounded contexts, aggregates, events, commands, repositories, services, glossary, context map) lives under `docs/domain/` — owned by the `project-explorer` and `project-update` pair. The human-readable narrative tree (one-page repo overview + one walkthrough per bounded context) lives under `docs/narrative/` — owned by the new `project-overview` agent. All three are runtime-only and never produce planning artifacts. The pipeline runs in two passes: narrative first (so a non-tech reader can follow the business flow), then schema (with narrative as soft input where present).
@@ -84,6 +86,8 @@ Neither command writes outside its own output tree (`/project:overview` writes o
 
 **Migration story (no-op for existing trees).** Nothing existing moves. The canonical schema continues to live at `docs/domain/` exactly as before; no rename, no folder shift, no path change to any frontmatter field. The only visible difference for a downstream repo is the *appearance* of a new tree at `docs/narrative/` *if and only if* the user opts in by invoking `/project:overview`. Repos that never invoke the new command are byte-identical before and after this change. The fences inside `docs/narrative/` are now load-bearing on the diff path (no longer inert).
 
+Walkthrough: `docs/workflow-domain-wiki.md`
+
 ## PR Review Loop
 
 Two root-tier commands turn PR review feedback into durable, repo-local rules.
@@ -103,6 +107,8 @@ Load-bearing rules of this pipeline:
 - **Hints are optional and bounded.** Zero to four per finding, each a hard word from that card with a plain meaning of at most 12 words. Zero is a correct answer — a hint invented to fill the row is noise.
 - **A new open concern must be wired** into a reserved skill's `## Also load` list. Only the three reserved concerns are auto-discovered; an unwired skill is a silent dead rule.
 - Design record: `docs/superpowers/specs/2026-08-05-pr-review-loop-design.md` — **untracked**. `docs/` is git-ignored, so this file is local to your clone and will not be there in a fresh one.
+
+Walkthrough: `docs/workflow-pr-review-loop.md`
 
 ## Layout
 

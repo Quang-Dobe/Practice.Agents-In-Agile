@@ -9,6 +9,9 @@
     target. Folders are merged, never wiped — target-only files (your own skills, agents, ...)
     survive. settings.json, hooks/ and README.md stay repo-only. Preview with -WhatIf.
     Before CLAUDE.md is replaced with different content, the old one is kept as CLAUDE.md.bak.
+
+    A file whose bytes already match the source is skipped, not rewritten, so the output is a
+    true change list. Use -Verbose to also list the skipped files.
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
@@ -26,19 +29,28 @@ $items = @('agents', 'skills', 'commands', 'templates', 'CLAUDE.md', 'CONVENTION
 $files = $items | ForEach-Object { Join-Path $srcRoot $_ } | Where-Object { Test-Path $_ } |
     Get-ChildItem -Recurse -File
 
+$added = 0; $replaced = 0; $skipped = 0
+
 foreach ($file in $files) {
     $rel = $file.FullName.Substring($srcRoot.Length).TrimStart('\', '/')
     $dest = Join-Path $Target $rel
-    $tag = (Test-Path $dest) ? '[replace]' : '[add]'
+    $exists = Test-Path $dest
+
+    if ($exists -and (Get-FileHash $dest).Hash -eq (Get-FileHash $file.FullName).Hash) {
+        $skipped++
+        Write-Verbose ("  {0,-9} {1}" -f '[same]', $rel)
+        continue
+    }
+
+    $tag = $exists ? '[replace]' : '[add]'
     if ($PSCmdlet.ShouldProcess($dest, 'Install (overwrite)')) {
         New-Item -ItemType Directory -Force -Path (Split-Path $dest -Parent) | Out-Null
-        if ($rel -eq 'CLAUDE.md' -and (Test-Path $dest) -and
-            (Get-FileHash $dest).Hash -ne (Get-FileHash $file.FullName).Hash) {
-            Copy-Item -Path $dest -Destination "$dest.bak" -Force
-        }
+        if ($rel -eq 'CLAUDE.md' -and $exists) { Copy-Item -Path $dest -Destination "$dest.bak" -Force }
         Copy-Item -Path $file.FullName -Destination $dest -Force
-        Write-Host ("  {0,-9} {1}" -f $tag, $rel) -ForegroundColor Green
     }
+    if ($exists) { $replaced++ } else { $added++ }
+    Write-Host ("  {0,-9} {1}" -f $tag, $rel) -ForegroundColor Green
 }
 
-Write-Host "Done: $($files.Count) files." -ForegroundColor Cyan
+Write-Host ("Done: {0} added, {1} replaced, {2} unchanged of {3} scanned." -f `
+    $added, $replaced, $skipped, $files.Count) -ForegroundColor Cyan

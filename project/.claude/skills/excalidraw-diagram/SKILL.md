@@ -1,6 +1,6 @@
 ---
 name: excalidraw-diagram
-consumed_by: wiki-diagrammer agent, diagram:build command
+consumed_by: wiki-diagrammer agent
 description: Create Excalidraw diagram JSON files that make visual arguments. Use when the user wants to visualize workflows, architectures, or concepts.
 ---
 
@@ -24,28 +24,6 @@ changes, nothing else:
 
 The upstream README is kept as `UPSTREAM-README.md`. Everything below this section is
 upstream design methodology, unchanged.
-
-## Where the kit deviates from the method below
-
-Two points, both found by following this skill on a real 250-element diagram.
-
-**`opacity: 100` is not absolute.** `## Modern Aesthetics` and quality checklist item 19 both say
-always. The `wiki-diagram` skill overrides it for one case: an edge marked `[planned]` renders at
-`opacity: 40`, because fading is the only way to say "registered but nobody calls it" without
-inventing a fourth arrow style. Every other element still stays at 100.
-
-**Build in sections, then assemble and validate.** `## Build in Sections` rightly forbids one-shotting
-the JSON, delegating to a coding agent, or writing a generator that invents coordinates. It does not
-forbid — and the kit recommends — writing each section by hand as its own fragment, then joining them
-with a small assembler that **checks** rather than creates: unique ids, every `boundElements` entry
-pointing at an element that exists, both ends of every arrow bound, `roughness`, `fontFamily` and the
-provenance marker present on all elements. Setting coordinates by hand is the rule; re-checking them
-by hand on every pass is how bindings silently rot. Seeds must be deterministic — derived from the
-section namespace and position, never random — or the `wiki-diagram` idempotency gate can never hit.
-
-**Who calls this skill in the kit:** the `wiki-diagrammer` agent, driven by
-`/wiki:enhance` step 9b. See `.claude/skills/wiki-diagram/SKILL.md` for what to draw and
-where it may write.
 
 ## Customization
 

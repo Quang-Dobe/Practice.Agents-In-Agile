@@ -121,8 +121,8 @@ grouping with no invariant is **not** a boundary — it gets no box.
 An empty context map is still a valid result: the repos are drawn side by side, unconnected, and the
 subtitle says so.
 
-Two skills drive it, in locked order: `wiki-diagram` (what to draw, where bytes may land) then
-`excalidraw-diagram` (how it should look). The second is a **vendored** copy of
+The `wiki-diagrammer` agent holds what to draw and where bytes may land; it loads one skill for how
+it should look — `excalidraw-diagram`, a **vendored** copy of
 `coleam00/excalidraw-diagram-skill` with four changes, listed in its own
 `## Vendored copy — what was changed` section. One of those four is not cosmetic: upstream's
 `?bundle` import 404s on a transitive submodule, which hangs **every** render until Playwright times
@@ -143,15 +143,15 @@ skipped, one advisory line is printed, and the rest of the run continues.
 **Idempotent by byte-compare.** A candidate `.excalidraw` equal to the file on disk means zero
 renders and no HTML rewrite. A clean re-enhance costs no Chromium passes.
 
-**Also note:** the tier already ships a second, unrelated diagram renderer —
-`present-draw-diagram`, an inline-SVG renderer used by `/present:build`. The two do not
-overlap: `present-draw-diagram` draws a **feature's** workflow into a dossier tab with no
-dependencies; `excalidraw-diagram` draws the **system's** architecture into a hand-editable
-file. Pick by subject, not by taste.
+**Also note:** the tier has a second, unrelated diagram renderer — the `## Drawing a diagram`
+section of the `present-builder` agent, an inline-SVG renderer used by `/present:build`. The two do
+not overlap: that one draws a **feature's** workflow into a dossier tab with no dependencies;
+`excalidraw-diagram` draws the **system's** architecture into a hand-editable file. Pick by subject,
+not by taste.
 
 ## `/present:build` — feature dossier
 
-Given `<feature> [unit...]`, spawns the `present-builder` agent to render one `docs/<feature>/present/present-<unit>.html` per unit (`requirement`, `overview-plan`, `test`, `analyzed`, `plan`), then rebuilds the `present.html` index (tabs limited to units that exist). Diagram units (`overview-plan`, `plan`) additionally follow `present-draw-diagram`. Gate-free, idempotent (rewrites only changed bytes), fence-preserving. Refuses with a one-line message if neither project grounding (`docs/domain`/`docs/narrative`) nor root grounding (`repo-layout.md`/`docs/memory`/`docs/references.md`) is present.
+Given `<feature> [unit...]`, spawns the `present-builder` agent to render one `docs/<feature>/present/present-<unit>.html` per unit (`requirement`, `overview-plan`, `test`, `analyzed`, `plan`), then rebuilds the `present.html` index (tabs limited to units that exist). Diagram units (`overview-plan`, `plan`) additionally follow the agent's `## Drawing a diagram` section. Gate-free, idempotent (rewrites only changed bytes), fence-preserving. Refuses with a one-line message if neither project grounding (`docs/domain`/`docs/narrative`) nor root grounding (`repo-layout.md`/`docs/memory`/`docs/references.md`) is present.
 
 ## Who owns docs/memory/
 
@@ -177,7 +177,7 @@ Use this exact shape (one line, comma-separated, never a YAML list) for every sk
 | `.claude/agents/wiki-architect.md` | Sole writer of docs/references.md (cross-repo synthesis, fence-preserving). |
 | `.claude/commands/diagram/build.md` | Draw the diagram from an existing wiki: `--effort low\|medium\|high`, `--html` |
 | `.claude/agents/wiki-diagrammer.md` | Sole writer of the `docs/references.diagram.*` files. Has `Bash` — the render loop is a shell script. |
-| `.claude/skills/wiki-diagram/SKILL.md` | What to draw from the Context Map + write confinement, render loop, idempotency, fence rules. |
+| `.claude/agents/wiki-diagrammer.md` | What to draw from the Context Map + write confinement, render loop, idempotency, effort levels. |
 | `.claude/skills/excalidraw-diagram/` | Vendored diagram-design method + `references/render_excalidraw.py` (patched with `--svg`) and a dark `color-palette.md`. |
 | `.claude/templates/references-diagram.html` | Dark, theme-aware page shell with the `diagram:begin:svg` slot and a human fence. |
 | `.claude/commands/wiki/ask.md` **(optional)** | Entry slash command: classifies and runs the 6-tier retrieval **inline in the main thread** (no sub-agent); lazy-loads `wiki-memory` only on a T6 source read. |
@@ -188,5 +188,4 @@ Use this exact shape (one line, comma-separated, never a YAML list) for every sk
 | `.claude/commands/present/build.md` | Mode-gates (project/root), resolves units, spawns `present-builder`, rebuilds the `present.html` index. |
 | `.claude/agents/present-builder.md` | Runtime agent: holds every unit's projection procedure and writes `docs/<feature>/present/present-<unit>.html`. |
 | `.claude/agents/present-builder.md` (units) | One section per unit: `requirement` -> Introduction, `overview-plan` -> Workflow (+ Component Design), `test` -> E2E Test, `analyzed` -> Analyzed, `plan` -> Code Structure (blueprint pre-code, real file content post-implementation). |
-| `.claude/skills/present-draw-diagram/SKILL.md` | Shared SVG diagram renderer (dark-mode design system, animated flow particles) used by the diagram units. |
 | `.claude/templates/present*.html`, `present.css` | HTML/CSS shells the present-* skills fill in. |

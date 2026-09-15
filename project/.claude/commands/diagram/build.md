@@ -49,13 +49,7 @@ diagram: unknown option <arg> — expected --effort low|medium|high or --html
 
    If the file exists but has no `## Context Map`, say so and stop. Never invent a map.
 
-3. **Reload the skills**, in this locked order:
-   1. `.claude/skills/wiki-diagram/SKILL.md` — what to draw at each effort, where bytes may land,
-      the render loop, idempotency, the pre-flight guard, write confinement.
-   2. `.claude/skills/excalidraw-diagram/SKILL.md` — how it should look, plus its
-      `references/color-palette.md`, `references/element-templates.md`, `references/json-schema.md`.
-
-4. **Spawn the `wiki-diagrammer` agent, once.** Pass it: the resolved root, the **effort level**,
+3. **Spawn the `wiki-diagrammer` agent, once.** Pass it: the resolved root, the **effort level**,
    whether `--html` was given, and `output_root` when the root is not the working directory.
 
    It writes `docs/references.diagram.excalidraw` and `docs/references.diagram.png` always, and
@@ -63,7 +57,7 @@ diagram: unknown option <arg> — expected --effort low|medium|high or --html
    without a page there is nothing to inline into. It returns the paths, the effort it drew at, and
    its counts.
 
-5. **`--html` only — write the page.** At **this command layer**, not inside `wiki-diagrammer` (that
+4. **`--html` only — write the page.** At **this command layer**, not inside `wiki-diagrammer` (that
    agent has no `Agent` tool), spawn a `model: "sonnet"` subagent per `[R-HTML-AGENT]` to write
    `docs/references-diagram.html` from `.claude/templates/references-diagram.html`.
 
@@ -76,7 +70,7 @@ diagram: unknown option <arg> — expected --effort low|medium|high or --html
 
    Without `--html`, skip this step entirely and say so in the summary.
 
-6. **Print a summary**: the files written, the effort used, node and edge counts, and any advisory.
+5. **Print a summary**: the files written, the effort used, node and edge counts, and any advisory.
 
 ## Effort
 
@@ -130,10 +124,36 @@ legibly, say so in the summary rather than shipping a crowded canvas.
 The page inlines the SVG rather than embedding the PNG, because a raster image softens the moment a
 reader zooms and zooming is the point of the page's camera.
 
+## Page slots
+
+`docs/references-diagram.html` is **fully regenerated** every run, and it is **disposable output** —
+nothing on it survives. There is no human fence. A note worth keeping goes in `references.md`, inside
+its own `<!-- human:begin -->` fence, where the `wiki-architecture` skill protects it.
+
+The page has exactly **two** slots. Both are replaced every run:
+
+| Slot | Filled from | Empty when |
+|---|---|---|
+| `<!-- diagram:begin:svg -->` / `end` | the exported `references.diagram.svg`, inlined verbatim | never — no SVG means no page was written |
+| `<!-- table:begin:boundaries -->` / `end` | the `## Boundaries` rows of `references.md` — region, members, invariant — as a real `<table>` | that section is absent |
+
+A slot whose source is absent gets **nothing between its markers**, and the page hides the
+surrounding block. Never write "N/A", never invent a row, and never delete a marker pair — the next
+run finds its slot by them.
+
+**Two slots, deliberately.** The picture answers *how does a request flow*; the boundaries table
+answers *what rule holds inside each region*. Ownership, edge state and per-repo prose all live in
+`references.md`, which is the document to read when you want them. Duplicating them here would give
+two places to go stale.
+
+**Boundaries stays a real `<table>`, outside the artwork.** Its cells hold identifiers, config keys
+and `file:line` references, and text baked into a diagram cannot be searched, selected, copied, or
+read aloud.
+
 ## Posture
 
 - **Gate-free.** No `APPROVE`. The safety net is single-owner write confinement plus the
-  `wiki-diagram` pre-flight guard, which refuses to overwrite a file this kit did not write.
+  `wiki-diagrammer` pre-flight guard, which refuses to overwrite a file this kit did not write.
 - **No auto-commit.** Leave every write as a working-tree change.
 - **Local paths only.**
 - **Idempotent.** A re-run at the same effort against an unchanged `references.md` rebuilds the same

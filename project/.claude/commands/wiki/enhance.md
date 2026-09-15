@@ -23,8 +23,8 @@ only.
    then `.claude/skills/wiki-memory/SKILL.md` (rollup write), then
    `.claude/skills/wiki-architecture/SKILL.md` (architecture write). Stop-before-write and
    report if any is missing/malformed when its write path is reached. **Not** the
-   `wiki-diagram` skill — this command draws nothing; `/diagram:build` owns that and loads it
-   itself.
+   diagram rules — this command draws nothing; `/diagram:build` and its
+   `wiki-diagrammer` agent own that entirely.
 4. **Refuse only when nothing to do.** If **no** depth-1 repo has narrative/domain AND no
    repo is bootstrappable (empty), emit the zero-repos advisory and stop. Otherwise proceed.
 5. **Discover repos** (orchestration skill): depth-1 children except `docs/` and `.claude/`;

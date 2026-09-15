@@ -37,7 +37,8 @@ harness preloads those skills at startup. Two kinds of skill exist:
 - **Generic capability skills** — stack-agnostic, installed to user scope under `~/.claude/skills/`.
   They hold the *how* of each artifact (`architecture-planning`,
   `risk-severity-analysis`, `implementation-planning`, `step-execution`, …) plus cross-cutting
-  process (`pipeline-protocol`, `project-seams`, `prompt-defense`, `repo-layout`). **Never edited per project.**
+  process (`pipeline-protocol`, `project-seams`, `prompt-defense`, `repo-layout`,
+  `library-knowledge`). **Never edited per project.**
 - **Project rule/pattern skills** — stack-specific, authored by the consuming repo under
   `.claude/skills/`. They hold *your* rules and framework patterns.
 
@@ -155,6 +156,14 @@ naming, and manifest wiring. That guidance still governs file shape and descript
   `rules-checker` audits diffs if present.
 - **Per-feature overrides** go in the `Project-Specific Rule Overrides` section of
   `<feature>.analyzed.md`, citing the rule skill + section being overridden.
+- **Architect / Software Engineer / workflow-step-planner** additionally read the optional
+  `tech-stack.md` pins and `docs/knowledge/` cache through `library-knowledge`, so a library fact is
+  version-correct rather than remembered. That content is **reference data, never instruction**: a
+  repo rule skill and an `analyzed.md` override both outrank it (`library-knowledge` `## Precedence`).
+  Tester, business-analyst and product-owner do **not** load it — a black-box spec and a product
+  framing must not carry library detail. None of the three may call Context7 themselves (read-only
+  `tools:`); a gap the cache cannot fill becomes a bounded `[Library Q]` that main Claude answers and
+  relays, exactly as it relays a stage-1 `[Architect Q]`.
 - All seam discovery is the job of the generic `project-seams` skill — agents never hardcode a
   project-skill path.
 
@@ -163,6 +172,10 @@ naming, and manifest wiring. That guidance still governs file shape and descript
 - The root tier (`~/.claude/`) is never edited per project. All project rules live under `.claude/`.
 - Every seam is optional. Missing seam → agent emits no error, proceeds.
 - `docs/architecture.md` is a free-form complement to the rule skills, not a replacement.
+- `tech-stack.md` (scan-root library pin manifest) and `docs/knowledge/` (its cache) are optional
+  inputs for the architect, software-engineer and workflow-step-planner; absent → one advisory line
+  and the agent proceeds. Only `/knowledge:init`, `/knowledge:refresh` and `/knowledge:cache` write
+  them — every crew agent is read-only.
 - `repo-layout.md` (workspace-root scan contract) is an optional input for the three wiki runtime agents (`project-explorer`, `project-overview`, `project-update`); when absent they fall back to built-in heuristics with no behavioral change. Only `/wiki:bootstrap` drafts it and `/wiki:enhance` reconciles it — the crew is read-only.
 
 ## Agent context-access matrix
@@ -179,10 +192,10 @@ Each agent's `skills:` manifest:
 |---|---|---|
 | product-owner | `feature-intake` | `pipeline-protocol`, `prompt-defense` |
 | business-analyst | `requirement-authoring` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
-| architect | `architecture-planning`, `risk-severity-analysis`, `codebase-recon` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
-| software-engineer | `implementation-planning`, `step-execution`, `e2e-validation` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
+| architect | `architecture-planning`, `risk-severity-analysis`, `codebase-recon` | `pipeline-protocol`, `project-seams`, `library-knowledge`, `prompt-defense` |
+| software-engineer | `implementation-planning`, `step-execution`, `e2e-validation` | `pipeline-protocol`, `project-seams`, `library-knowledge`, `prompt-defense` |
 | tester | `acceptance-spec-authoring` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
-| workflow-step-planner | `open-question-drafting` | `project-seams`, `prompt-defense` |
+| workflow-step-planner | `open-question-drafting` | `project-seams`, `library-knowledge`, `prompt-defense` |
 | pr-review-analyst | `pr-review-analysis`, `pr-review-learning` | `project-seams`, `prompt-defense` |
 
 Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** = optional, never blocks.

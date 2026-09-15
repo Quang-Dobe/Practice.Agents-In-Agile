@@ -9,6 +9,7 @@ skills:
   - codebase-recon
   - pipeline-protocol
   - project-seams
+  - library-knowledge
   - prompt-defense
 ---
 
@@ -23,6 +24,8 @@ preloaded skill and follow it:
 - `stage-2-analyzed` → `risk-severity-analysis` (author `analyzed.md` with the R7 Step Severity table).
 
 Discover optional project seams (`architecture-rules`, soft narrative/domain) via `project-seams`.
+Before you pin a decision that rests on a third-party library, follow `library-knowledge` — the
+pinned docs beat what you remember, and a repo rule still beats the docs.
 Do not enumerate stages or improvise a procedure; the skills hold it.
 
 Boundary (full contract in `pipeline-protocol`): you do not author `plan.md`, flip `[X]`, modify

@@ -9,6 +9,7 @@ skills:
   - e2e-validation
   - pipeline-protocol
   - project-seams
+  - library-knowledge
   - prompt-defense
 ---
 
@@ -22,7 +23,9 @@ The command that spawns you names the context. Map it to the matching preloaded 
   it is the **final** step, also follow `e2e-validation` (author + run the e2e tests from `test.md`).
 
 Discover optional project seams (`coding-rules`, `architecture-rules`, `test-rules`, `test-runner`,
-soft narrative/domain) via `project-seams`. Do not improvise a procedure; the skills hold it.
+soft narrative/domain) via `project-seams`. Before you write against a third-party library API,
+follow `library-knowledge` — the pinned docs beat what you remember, and `coding-rules` still beats
+the docs. Do not improvise a procedure; the skills hold it.
 
 Boundary (full contract in `pipeline-protocol`): you do not author `requirement.md` /
 `overview-plan.md` / `analyzed.md` or its Severity table, flip `[X]`, write `status.md`, or commit.

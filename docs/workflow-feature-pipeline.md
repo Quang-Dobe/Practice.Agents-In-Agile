@@ -130,7 +130,7 @@ per step from the overview plan:
 | ------- | -------- |
 | A       | …        |
 
-Each step's severity is what later drives `/workflow:step-start
+Each step's severity is what later drives `/feature:implement
 --bypass-approval`: low-severity steps can be auto-approved, higher-severity
 steps still require your explicit sign-off.
 
@@ -172,7 +172,7 @@ implementation step (`Step A`, `Step B`, …) you do this loop:
 ### 1. Start the step
 
 ```
-/workflow:step-start payments-export
+/feature:implement payments-export
 ```
 
 The kit:
@@ -180,11 +180,10 @@ The kit:
 1. Finds the first un-approved step.
 2. Reads the requirement, the detailed plan, the status file, and the
    step's Severity row from the analysis file.
-3. Briefs you with: the step goal, the open questions you must answer
-   before coding, the inputs from previous steps, and
-   what will happen as soon as you give the go-ahead.
+3. Briefs you with: the step goal, the inputs from previous steps, the
+   step's severity, and what will happen as soon as you give the go-ahead.
 
-You answer the open questions in chat.
+You give the go-ahead in chat.
 
 ### 2. Engineer writes the code
 
@@ -195,17 +194,18 @@ changed and what to verify.
 
 ### 3. You approve
 
-Read the changes (and the tests if there were any). When you are happy:
+Read the changes (and the tests if there were any). When you are happy, type:
 
 ```
-/workflow:step-approve payments-export
+APPROVE
 ```
 
-The kit flips the step's checkbox to `[X]`, updates the status file's
-"current step" pointer, and shows you `git status` so you can decide when to
-commit. **The kit never commits for you — you commit explicitly.**
+The same command flips the step's checkbox to `[X]`, updates the status
+file's "current step" pointer, and shows you `git status` so you can decide
+when to commit. **The kit never commits for you — you commit explicitly.**
 
-Repeat for every step.
+Then it goes straight back to the brief for the next step. One command runs
+the whole loop.
 
 ### 4. Final step — E2E validation gate
 
@@ -215,20 +215,6 @@ and runs them; the step is done when they all pass green. When present, the
 SE hands off to the project's optional test-runner agent
 (`.claude/agents/test-runner.md`), which runs the suite and returns only the
 failures.
-
----
-
-## Phase 4 — Stopping for the day
-
-If you have to walk away mid-feature:
-
-```
-/workflow:step-handoff payments-export
-```
-
-The kit drafts a one-screen summary: what got done this session, what's
-next, what's still open. You confirm, it appends the summary to the status
-file, and the next session can pick up cleanly.
 
 ---
 

@@ -19,7 +19,7 @@ production + test source.
 The command that spawns you names the context. Map it to the matching preloaded skill and follow it:
 - `/feature:structure` stage-2-plan → `implementation-planning` (author the mechanical `plan.md`; its
   final step is the E2E validation gate; no Severity column).
-- `/workflow:step-start <Step ID>` → `step-execution` (implement the step's substeps + unit tests). If
+- `/feature:implement <Step ID>` → `step-execution` (implement the step's substeps + unit tests). If
   it is the **final** step, also follow `e2e-validation` (author + run the e2e tests from `test.md`).
 
 Discover optional project seams (`coding-rules`, `architecture-rules`, `test-rules`, `test-runner`,

@@ -15,13 +15,12 @@ The single source of truth for the contract every feature-crew agent obeys. Capa
 | `test.md` | tester |
 | `plan.md` + production code + unit tests + e2e tests | software-engineer |
 | (no file) brainstorm summary | product-owner |
-| (no file) open-question punch list | workflow-step-planner |
 | (no file) Current Behavior recon brief + stage-1 code-Q&A answers | architect (stage-1, wiki absent) |
 
 You touch **only your own artifact(s)**. You never modify another role's file, the templates, or other features' files.
 
 ## Checkbox + status ownership (main Claude, not agents)
-- You do **not** flip `[ ]` → `[X]`. Main Claude does that after the user types `APPROVE` (via `/workflow:step-approve` or the matching stage gate).
+- You do **not** flip `[ ]` → `[X]`. Main Claude does that after the user types `APPROVE` (in `/feature:implement` Phase 3, or the matching stage gate).
 - You do **not** create or update `<feature>.status.md`. Main Claude initializes and maintains it.
 
 ## Approval + questions

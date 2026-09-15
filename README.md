@@ -43,9 +43,9 @@ nothing advances until you type `APPROVE`.
 │ plan.md + code,  │             │
 │ step by step     │             │
 └────────┬─────────┘             │
-         │  /workflow:step-start │
+         │  /feature:implement   │
          ▼                       │
-    ┌──────────┐  step-approve   │
+    ┌──────────┐    APPROVE      │
     │  step OK │◄────────────────┘
     └────┬─────┘   (loop each step; the final step
          │          runs the E2E tests from test.md)
@@ -59,9 +59,7 @@ Commands:
 
 - `/feature:new <name>` — brainstorm with the Product Owner.
 - `/feature:structure <name>` — produce requirement, plans, analysis, test spec.
-- `/workflow:step-start <name>` — implement the next step.
-- `/workflow:step-approve <name>` — mark the current step done.
-- `/workflow:step-handoff <name>` — end-of-day summary for the next session.
+- `/feature:implement <name>` — run the next step: brief, implement, approve, advance.
 
 If the repo has no wiki yet, Stage 1 adds one extra step: the Architect reads the
 code and hands the Business Analyst a short "current behavior" brief, so the

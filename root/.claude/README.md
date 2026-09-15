@@ -20,9 +20,9 @@ After install, every repo you open gets the crew. The crew reads the repo and wr
 
 ```
 ~/.claude/                            ← install target (user scope)
-├── agents/                                ← 10 thin agents (identity + skills: manifest only)
-├── commands/{feature,pr-review,project,workflow}/   ← the slash commands you type
-├── skills/                                ← 20 concern-named skills (the actual "how")
+├── agents/                                ← 9 thin agents (identity + skills: manifest only)
+├── commands/{feature,pr-review,project}/   ← the slash commands you type
+├── skills/                                ← 19 concern-named skills (the actual "how")
 ├── templates/                             ← feature document shapes
 └── CONVENTIONS.md                         ← seam contract for repo-tier authors
 
@@ -70,7 +70,7 @@ Two commands close the gap between a PR review and the next feature's plan.
 
 ## Boundary
 
-The feature pipeline writes `docs/<FEATURE>/` plus the source code its steps produce. `/project:overview` writes only `docs/narrative/`; `/project:explore` writes only `docs/domain/`; `/project:update` writes both. Neither pipeline touches the other's files, with **one documented seam**: `/workflow:step-handoff` invokes `/project:update` at session close to keep the wiki in sync (it no-ops or refuses gracefully when both wiki trees are missing). Nothing in this tier writes inside `root/.claude/`, and nothing writes inside the consuming repo's `.claude/` — with one exception: `/pr-review:learn` appends rule sections under `<repo>/.claude/skills/`, and only after the user types `APPROVE`.
+The feature pipeline writes `docs/<FEATURE>/` plus the source code its steps produce. `/project:overview` writes only `docs/narrative/`; `/project:explore` writes only `docs/domain/`; `/project:update` writes both. Neither pipeline touches the other's files — run `/project:update` yourself when code changes and you want the wiki refreshed. Nothing in this tier writes inside `root/.claude/`, and nothing writes inside the consuming repo's `.claude/` — with one exception: `/pr-review:learn` appends rule sections under `<repo>/.claude/skills/`, and only after the user types `APPROVE`.
 
 ## Who owns what
 
@@ -80,14 +80,14 @@ The feature pipeline writes `docs/<FEATURE>/` plus the source code its steps pro
 | `<FEATURE>.overview-plan.md`, `.analyzed.md` (incl. Severity table) | architect |
 | `<FEATURE>.test.md` (Given/When/Then e2e spec) | tester (planning-only; no runtime role) |
 | `<FEATURE>.plan.md` + all source code | software-engineer |
-| `<FEATURE>.status.md` | mechanical (template-initialized, flipped by step-approve) |
+| `<FEATURE>.status.md` | mechanical (template-initialized, flipped by `/feature:implement` Phase 3) |
 | `docs/narrative/` | project-overview (bootstrap), project-update (every refresh) |
 | `docs/domain/` | project-explorer (bootstrap), project-update (every refresh) |
 | `<stem>.pr-review.ledger.md` | `/pr-review:analyze` appends findings; the human owns `status`; `/pr-review:learn` flips `promoted` |
 | `<stem>.pr-review.html` | rendered from the ledger by a `sonnet` subagent; never edited by hand |
 | rule sections in `<repo>/.claude/skills/` | `/pr-review:learn`, written by main Claude only after `APPROVE` |
 
-The product-owner writes nothing; the workflow-step-planner only drafts open questions.
+The product-owner writes nothing.
 
 ## Index — files in this tier
 
@@ -98,22 +98,19 @@ The product-owner writes nothing; the workflow-step-planner only drafts open que
 | `agents/architect.md` | Authors overview-plan + analyzed (risk + per-step Severity). |
 | `agents/tester.md` | Authors the e2e/acceptance spec from the approved requirement. |
 | `agents/software-engineer.md` | Authors the mechanical plan; implements every step (code + tests). |
-| `agents/workflow-step-planner.md` | Drafts open questions + rule implications before a step starts. |
 | `agents/project-overview.md` | Wiki runtime: bootstraps `docs/narrative/`. |
 | `agents/project-explorer.md` | Wiki runtime: bootstraps `docs/domain/`. |
 | `agents/project-update.md` | Wiki runtime: dual-pass diff-aware refresh of both trees. |
 | `commands/feature/new.md` | Start a brainstorm with the Product Owner. |
 | `commands/feature/structure.md` | Four APPROVE-gated stages: requirement → overview+test → analyzed → plan. |
-| `commands/workflow/step-start.md` | Brief + spawn the SE on the current open step. |
-| `commands/workflow/step-approve.md` | Flip the current step to done after `APPROVE`. |
-| `commands/workflow/step-handoff.md` | End-of-session status update; invokes `/project:update` (the one seam). |
+| `commands/feature/implement.md` | The whole step loop: brief, spawn the SE, flip to done after `APPROVE`, advance. |
 | `commands/project/overview.md` | One-shot narrative bootstrap (refuses on non-empty tree). |
 | `commands/project/explore.md` | One-shot schema bootstrap (refuses on non-empty tree). |
 | `commands/project/update.md` | Diff-aware dual-pass refresh (refuses when both trees missing). |
 | `commands/pr-review/analyze.md` | Read PR review notes, attach code evidence, render one card page per review file. Gate-free. |
 | `commands/pr-review/learn.md` | Promote fixed findings into this repo's own rule skills. `APPROVE`-gated. |
 | `agents/pr-review-analyst.md` | Read-only: returns evidenced findings, then rule drafts. Gives no validity verdict. |
-| `skills/` — 10 capability skills | `feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `codebase-recon`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`, `open-question-drafting`. |
+| `skills/` — 9 capability skills | `feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `codebase-recon`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`. |
 | `skills/` — 5 cross-cutting skills | `pipeline-protocol` (gates + handoff), `project-seams` (optional repo-tier rules), `prompt-defense`, `repo-layout` (opt-in scan-scope contract; read-only for the crew), `library-knowledge` (opt-in pinned library docs via Context7; read-only for the crew). |
 | `skills/` — 3 wiki skills | `project-overview`, `project-explorer`, `project-update` (single-owner, mirror their agents). |
 | `skills/` — 2 pr-review skills | `pr-review-analysis` (segment, evidence hunt, classify), `pr-review-learning` (draft rule text, resolve target skill). |

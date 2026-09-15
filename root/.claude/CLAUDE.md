@@ -72,7 +72,7 @@ The subagent sees **none** of our conversation. Its prompt MUST spell out:
 | every number, fact, and decision the page must show | it cannot read our thread |
 | for an edit: the current file content, or the exact lines to change | else it rewrites from scratch |
 
-- **Feature-pipeline collision (known, accepted).** In a `/workflow:step-start` step the software-engineer still owns the step and the review; for a `.html` / `.htm` file it delegates the **write** to the sonnet subagent, then verifies and integrates. Step ownership does not move.
+- **Feature-pipeline collision (known, accepted).** In a `/feature:implement` step the software-engineer still owns the step and the review; for a `.html` / `.htm` file it delegates the **write** to the sonnet subagent, then verifies and integrates. Step ownership does not move.
 - Publishing it as an Artifact → **read the whole file first** (the Artifact tool's own rule for files I did not write), then publish.
 - Relay what the page contains. The subagent's own report is never shown to me.
 
@@ -110,9 +110,13 @@ The subagent sees **none** of our conversation. Its prompt MUST spell out:
 
 - Every artifact captures: decision + alternatives considered + reasoning + consequences. No naked decisions.
 
+## Commit messages — [R-COMMIT]
+
+- A single tight summary line, imperative mood, ~50 chars where practical. Add a body only when the change needs context the subject can't carry — no per-file bullet lists unless asked. Never add a `Co-Authored-By` trailer or any other AI attribution.
+
 ## Authoring skills for agents — [R-SKILLS]
 
-- Asked to create or edit a **skill** for any crew agent (architect, business-analyst, product-owner, software-engineer, tester, workflow-step-planner, or the wiki runtime agents) → **read `~/.claude/CONVENTIONS.md` first**, then follow it. Do not draft the skill from memory.
+- Asked to create or edit a **skill** for any crew agent (architect, business-analyst, product-owner, software-engineer, tester, or the wiki runtime agents) → **read `~/.claude/CONVENTIONS.md` first**, then follow it. Do not draft the skill from memory.
 - CONVENTIONS.md owns: which tier the skill lives in (root vs project), concern naming, body sections, and the agent `skills:` manifest wiring.
 - Generic skill-writing guidance (e.g. `superpowers:writing-skills`) owns only file shape and description wording. **CONVENTIONS.md wins every conflict.**
 - Never put a stack-specific skill in the root tier. Project rules live in the consuming repo's own `.claude/skills/`.

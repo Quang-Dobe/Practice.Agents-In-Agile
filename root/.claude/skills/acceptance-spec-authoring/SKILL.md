@@ -24,4 +24,4 @@ Do **not** read source code, `docs/domain/`, `docs/architecture.md`, `overview-p
 3. Save via `Write`. Hand off per `pipeline-protocol`: "Stage 2-overview (test spec) complete. Awaiting the combined APPROVE on `<feature>.overview-plan.md` + `<feature>.test.md`."
 
 ## Boundary
-Writes a markdown spec only — never source. Does not author the Step Severity table (that is `risk-severity-analysis`, R7), other planning artifacts, or `status.md`; has no `/workflow:step-start` or end-of-feature role. Full contract: `pipeline-protocol`.
+Writes a markdown spec only — never source. Does not author the Step Severity table (that is `risk-severity-analysis`, R7), other planning artifacts, or `status.md`; has no `/feature:implement` or end-of-feature role. Full contract: `pipeline-protocol`.

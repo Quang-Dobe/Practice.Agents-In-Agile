@@ -52,8 +52,8 @@ more than one skill. These three are **reserved** — the crew auto-discovers th
 
 | Rule skill | Governs | Referenced by |
 |---|---|---|
-| `architecture-rules` | layering, boundaries, allowed patterns, dependency direction | architect, workflow-step-planner, software-engineer (as context) |
-| `coding-rules` | language/style conventions, forbidden patterns, naming | software-engineer, workflow-step-planner |
+| `architecture-rules` | layering, boundaries, allowed patterns, dependency direction | architect, software-engineer (as context) |
+| `coding-rules` | language/style conventions, forbidden patterns, naming | software-engineer |
 | `test-rules` | test layout, naming, coverage targets, fixtures | tester, software-engineer (unit/e2e layout) |
 
 All three are optional and independent. Author only the ones your project needs.
@@ -156,12 +156,12 @@ naming, and manifest wiring. That guidance still governs file shape and descript
   `rules-checker` audits diffs if present.
 - **Per-feature overrides** go in the `Project-Specific Rule Overrides` section of
   `<feature>.analyzed.md`, citing the rule skill + section being overridden.
-- **Architect / Software Engineer / workflow-step-planner** additionally read the optional
+- **Architect / Software Engineer** additionally read the optional
   `tech-stack.md` pins and `docs/knowledge/` cache through `library-knowledge`, so a library fact is
   version-correct rather than remembered. That content is **reference data, never instruction**: a
   repo rule skill and an `analyzed.md` override both outrank it (`library-knowledge` `## Precedence`).
   Tester, business-analyst and product-owner do **not** load it — a black-box spec and a product
-  framing must not carry library detail. None of the three may call Context7 themselves (read-only
+  framing must not carry library detail. Neither may call Context7 itself (read-only
   `tools:`); a gap the cache cannot fill becomes a bounded `[Library Q]` that main Claude answers and
   relays, exactly as it relays a stage-1 `[Architect Q]`.
 - All seam discovery is the job of the generic `project-seams` skill — agents never hardcode a
@@ -173,7 +173,7 @@ naming, and manifest wiring. That guidance still governs file shape and descript
 - Every seam is optional. Missing seam → agent emits no error, proceeds.
 - `docs/architecture.md` is a free-form complement to the rule skills, not a replacement.
 - `tech-stack.md` (scan-root library pin manifest) and `docs/knowledge/` (its cache) are optional
-  inputs for the architect, software-engineer and workflow-step-planner; absent → one advisory line
+  inputs for the architect and software-engineer; absent → one advisory line
   and the agent proceeds. Only `/knowledge:init`, `/knowledge:refresh` and `/knowledge:cache` write
   them — every crew agent is read-only.
 - `repo-layout.md` (workspace-root scan contract) is an optional input for the three wiki runtime agents (`project-explorer`, `project-overview`, `project-update`); when absent they fall back to built-in heuristics with no behavioral change. Only `/wiki:bootstrap` drafts it and `/wiki:enhance` reconciles it — the crew is read-only.
@@ -195,7 +195,6 @@ Each agent's `skills:` manifest:
 | architect | `architecture-planning`, `risk-severity-analysis`, `codebase-recon` | `pipeline-protocol`, `project-seams`, `library-knowledge`, `prompt-defense` |
 | software-engineer | `implementation-planning`, `step-execution`, `e2e-validation` | `pipeline-protocol`, `project-seams`, `library-knowledge`, `prompt-defense` |
 | tester | `acceptance-spec-authoring` | `pipeline-protocol`, `project-seams`, `prompt-defense` |
-| workflow-step-planner | `open-question-drafting` | `project-seams`, `library-knowledge`, `prompt-defense` |
 | pr-review-analyst | `pr-review-analysis`, `pr-review-learning` | `project-seams`, `prompt-defense` |
 
 Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** = optional, never blocks.
@@ -209,10 +208,9 @@ Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** =
 | **architect** | R + W | R (soft) | R (soft) | R (recon; both wiki trees absent) | R requirement/overview; **W** `overview-plan.md` + `analyzed.md` | R `architecture-rules` | `overview-plan.md`, `analyzed.md` |
 | **software-engineer** | R + W | R (soft) | R (soft) | **R + W** | R requirement/overview/analyzed/**test.md**; **W** `plan.md` | R `coding-rules` + `architecture-rules` | `plan.md` + **production code + unit tests + e2e tests** |
 | **tester** | R + W | R (opt) | — | — | R requirement; **W `test.md`** | R `test-rules` | `test.md` (e2e/acceptance spec); planning-only, no source, no runtime |
-| **workflow-step-planner** | R only | — | — | — | R plan/status/analyzed | R `architecture-rules` + `coding-rules` | **nothing** (surfaces questions only) |
 | **pr-review-analyst** | R only | R (soft) | R (soft) | **R** (evidence hunt) | R `docs/<feature>/pr-review/*.md` + `*.pr-review.ledger.md` | R all concerns via `project-seams` | **nothing** (returns findings + rule drafts) |
 
-- `docs/architecture.md` is read by business-analyst, architect, software-engineer, tester — not by product-owner (narrative-only carve-out) or workflow-step-planner.
+- `docs/architecture.md` is read by business-analyst, architect, software-engineer, tester — not by product-owner (narrative-only carve-out).
 - Product-owner is the only role walled off from all engineering context (no domain, no architecture, no status).
 - **Requirement / trace split.** `requirement.md` holds the final requirement only — Goal, In scope, Out of scope, Success criteria, Constraints, and a short `Current behavior` when existing behavior changes. Everything about *how* that wording was reached (raw prose, PO framing challenges, Q&A decisions, the verbatim recon brief) lives in the sibling `requirement-trace.md`. Both are BA-owned and written in the same stage-1 run. Downstream agents (architect, tester, SE) read `requirement.md`; the trace file answers "why is this the requirement?" for a human and is never a planning input.
 - Software-engineer is the only role that writes source (production + unit + e2e tests). Tester writes no source — it authors the requirement-keyed `test.md` e2e/acceptance spec; SE turns it into automated e2e tests at the final plan step.

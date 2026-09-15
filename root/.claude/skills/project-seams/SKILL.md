@@ -12,8 +12,8 @@ For each concern this agent references, check `<repo>/.claude/skills/<concern>/S
 
 | Concern | Governs | Referenced by |
 |---|---|---|
-| `architecture-rules` | layering, boundaries, allowed patterns, dependency direction | architect, software-engineer (context), workflow-step-planner |
-| `coding-rules` | language/style conventions, forbidden patterns, naming | software-engineer, workflow-step-planner |
+| `architecture-rules` | layering, boundaries, allowed patterns, dependency direction | architect, software-engineer (context) |
+| `coding-rules` | language/style conventions, forbidden patterns, naming | software-engineer |
 | `test-rules` | test layout, naming, coverage targets, fixtures | tester, software-engineer (unit/e2e layout) |
 
 ## Open project skills

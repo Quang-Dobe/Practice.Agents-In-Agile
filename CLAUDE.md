@@ -25,7 +25,7 @@ This scaffold ships three independent workflows:
    review notes into evidenced findings, then, after you fix the code, into
    rule sections inside this repo's own `.claude/skills/`.
 
-The three pipelines are independent but share the same `docs/` root — with **one documented exception**: `/workflow:step-handoff` invokes `/project:update` at session close to keep the wiki in sync (see the carve-out under *When to use which workflow*).
+The three pipelines are independent. They share the same `docs/` root and never write each other's files.
 
 ## Feature/Workflow Pipeline
 
@@ -38,9 +38,7 @@ Five-role crew: Product Owner, Business Analyst, Architect, Software Engineer, T
    - stage-2-analyzed: Architect authors `<NAME>.analyzed.md` including the per-step Severity table (`Step ID | Severity`; reads `test.md`).
    - stage-2-plan: Software Engineer authors mechanical `<NAME>.plan.md` (no Severity column there); its final step is the E2E validation gate.
    After stage-2-plan APPROVE, `<NAME>.status.md` is initialized mechanically from the template.
-3. `/workflow:step-start <NAME> [Step ID]` — brief for the current open step, then spawn the Software Engineer (the Tester has no runtime role). SE writes production code + unit tests per step; the step's Severity in `analyzed.md` drives `--bypass-approval`. The feature's final implementation step is the E2E validation gate: SE authors automated e2e tests from `<NAME>.test.md` and runs them via the project test-runner.
-4. `/workflow:step-approve <NAME>` — flip current step to `[X]` after user types APPROVE.
-5. `/workflow:step-handoff <NAME>` — end-of-session status update.
+3. `/feature:implement <NAME> [Step ID]` — the whole step loop, in three phases. **Phase 1** briefs the current open step; **Phase 2** spawns the Software Engineer on your go-ahead (the Tester has no runtime role), which writes production code + unit tests; **Phase 3** flips the step to `[X]` and updates `status.md` once you type APPROVE, then returns to Phase 1 for the next step. The step's Severity in `analyzed.md` drives `--bypass-approval`. The feature's final implementation step is the E2E validation gate: SE authors automated e2e tests from `<NAME>.test.md` and runs them via the project test-runner.
 
 Walkthrough: `docs/workflow-feature-pipeline.md`
 
@@ -116,9 +114,9 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 
 ## Layout
 
-- `root/.claude/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, workflow-step-planner, project-explorer, project-update, project-overview, pr-review-analyst)
-- `root/.claude/commands/` — slash commands under `feature/`, `pr-review/`, `project/`, `workflow/`
-- `root/.claude/skills/` — concern-named skills (one folder per skill). Feature-crew **capability** skills (`feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `codebase-recon`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`, `open-question-drafting`) + **cross-cutting** skills (`pipeline-protocol`, `project-seams`, `prompt-defense`, `repo-layout`, `library-knowledge`) + the three wiki skills (`project-explorer`, `project-overview`, `project-update`) + the two pr-review skills (`pr-review-analysis`, `pr-review-learning`)
+- `root/.claude/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, project-explorer, project-update, project-overview, pr-review-analyst)
+- `root/.claude/commands/` — slash commands under `feature/`, `pr-review/`, `project/`
+- `root/.claude/skills/` — concern-named skills (one folder per skill). Feature-crew **capability** skills (`feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `codebase-recon`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`) + **cross-cutting** skills (`pipeline-protocol`, `project-seams`, `prompt-defense`, `repo-layout`, `library-knowledge`) + the three wiki skills (`project-explorer`, `project-overview`, `project-update`) + the two pr-review skills (`pr-review-analysis`, `pr-review-learning`)
 - `root/.claude/templates/` — `feature.requirement.md`, `feature.requirement-trace.md`, `feature.overview-plan.md`, `feature.test.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`, `project-rules.template.md` (copy-me example for a project rule skill), `pr-review.ledger.md`, `pr-review.html`
 - `root/.claude/CLAUDE.md` — versioned **Global Engagement Rules** (general R-XX rules only, no kit docs; source of truth for `~/.claude/CLAUDE.md`). `install.ps1` replaces the profile copy on every run (previous version kept as `CLAUDE.md.bak` when content changes).
 - `root/.claude/CONVENTIONS.md` — how a consuming project supplies its own rule skills + optional agents under its `.claude/` tree (the stack-specific seam this kit deliberately omits); also holds the per-agent context-access matrix
@@ -139,7 +137,7 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 - **Thin agents + concern-named skills.** Feature-crew agents hold no procedure — only identity, a `skills:` manifest, and an ownership boundary. The *how* lives in concern-named skills (one capability per skill); the *which-agent-at-which-stage* lives in the commands. One agent loads many skills, and a skill may be shared by many agents. (The three **wiki** skills still mirror their owning agent name — `project-explorer` skill ↔ `project-explorer` agent — because each is a single-owner runtime skill.)
 - **Stack-agnostic by design.** This scaffold ships **no** stack- or architecture-specific skills (no `.NET` rules, no language-bound test runner, no per-language edit hook). The generic tier is installed to user scope **unchanged**; the consuming project supplies rules in **its own `.claude/` tree** — never inside `root/.claude/`. Project skills use **reserved** concerns (`architecture-rules`, `coding-rules`, `test-rules`) plus an **open** set (`dotnet-patterns`, `react-patterns`, …); see `root/.claude/CONVENTIONS.md`. The crew reads these optional seams (proceeds, never blocks, when absent):
   - `docs/references.md` — free-form architecture notes.
-  - Concern-named rule skills under `.claude/skills/`: `architecture-rules` (architect, step-planner, SE), `coding-rules` (SE), `test-rules` (tester).
+  - Concern-named rule skills under `.claude/skills/`: `architecture-rules` (architect, SE), `coding-rules` (SE), `test-rules` (tester).
   - Optional project agents `.claude/agents/rules-checker.md` and `.claude/agents/test-runner.md`.
   - Full convention + agent→skill map: **`root/.claude/CONVENTIONS.md`**. Author a rule skill by copying `root/.claude/templates/project-rules.template.md` into `.claude/skills/<concern>-rules/SKILL.md`.
 - **No comments in generated code by default.** The Software Engineer writes production code **without** explanatory comments unless the user explicitly asks for them (self-documenting names + structure instead). Operative contract lives in the `step-execution` skill; this bullet is the doc pointer.
@@ -152,8 +150,7 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 
 - New product feature, need to plan & build it → **Feature pipeline** (`/feature:new` then `/feature:structure`).
 - Onboarding a new repo, want a living wiki → **LLM wiki pipeline**. Run `/project:overview` first to produce a plain-language narrative under `docs/narrative/` (skip if you only want the canonical schema). Then run `/project:explore` once to produce the canonical schema under `docs/domain/` (it will read the narrative as soft input when present). Use `/project:update` whenever code changes to refresh both `docs/narrative/` and `docs/domain/` in one command.
-- Both can be used in the same repo. The feature pipeline writes under `docs/<FEATURE>/`; the wiki pipeline writes under `docs/domain/`. They never touch each other's files.
-  - **Carve-out (the single coupling seam).** The feature pipeline does not otherwise write the wiki trees, with exactly one exception: `/workflow:step-handoff` unconditionally invokes `/project:update` at session close. That invocation is subject to `/project:update`'s own missing-both-trees refusal. Because `/project:update` is fully agent-driven (no gate), it never blocks handoff finalization except on an unexpected error; it either succeeds (writes / clean no-op) or refuses for missing-both-trees (noted, handoff continues). Outside this one documented seam, the pipelines remain independent and the 'never touch each other's files' invariant holds.
+- Both can be used in the same repo. The feature pipeline writes under `docs/<FEATURE>/`; the wiki pipeline writes under `docs/domain/`. They never touch each other's files, and neither invokes the other — run `/project:update` yourself when you want the wiki caught up with code a feature changed.
 
 ## Environment
 

@@ -1,6 +1,6 @@
 ---
 name: step-execution
-description: Execute the substeps of one implementation step — edit the named files, author unit tests, self-verify, and report. Used by the software-engineer agent at /workflow:step-start. Concrete build/test commands are delegated to the project test-runner.
+description: Execute the substeps of one implementation step — edit the named files, author unit tests, self-verify, and report. Used by the software-engineer agent at /feature:implement. Concrete build/test commands are delegated to the project test-runner.
 ---
 
 # Step execution skill
@@ -11,7 +11,7 @@ Execute one implementation step from `plan.md`: edit the named files, author its
 ## Inputs
 - Feature name and the Step `<ID>` (e.g. `A`, `B`).
 - The Step `<ID>` section in `docs/<feature>/<feature>.plan.md`.
-- The matching Severity row in `docs/<feature>/<feature>.analyzed.md` (2-col `Step ID | Severity`; the cell `/workflow:step-start --bypass-approval` consults).
+- The matching Severity row in `docs/<feature>/<feature>.analyzed.md` (2-col `Step ID | Severity`; the cell `/feature:implement --bypass-approval` consults).
 
 ## Read scope
 - The plan section + Severity row above.
@@ -27,4 +27,4 @@ Execute one implementation step from `plan.md`: edit the named files, author its
 5. Return a brief chat summary: files changed and what to verify before the user types `APPROVE`.
 
 ## Boundary
-Does not flip `[X]` (main Claude does that via `/workflow:step-approve`), author or modify planning artifacts / the Severity table, write `status.md`, or commit. Full contract: `pipeline-protocol`.
+Does not flip `[X]` (main Claude does that in `/feature:implement` Phase 3), author or modify planning artifacts / the Severity table, write `status.md`, or commit. Full contract: `pipeline-protocol`.

@@ -57,7 +57,7 @@ The project's rules-checker agent at `.claude/agents/rules-checker.md` (if it sh
 
 ## N+3. Step Severity
 
-> Per R7: one row per implementation step in `overview-plan.md`. `Severity` = one of `minor` / `medium` / `major` / `risky` / `irreversible`, declared per step up front; minor/medium auto-approve under `/workflow:step-start --bypass-approval`, major/risky/irreversible hard-stop and wait for a human. E2E/acceptance cases are NOT here — they live in `<feature>.test.md` (Tester); per-step unit tests are authored by the Software Engineer.
+> Per R7: one row per implementation step in `overview-plan.md`. `Severity` = one of `minor` / `medium` / `major` / `risky` / `irreversible`, declared per step up front; minor/medium auto-approve under `/feature:implement --bypass-approval`, major/risky/irreversible hard-stop and wait for a human. E2E/acceptance cases are NOT here — they live in `<feature>.test.md` (Tester); per-step unit tests are authored by the Software Engineer.
 
 | Step ID | Severity |
 |---|---|

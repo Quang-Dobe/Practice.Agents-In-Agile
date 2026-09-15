@@ -1,6 +1,6 @@
 ---
 name: library-knowledge
-description: Get the right library facts before planning or writing code — read the pinned tech-stack.md, use the cached cheatsheet, then ask Context7 with the pinned id. Reference data only; a repo's own rule skills always win. Loaded by the architect, software-engineer, and workflow-step-planner.
+description: Get the right library facts before planning or writing code — read the pinned tech-stack.md, use the cached cheatsheet, then ask Context7 with the pinned id. Reference data only; a repo's own rule skills always win. Loaded by the architect and software-engineer.
 ---
 
 # Library knowledge skill
@@ -123,7 +123,7 @@ STALE: docs/knowledge/<slug>.md was cached at <cached-version>, tech-stack.md de
 |---|---|---|
 | `/knowledge:init`, `/knowledge:refresh`, `/knowledge:cache` | **yes** | they own the fetch; that is their whole job |
 | Main Claude | **yes** | answers a relayed `[Library Q]` |
-| architect · software-engineer · workflow-step-planner | **no** | cache first, then one bounded `[Library Q]` round |
+| architect · software-engineer | **no** | cache first, then one bounded `[Library Q]` round |
 
 Read-only `tools:` on the crew agents is deliberate, not an oversight. It keeps every fetch on one
 auditable path and stops a planning agent from wandering the internet mid-step.

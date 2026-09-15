@@ -1,13 +1,13 @@
 ---
 name: risk-severity-analysis
-description: Author <feature>.analyzed.md including the per-step Severity table (R7). Used by the architect agent at /feature:structure stage-2-analyzed. Severity drives /workflow:step-start --bypass-approval.
+description: Author <feature>.analyzed.md including the per-step Severity table (R7). Used by the architect agent at /feature:structure stage-2-analyzed. Severity drives /feature:implement --bypass-approval.
 ---
 
 # Risk & severity analysis skill
 
 > ## R7 — Step Severity rule (verbatim)
 >
-> *"For every step in the feature's overview-plan, output one row in the Step Severity table inside analyzed.md, each with a declared Severity (minor / medium / major / risky / irreversible). Severity drives /workflow:step-start --bypass-approval. E2E/acceptance cases are not here — they live in the Tester's test.md."*
+> *"For every step in the feature's overview-plan, output one row in the Step Severity table inside analyzed.md, each with a declared Severity (minor / medium / major / risky / irreversible). Severity drives /feature:implement --bypass-approval. E2E/acceptance cases are not here — they live in the Tester's test.md."*
 
 ## Mission
 Author the analysis doc and the per-step Severity table that governs auto-approval downstream.
@@ -33,7 +33,7 @@ Author the analysis doc and the per-step Severity table that governs auto-approv
    | B | ... |
    ```
 
-   Exactly one row per implementation step (`Step A`, `Step B`, …) in `overview-plan.md`. `minor`/`medium` auto-approve under `/workflow:step-start --bypass-approval`; `major`/`risky`/`irreversible` hard-stop and wait for a human. E2E/acceptance cases are NOT here — they live in `<feature>.test.md` (Tester).
+   Exactly one row per implementation step (`Step A`, `Step B`, …) in `overview-plan.md`. `minor`/`medium` auto-approve under `/feature:implement --bypass-approval`; `major`/`risky`/`irreversible` hard-stop and wait for a human. E2E/acceptance cases are NOT here — they live in `<feature>.test.md` (Tester).
 4. Save via `Write`. Hand off per `pipeline-protocol`: "Stage 2-analyzed complete. Awaiting user APPROVE on `<feature>.analyzed.md`. After APPROVE, Software Engineer drafts `<feature>.plan.md` at stage-2-plan."
 
 ## Boundary

@@ -22,7 +22,7 @@ After install, every repo you open gets the crew. The crew reads the repo and wr
 ~/.claude/                            ← install target (user scope)
 ├── agents/                                ← 9 thin agents (identity + skills: manifest only)
 ├── commands/{feature,pr-review,project}/   ← the slash commands you type
-├── skills/                                ← 19 concern-named skills (the actual "how")
+├── skills/                                ← 7 shared skills (the actual "how")
 ├── templates/                             ← feature document shapes
 └── CONVENTIONS.md                         ← seam contract for repo-tier authors
 
@@ -110,10 +110,8 @@ The product-owner writes nothing.
 | `commands/pr-review/analyze.md` | Read PR review notes, attach code evidence, render one card page per review file. Gate-free. |
 | `commands/pr-review/learn.md` | Promote fixed findings into this repo's own rule skills. `APPROVE`-gated. |
 | `agents/pr-review-analyst.md` | Read-only: returns evidenced findings, then rule drafts. Gives no validity verdict. |
-| `skills/` — 9 capability skills | `feature-intake`, `requirement-authoring`, `architecture-planning`, `risk-severity-analysis`, `codebase-recon`, `acceptance-spec-authoring`, `implementation-planning`, `step-execution`, `e2e-validation`. |
-| `skills/` — 5 cross-cutting skills | `pipeline-protocol` (gates + handoff), `project-seams` (optional repo-tier rules), `prompt-defense`, `repo-layout` (opt-in scan-scope contract; read-only for the crew), `library-knowledge` (opt-in pinned library docs via Context7; read-only for the crew). |
-| `skills/` — 3 wiki skills | `project-overview`, `project-explorer`, `project-update` (single-owner, mirror their agents). |
-| `skills/` — 2 pr-review skills | `pr-review-analysis` (segment, evidence hunt, classify), `pr-review-learning` (draft rule text, resolve target skill). |
+| `skills/` — 4 cross-cutting skills | `project-seams` (optional repo-tier rules), `prompt-defense`, `repo-layout` (opt-in scan-scope contract; read-only for the crew), `library-knowledge` (opt-in pinned library docs via Context7; read-only for the crew). |
+| `skills/` — 3 wiki skills | `project-overview`, `project-explorer`, `project-update`. Shared across the wiki agents; `project-update` also has its sections cited by `project-overview`. |
 | `templates/feature.*.md` | Document shapes for the six feature artifacts. |
 | `templates/project-rules.template.md` | Copy-me example for a repo-tier rule skill. |
 | `templates/pr-review.ledger.md` | The ledger shape: one `## PR-NN` section per finding, each carrying a short `title` and an optional `### Hints` list. |

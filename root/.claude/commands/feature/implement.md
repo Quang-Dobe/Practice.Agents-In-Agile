@@ -29,7 +29,7 @@ If `[step-id]` is provided (e.g., `C`), force that step.
 
 ## Phase 2 - Implement
 
-When the user gives the go-ahead, main Claude spawns the `software-engineer` subagent with `<feature>` + Step ID (it follows its `step-execution` skill; the final step also follows `e2e-validation`). SE executes the step's substeps, writes production code and unit tests, and — for the final step — authors the e2e tests from `test.md` and runs them via the project `test-runner`. The Tester is not spawned at `step-start`.
+When the user gives the go-ahead, main Claude spawns the `software-engineer` subagent with `<feature>` + Step ID (it follows the `/feature:implement <Step ID>` section of its agent file; the final step also runs the E2E validation gate there). SE executes the step's substeps, writes production code and unit tests, and — for the final step — authors the e2e tests from `test.md` and runs them via the project `test-runner`. The Tester is not spawned here.
 
 When SE reports back, show the user what changed and ask for `APPROVE` to close the step.
 

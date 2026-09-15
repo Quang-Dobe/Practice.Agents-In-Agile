@@ -37,7 +37,7 @@ Turn hand-written PR review notes into evidenced findings you can judge.
 
    The re-render path reads the ledger and nothing else. No source read, no re-analysis. This is what carries your `status: fixed` edit onto the page.
 
-5. **Spawn `pr-review-analyst`** once per review file being analysed, with `description: PR review: analyse <stem>` and a `prompt` carrying: the feature name, the stem, `stage: analyze`, the review file path, the ledger path if it exists, and the directive to read `docs/narrative/` and `docs/domain/` if present as soft context (symmetric advisory for whichever is absent; never blocks). It follows its `pr-review-analysis` skill and returns findings. It writes nothing.
+5. **Spawn `pr-review-analyst`** once per review file being analysed, with `description: PR review: analyse <stem>` and a `prompt` carrying: the feature name, the stem, `stage: analyze`, the review file path, the ledger path if it exists, and the directive to read `docs/narrative/` and `docs/domain/` if present as soft context (symmetric advisory for whichever is absent; never blocks). It follows its `analyze` stage and returns findings. It writes nothing.
 
 6. **Write the ledger, then render the page. Always in that order.** The ledger is upstream; the page is derived from it.
    a. Append each **new** finding to `docs/<feature>/pr-review/<stem>.pr-review.ledger.md` as a whole `## PR-NN` section, mirroring `~/.claude/templates/pr-review.ledger.md`. New findings carry `status: open` and `promoted: no`. Append-only: never edit an existing section, and skip any finding whose quote already appears in the ledger.

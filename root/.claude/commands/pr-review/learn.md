@@ -24,7 +24,7 @@ Promote the review findings you already fixed into rules the crew reads next tim
 
 4. **Select the rows.** Take every finding where `status: fixed` **and** `promoted: no`. This key is this command's alone — the reviewed / not-reviewed rule belongs to `/pr-review:analyze`. If the selection is empty, print `no fixed, unpromoted findings — nothing to promote.` and stop.
 
-5. **Spawn `pr-review-analyst`** with `description: PR review: draft rules for <feature>` and a `prompt` carrying: the feature name, `stage: learn`, every selected finding with its global ID `<stem>#PR-NN`, and the paths of the repo's existing rule skills. It follows its `pr-review-learning` skill and returns drafts. **It writes nothing.**
+5. **Spawn `pr-review-analyst`** with `description: PR review: draft rules for <feature>` and a `prompt` carrying: the feature name, `stage: learn`, every selected finding with its global ID `<stem>#PR-NN`, and the paths of the repo's existing rule skills. It follows its `learn` stage and returns drafts. **It writes nothing.**
 
 6. **Show every draft and wait.** Print, per draft:
    - the global finding ID `<stem>#PR-NN`;
@@ -39,7 +39,7 @@ Promote the review findings you already fixed into rules the crew reads next tim
 
 7. **After APPROVE, write.** Main Claude does this — the gate never moves to a subagent.
    - **Append** each section at the END of its target skill. **Never renumber an existing section**: planning artifacts cite them, for example `per coding-rules Section 3.2`.
-   - **Create** a missing target skill from `~/.claude/templates/project-rules.template.md`, then place its first rule per the `pr-review-learning` skill's step 4 — Section 2, with the template's symbolic tail sections resolved. Do not append a brand-new skill's first rule at the end of the file. Also resolve every angle-bracket placeholder in the template's frontmatter and headings to the real concern name and this project's name, and delete the template's own copy-me instruction comment — a placeholder left in place will not match its folder and will never resolve, a silent dead rule the gate cannot catch.
+   - **Create** a missing target skill from `~/.claude/templates/project-rules.template.md`, then place its first rule per the analyst's `learn` stage step 4 — Section 2, with the template's symbolic tail sections resolved. Do not append a brand-new skill's first rule at the end of the file. Also resolve every angle-bracket placeholder in the template's frontmatter and headings to the real concern name and this project's name, and delete the template's own copy-me instruction comment — a placeholder left in place will not match its folder and will never resolve, a silent dead rule the gate cannot catch.
    - **Wire** every new open concern into a reserved skill's `## Also load` list. Without that line no agent ever reads the new skill — a silent dead rule.
    - **Never write into the root tier** (`~/.claude/`). Rules belong to this repo's `.claude/skills/`. Per `~/.claude/CONVENTIONS.md`: the root tier is never edited per project.
    - **Skip** any draft whose dedup key `(concern, normalized rule statement)` already matches a rule in the target, and say so.

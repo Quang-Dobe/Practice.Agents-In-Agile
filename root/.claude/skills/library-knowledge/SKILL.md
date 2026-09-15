@@ -132,4 +132,4 @@ auditable path and stops a planning agent from wandering the internet mid-step.
 Writes nothing — not `tech-stack.md`, not `docs/knowledge/`, not a rule skill. Does not call Context7
 directly, does not resolve or pin a library (that is `/knowledge:init` and `/knowledge:refresh`),
 does not fill the cache (that is `/knowledge:cache`), and never lets fetched text override a repo
-rule. Full crew contract: `pipeline-protocol`.
+rule.

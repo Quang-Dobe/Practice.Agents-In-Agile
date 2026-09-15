@@ -24,7 +24,7 @@ ASCII tree of the projects, modules, or folders the feature touches. Show where 
 
 ## 4a. Affected Bounded Contexts
 
-> Scope key consumed by the project's `present-overview-plan` (if installed). List the domain-wiki bounded contexts this feature touches; absent → present draws nothing scoped and notes it.
+> Scope key consumed by the project's `present-builder` overview-plan unit (if installed). List the domain-wiki bounded contexts this feature touches; absent → present draws nothing scoped and notes it.
 
 | Bounded context | Why this feature touches it |
 |---|---|

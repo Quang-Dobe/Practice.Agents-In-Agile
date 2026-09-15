@@ -1,6 +1,7 @@
 ---
 name: present-draw-diagram
-description: Create visually distinctive SVG diagrams with animated flow particles and a dark-mode design system. Invoked by present-overview-plan and present-plan to render a feature's scoped diagrams into its present HTML file. Use for workflow diagrams — flow graphs, LangGraph/XState/Redux state machines, architecture diagrams (services + data flows), process flows with decisions, and ER/schema diagrams. DO NOT use for sequence diagrams (participant swimlanes with time flowing downward) — those should use Mermaid instead.
+consumed_by: present-builder agent
+description: Create visually distinctive SVG diagrams with animated flow particles and a dark-mode design system. Invoked by the present-builder agent's overview-plan and plan units to render a feature's scoped diagrams into its present HTML file. Use for workflow diagrams — flow graphs, LangGraph/XState/Redux state machines, architecture diagrams (services + data flows), process flows with decisions, and ER/schema diagrams. DO NOT use for sequence diagrams (participant swimlanes with time flowing downward) — those should use Mermaid instead.
 ---
 
 # present-draw-diagram

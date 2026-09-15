@@ -181,16 +181,12 @@ Use this exact shape (one line, comma-separated, never a YAML list) for every sk
 | `.claude/skills/excalidraw-diagram/` | Vendored diagram-design method + `references/render_excalidraw.py` (patched with `--svg`) and a dark `color-palette.md`. |
 | `.claude/templates/references-diagram.html` | Dark, theme-aware page shell with the `diagram:begin:svg` slot and a human fence. |
 | `.claude/commands/wiki/ask.md` **(optional)** | Entry slash command: classifies and runs the 6-tier retrieval **inline in the main thread** (no sub-agent); lazy-loads `wiki-memory` only on a T6 source read. |
-| `.claude/skills/wiki-router/SKILL.md` | Classification + fixed 6-tier retrieval-order checklist reloaded inline by `/wiki:ask` each run. |
+| `.claude/commands/wiki/ask.md` | Classification + fixed 6-tier retrieval-order checklist, inline in the command (no sub-agent, no skill). |
 | `.claude/skills/wiki-memory/SKILL.md` | Append-only / dedup / provenance / fence write-path operating manual lazy-loaded by `/wiki:ask` on a T6 source read and reloaded by the `wiki-bootstrapper`. |
 | `.claude/skills/wiki-orchestration/SKILL.md` | Shared ensureRepo + 2-question + execution-model core for bootstrap/enhance. |
 | `.claude/skills/wiki-architecture/SKILL.md` | Synthesis + context-map + fence-preservation manual for the architect. |
 | `.claude/commands/present/build.md` | Mode-gates (project/root), resolves units, spawns `present-builder`, rebuilds the `present.html` index. |
-| `.claude/agents/present-builder.md` | Thin runtime agent: loads the matching `present-<unit>` skill(s) and writes `docs/<feature>/present/present-<unit>.html`. |
-| `.claude/skills/present-requirement/SKILL.md` | Projects the requirement's Goal into the Introduction tab. |
-| `.claude/skills/present-overview-plan/SKILL.md` | Projects the overview-plan into the Workflow tab (Workflow + Component Design diagrams via `present-draw-diagram`). |
-| `.claude/skills/present-test/SKILL.md` | Projects acceptance cases + scope into the E2E Test tab. |
-| `.claude/skills/present-analyzed/SKILL.md` | Projects steps, severity, decisions, residual flags into the Analyzed tab. |
-| `.claude/skills/present-plan/SKILL.md` | Projects the plan into the Code Structure tab (blueprint pre-code, real file content post-implementation). |
+| `.claude/agents/present-builder.md` | Runtime agent: holds every unit's projection procedure and writes `docs/<feature>/present/present-<unit>.html`. |
+| `.claude/agents/present-builder.md` (units) | One section per unit: `requirement` -> Introduction, `overview-plan` -> Workflow (+ Component Design), `test` -> E2E Test, `analyzed` -> Analyzed, `plan` -> Code Structure (blueprint pre-code, real file content post-implementation). |
 | `.claude/skills/present-draw-diagram/SKILL.md` | Shared SVG diagram renderer (dark-mode design system, animated flow particles) used by the diagram units. |
 | `.claude/templates/present*.html`, `present.css` | HTML/CSS shells the present-* skills fill in. |

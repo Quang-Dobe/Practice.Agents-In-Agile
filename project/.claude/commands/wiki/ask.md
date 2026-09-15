@@ -3,53 +3,88 @@ description: Ask the root LLM-Wiki a question; classifies and answers inline in 
 argument-hint: <question>
 ---
 
-Ask the project-tier LLM-Wiki a question. The question is classified and answered **inline
-in the main thread** — no sub-agent is spawned. An in-domain question is answered from
-the wiki using the fixed retrieval order (root `docs/memory/*` → `docs/references.md`
-→ repos' `docs/narrative/` → repos' `docs/domain/` → repos' `docs/memory/` → repo source,
-last resort), stopping at the first tier that answers. The wiki is read first and repo
-source last; a pure read/answer path never writes.
+Ask the project-tier LLM-Wiki a question. The question is classified and answered **inline in the
+main thread** — no sub-agent is spawned. The wiki is read first and repo source last; a pure
+read/answer path never writes.
 
-`<question>` is the natural-language question to answer. This command takes a **question**,
-not a path — there is no remote-URL guard.
+`<question>` is the natural-language question to answer. This command takes a **question**, not a
+path — there is no remote-URL guard.
 
 ## Procedure
 
 1. **Parse `<question>`.** Read the question from the slash-command argument.
 
 2. **Refuse empty input.** If `<question>` is empty or whitespace-only, refuse with this
-   **exact-case** literal one-line message and **stop** — do not load any skill and do
-   not consult any tier:
+   **exact-case** literal one-line message and **stop** — do not consult any tier:
 
    ```
    Ask a question, e.g. /wiki:ask "where is OrderPaid published?"
    ```
 
-3. **Load the retrieval checklist — and only that.** Reload
-   `.claude/skills/wiki-router/SKILL.md` — the operating manual for classification
-   (titles/headings-only manifest), the fixed 6-tier retrieval order, the
-   stop-once-sufficient rule, the one-line TRACE format, and the out-of-domain decline
-   literal. If it is **missing or malformed** (cannot be read, YAML frontmatter does not
-   parse, or required body sections absent), **stop before any retrieval** and report the
-   missing/malformed skill. Do **NOT** load `wiki-memory` here — it is lazy-loaded only
-   if T6 is actually reached (step 6).
+3. **Classify from the manifest only — before any tier read.** Build the scope manifest from
+   titles/headings ONLY, never file bodies:
 
-4. **Classify, then retrieve, per the skill.** Build the titles/headings manifest and
-   decide in-domain vs out-of-domain. Out-of-domain → emit the decline literal plus the
-   empty TRACE (`wiki-trace: (no tiers consulted)`) and stop — no tier opened, nothing
-   written. In-domain → walk T1 → T6 in the exact order, stopping once sufficient, and
-   emit the one-line `wiki-trace:` naming the tiers consulted with the `STOP@T<n>` marker.
+   - the `# <Topic title>` line of every root `docs/memory/*.md`
+   - the `#`/`##`/`###` heading lines of `docs/references.md`
+   - the `# <Topic title>` line of every `<repo>/docs/memory/*.md`
 
-5. **Answer came from the wiki (T1–T5) → done.** Cite the tier artifact (memory topic /
-   architecture section / narrative file / domain file / per-repo memory topic) and stop.
-   No source read, no write, no `APPROVE` prompt.
+   Body reads happen only after an in-domain decision, during tier retrieval — never here.
 
-6. **T6 source read → lazy-load the write manual, then append.** Only when repo source
-   was actually read to answer: load `.claude/skills/wiki-memory/SKILL.md` and append the
-   learning to **that repo's** `<repo>/docs/memory/` per the write manual (ungated:
-   append-only + dedup + fence). If `wiki-memory` is missing/malformed, still deliver the
-   answer, write nothing, and report the missing skill.
+   - **In-domain** = the question has a manifest anchor (a topic title or heading it is clearly about).
+   - **Out-of-domain** = no anchor. Decline with this **exact-case byte-for-byte** literal, emit the
+     empty TRACE (`wiki-trace: (no tiers consulted)`), open no tier, write nothing, and stop:
 
-(Historical note: v1 spawned a `wiki-router` sub-agent that preloaded both skills on
-every question; v2 answers inline and lazy-loads the write manual — same classification,
-tier order, TRACE format, literals, and write rules.)
+   ```
+   This question is outside the wiki's domain (the systems documented under docs/memory/, docs/references.md, and the sibling repos). No retrieval was performed.
+   ```
+
+   False-positives and false-negatives weigh **equally** — the manifest-anchor test is the
+   deterministic call; no "search anyway when unsure" bias, and no "decline when unsure" bias either.
+
+4. **Retrieve (in-domain only) — fixed order, stop once sufficient.** Walk EXACTLY this order.
+   Between tiers apply the stop-check: *found a citable artifact that answers? yes → cite it + stop;
+   no → descend exactly one tier.* Never skip a tier; never read below an answering tier (no
+   over-descent).
+
+   | Tier | Corpus |
+   |---|---|
+   | T1 | root `docs/memory/*` (curated rollup) |
+   | T2 | `docs/references.md` (cross-repo overview) |
+   | T3 | repos' `docs/narrative/` (per-repo walkthroughs) |
+   | T4 | repos' `docs/domain/` (Evans-canonical schema) |
+   | T5 | repos' `docs/memory/` (per-repo learnings from prior source reads) |
+   | T6 | repo source — last resort, only after T1–T5 each insufficient; triggers the write-back below |
+
+5. **Emit the TRACE — one line, every outcome.**
+
+   ```
+   wiki-trace: T1 -> T2 -> STOP@T2 (docs/references.md#billing)
+   ```
+
+   - Literal greppable prefix `wiki-trace:`; consulted tiers in order, ` -> ` separated, starting at
+     `T1`; `STOP@T<n>` at the answering tier; the citable artifact (repo-relative path, optional
+     `#anchor`) in parentheses.
+   - Full descent: `wiki-trace: T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> STOP@T6 (repo-a/src/Billing/OrderPaidPublisher.cs:42)`
+   - Out-of-domain (no tier consulted): `wiki-trace: (no tiers consulted)`
+
+   One line of text, never a multi-line block; emitted exactly once per question.
+
+6. **Answer came from the wiki (T1–T5) → done.** Cite the tier artifact (memory topic / architecture
+   section / narrative file / domain file / per-repo memory topic) and stop. No source read, no
+   write, no `APPROVE` prompt.
+
+7. **T6 source read → lazy-load the write manual, then append.** This is the only write path. Load
+   `.claude/skills/wiki-memory/SKILL.md` ONLY when T6 source was actually read to answer — never
+   earlier. Then append the learning to `<repo>/docs/memory/<slug>.md` of **the repo whose source was
+   read**, per that manual (ungated: append-only + same-`source-ref:` dedup + fence protection).
+   Write rules are never inlined here.
+
+   - `wiki-memory` missing/malformed (cannot be read, YAML frontmatter does not parse, or required
+     body sections absent) → still deliver the answer from the source read; write NOTHING; report the
+     missing/malformed skill.
+   - Never write outside a `docs/memory/` tree; never the root `docs/memory/` from this path; never
+     narrative/domain/architecture/source/`.claude/`; never commit.
+
+(Historical note: v1 spawned a `wiki-router` sub-agent that preloaded both skills on every question;
+v2 answers inline and lazy-loads the write manual to cut per-question overhead. Classification, tier
+order, TRACE format, literals, and write rules are unchanged.)

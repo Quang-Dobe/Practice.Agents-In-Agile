@@ -1,6 +1,6 @@
 # Claude Workflow Scaffold
 
-Reusable `root/.claude/` folder (agents, commands, hooks, skills, templates) that is the
+Reusable `root/.claude/` folder (agents, commands, skills, templates) that is the
 **source-of-truth for the root tier** — installed to user scope (`~/.claude/`) via `install.ps1`,
 not copied per-project. Agents are **thin**: each declares a `skills:` manifest and the harness
 preloads those concern-named skills; the consuming repo supplies stack-specific rules under its own
@@ -120,7 +120,6 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 - `root/.claude/templates/` — `feature.requirement.md`, `feature.requirement-trace.md`, `feature.overview-plan.md`, `feature.test.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`, `project-rules.template.md` (copy-me example for a project rule skill), `pr-review.ledger.md`, `pr-review.html`
 - `root/.claude/CLAUDE.md` — versioned **Global Engagement Rules** (general R-XX rules only, no kit docs; source of truth for `~/.claude/CLAUDE.md`). `install.ps1` replaces the profile copy on every run (previous version kept as `CLAUDE.md.bak` when content changes).
 - `root/.claude/CONVENTIONS.md` — how a consuming project supplies its own rule skills + optional agents under its `.claude/` tree (the stack-specific seam this kit deliberately omits); also holds the per-agent context-access matrix
-- `root/.claude/hooks/` — `session-start-banner.py`
 - `docs/<FEATURE>/` — feature pipeline artifacts: `<FEATURE>.requirement.md` (final requirement, flat), `.requirement-trace.md` (how it was reached), `.overview-plan.md`, `.plan.md`, `.analyzed.md`, `.status.md`. Raw requirements also start here — stage-1 rewrites `requirement.md` in place, so the raw prose survives only in `.requirement-trace.md`.
 - `docs/domain/` — the LLM wiki's canonical DDD schema tree, owned by the project-explorer / project-update agents. Bootstrapped once, then diff-updated on every subsequent run.
 - `docs/narrative/` — human-readable narrative tree owned by the `project-overview` agent at bootstrap and by `/project:update` on every subsequent code change. One file per bounded context (`<bc>/walkthrough.md`) plus a top-level `references.md`.
@@ -154,4 +153,3 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 ## Environment
 
 - Windows + PowerShell 7+. Use `$env:VAR`, `$null`, backtick line-continuation.
-- Hooks are Python (`python root/.claude/hooks/*.py`) — Python must be on PATH.

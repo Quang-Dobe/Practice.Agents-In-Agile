@@ -40,7 +40,7 @@ Roles of the outputs:
 
 ## Conventions
 
-- **Windows + PowerShell 7+.** Wherever shell is shown, use PowerShell idioms (`$null`, `$env:VAR`, backtick line-continuation). Hooks are Python — Python must be on PATH.
+- **Windows + PowerShell 7+.** Wherever shell is shown, use PowerShell idioms (`$null`, `$env:VAR`, backtick line-continuation).
 - **Thin agents + concern-named skills.** Agents hold no procedure — only identity, a `skills:` manifest, and an ownership boundary. The *how* lives in skills; the *which-agent-at-which-stage* lives in the commands. (The three wiki skills mirror their owning agent's name because each is single-owner.)
 - **Stack-agnostic by design.** No `.NET` rules, no language-bound test runner. The consuming repo supplies stack rules in **its own** `.claude/` tree using reserved concerns (`architecture-rules`, `coding-rules`, `test-rules`) — see `CONVENTIONS.md`. The crew reads these seams when present and proceeds without them; it never blocks.
 - **Gates only in the feature pipeline.** Every planning stage and implementation step waits for a literal `APPROVE`. The three wiki agents are fully agent-driven: they print their bounded-context decisions for the audit trail, then write automatically.
@@ -116,6 +116,4 @@ The product-owner writes nothing.
 | `templates/project-rules.template.md` | Copy-me example for a repo-tier rule skill. |
 | `templates/pr-review.ledger.md` | The ledger shape: one `## PR-NN` section per finding, each carrying a short `title` and an optional `### Hints` list. |
 | `templates/pr-review.html` | The card page shell. One collapsible card per finding at its own `#PR-NN` anchor, plus a sticky link rail. Open findings expand, `fixed` and `rejected` collapse. Dark default, theme-aware, all CSS and JS inlined. |
-| `hooks/session-start-banner.py` | Session-start banner (wired via `settings.json`). |
-| `settings.json` | Hook registration for this scaffold repo only (not installed). |
 | `CONVENTIONS.md` | Two-tier model + agent→skill map + how a repo authors rule skills. |

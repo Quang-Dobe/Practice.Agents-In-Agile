@@ -7,7 +7,7 @@
 .DESCRIPTION
     Per-file mirror: every source file replaces the file at the same relative path under the
     target. Folders are merged, never wiped — target-only files (your own skills, agents, ...)
-    survive. settings.json, hooks/ and README.md stay repo-only. Preview with -WhatIf.
+    survive. README.md stays repo-only. Preview with -WhatIf.
     Before CLAUDE.md is replaced with different content, the old one is kept as CLAUDE.md.bak.
 
     A file whose bytes already match the source is skipped, not rewritten, so the output is a

@@ -137,12 +137,13 @@ naming, and manifest wiring. That guidance still governs file shape and descript
    | `## Boundary` | what this skill must NOT do, and which skill owns that instead |
 
 5. **A skill file exists only when it is shared** — either **two or more agents load it**, or **two
-   or more skills cite it by heading**. A procedure used by exactly one agent and cited by no other
-   skill lives **inside that agent's own file**, using the same body sections as above, and gets no
-   skill folder: splitting a single-owner contract across two files buys nothing and lets the two
-   halves drift. The second clause is why `project-update` stays a skill — only one agent loads it,
-   but `project-overview` cites its sections by name instead of restating them. The
-   *which-agent-at-which-stage* still lives in the command.
+   or more other files cite it by heading**. A procedure used by exactly one agent and cited by no
+   other file lives **inside that agent's own file**, using the same body sections as above, and gets
+   no skill folder: splitting a single-owner contract across two files buys nothing and lets the two
+   halves drift. The second clause counts **any** file — a skill, an agent, or a command. It is why
+   `project-update` stays a skill (`project-overview` cites its sections by name instead of restating
+   them), and why `wiki-architecture` does (the `wiki-diagrammer` agent cites two of its headings).
+   The *which-agent-at-which-stage* still lives in the command.
 6. **Wire it up in the same change:** add the concern to the owning agent's `skills:` manifest, add
    its row to the *Agent context-access matrix* below, then re-run `install.ps1`.
 7. **Reference project rules by concern name only** — never by path. Discovery is `project-seams`' job.

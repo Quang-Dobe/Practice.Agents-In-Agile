@@ -24,8 +24,8 @@ only.
 3. **Resolve to absolute.** PowerShell: `Resolve-Path $rootPath`.
 4. **Load the orchestration core.** Reload `.claude/skills/wiki-orchestration/SKILL.md`. If
    missing/malformed, stop and report it (no partial orchestration against an undefined
-   contract). Reload `.claude/skills/wiki-memory/SKILL.md` before any rollup write; if
-   missing/malformed, stop before writing and report it.
+   contract). Load nothing else: **not** the `wiki-memory` skill — every `docs/memory/` write
+   is handed to the `wiki-bootstrapper` agent (steps 8 and 9), which reloads it itself.
 5. **Discover repos (read-only).** Per the orchestration skill: depth-1 children except
    `docs/` and `.claude/`; classify each empty/existing.
 6. **Draft `repo-layout.md` (writer — gap-fill only).** Reload `~/.claude/skills/repo-layout/SKILL.md`. If a `repo-layout.md` already exists at the resolved root, leave it untouched (it is the human-reviewed contract; only `/wiki:enhance` reconciles it). If it is absent, draft one per the `repo-layout` skill `## Drafting heuristics (writer only)`: infer one `repos[]` entry per discovered repo with `roots` seeded from `.gitignore` + ecosystem manifests, print the inferred layout for the audit trail, and write `repo-layout.md` at the root. Proceed in the same run (no gate). This is the only point in bootstrap that writes the manifest.

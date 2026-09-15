@@ -19,11 +19,11 @@ only.
    Remote URLs are not supported in v1. Pass a local filesystem path.
    ```
 2. **Resolve to absolute** (`Resolve-Path`).
-3. **Load skills.** Reload `.claude/skills/wiki-orchestration/SKILL.md` (per-repo core),
-   then `.claude/skills/wiki-memory/SKILL.md` (rollup write), then
-   `.claude/skills/wiki-architecture/SKILL.md` (architecture write). Stop-before-write and
-   report if any is missing/malformed when its write path is reached. **Not** the
-   diagram rules — this command draws nothing; `/diagram:build` and its
+3. **Load the orchestration core.** Reload `.claude/skills/wiki-orchestration/SKILL.md`.
+   Stop and report if it is missing/malformed. Load nothing else: **not** the `wiki-memory`
+   skill — the `wiki-bootstrapper` agent that step 8 hands the rollup to reloads it itself;
+   **not** the `wiki-architecture` skill — the `wiki-architect` agent spawned at step 9
+   reloads it itself; **not** the diagram rules — this command draws nothing; `/diagram:build` and its
    `wiki-diagrammer` agent own that entirely.
 4. **Refuse only when nothing to do.** If **no** depth-1 repo has narrative/domain AND no
    repo is bootstrappable (empty), emit the zero-repos advisory and stop. Otherwise proceed.

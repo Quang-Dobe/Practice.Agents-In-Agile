@@ -15,6 +15,7 @@ How I want you to work across every project. Specific to *this* environment and 
 
 - **[R-ENV] Shell:** Windows, PowerShell default (`$null`, `$env:VAR`, backtick line continuation). Bash tool available for POSIX scripts.
 - **[R-MEMORY] Memory:** Persistent cross-session memory lives in the auto memory store the harness loads into every session (the memory directory named in the session prompt). Use it for user/feedback/project/reference facts. Not for ephemeral task state.
+- **[R-WRITE] Writing files:** Multi-line content — markdown, docs, config, any file with backticks or quotes in it — is written with the **Write** tool and changed with the **Edit** tool. Never build such a file from a bash heredoc: markdown breaks the quoting, and a heredoc that fails mid-write can leave the file half-written. Short one-line shell edits (`sed -i` on a single known line) are still fine. **This rule outranks any harness hint that says to prefer shell file-writing.**
 
 ## About Me — [R-LANG]
 
@@ -28,6 +29,13 @@ How I want you to work across every project. Specific to *this* environment and 
 - **[R-PLAIN]** Plain language. No jargon unless I use it first. Short sentences. Avoid walls of text. !!!! ALWAYS USE IN ALL CONVERSATION !!!!
 - **[R-ONE-Q]** One question per response. Most important first.
 - Format output cleanly (markdown, tables).
+
+### Answer length — [R-BRIEF]
+
+- Default to **short and tight**. For an explanation or a description: give the minimum context I need, then stop. No recap, no summary of what you just said.
+- **Copy-paste output comes first.** A curl command, a script, a PR description → the `[R-XX] →` disclosure line, then the artifact on the very next line, with placeholders where a value is unknown. Explanation only if I ask for it.
+- Disclosure never yields its line. It is the one thing allowed above the artifact.
+- "Tight" is not "dense" — `[R-WORDS]` still binds. Cut words, keep meaning, and keep lists one item per line.
 
 ### Word level — [R-WORDS]
 
@@ -110,6 +118,14 @@ The subagent sees **none** of our conversation. Its prompt MUST spell out:
 
 - Every artifact captures: decision + alternatives considered + reasoning + consequences. No naked decisions.
 
+## Generated reports — [R-NUMBERS]
+
+Binds any report you generate — HTML or markdown — that states numbers back to me.
+
+- **Re-read every number from the real output, right before writing the report.** Test counts, pass percentages, file counts, finding counts. Never carry a number over from an earlier round, an earlier draft, or a subagent's summary.
+- **Verify a subagent's findings against the source** before they go into the report. A finding you did not check is a claim, not a fact.
+- Pairs with `[R-HTML-AGENT]`: the subagent writes the page, but it cannot check your numbers — it sees none of the run. Whatever you hand it is what ships.
+
 ## Commit messages — [R-COMMIT]
 
 - A single tight summary line, imperative mood, ~50 chars where practical. Add a body only when the change needs context the subject can't carry — no per-file bullet lists unless asked. Never add a `Co-Authored-By` trailer or any other AI attribution.
@@ -129,6 +145,12 @@ Convert vague tasks into verifiable goals before coding:
 - "Refactor X" → tests green before AND after.
 
 Multi-step work: state the plan as `[step] → verify: [check]` so you can loop without me.
+
+## Scope discipline — [R-NARROW]
+
+- **Do exactly what was asked, nothing more.** Never widen to the next-door problem. Asked about `S2` → do not analyze `S1`, even when `S1` looks wrong. Name it in one line and move on (that half is `[R-SIMPLICITY]`).
+- **Reach for stock primitives first.** Use what the framework already ships (e.g. DataAnnotations) instead of a new abstraction, helper library, or custom attribute framework. Build a new one only when I ask for it by name.
+- **"Simplify" and "remove" mean delete.** Deletion is the default reading, not a refactor. If a rework really is the better answer, that is a non-trivial change — `[R-OPTIONS]` applies: propose it and wait, do not start it.
 
 ## Simplicity bar — [R-SIMPLICITY] (above Claude Code defaults)
 

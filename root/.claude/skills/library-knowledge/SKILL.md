@@ -22,8 +22,9 @@ Writes no file. You are **read-only** on both inputs:
   the `repo-layout` skill `## Discovery (walk-up to the scan root)` defines; the two manifests share
   one scan root. Do not fork that walk-up here.
 - `docs/knowledge/<slug>.md` — the cached cheatsheet for one library, when the manifest names one.
-- The feature's `## 4a. Affected Bounded Contexts` table in `<feature>.overview-plan.md` — the key
-  that narrows a whole workspace of libraries down to the handful this feature touches.
+- The current step's files — the key that narrows a whole workspace of libraries down to the handful
+  this feature touches. At planning time that is the `Owns files` column of the `<feature>.plan.md`
+  Component map; during a build it is the step's own owned files.
 - **No direct Context7 access.** The crew agents declare read-only `tools:`, so the MCP tools are
   out of their reach by design. Main Claude and the `/knowledge:*` commands hold them and relay —
   see `## Procedure` step 4.
@@ -35,8 +36,9 @@ Writes no file. You are **read-only** on both inputs:
    This is a seam, not a gate.
 
 2. **Narrow to what this feature touches.** In order:
-   - the feature's `## 4a. Affected Bounded Contexts` rows → match each against `roots[].bc`;
-   - no table, or no row matches → the libraries of the roots the current step's files live under;
+   - the libraries of the roots the current step's files live under (from the `<feature>.plan.md`
+     Component map, or the step's owned files during a build);
+   - no file list yet → match the feature's component names against `roots[].bc`;
    - neither resolves → do not load anything. A whole-workspace read is not narrowing.
 
 3. **Read the cache first.** For each narrowed library with a `cache:` path, read that file. Check

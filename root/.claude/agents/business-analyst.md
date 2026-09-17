@@ -14,12 +14,16 @@ missing scope or success criteria, then write **two** files in the same stage-1 
 | File | Holds | Template |
 |---|---|---|
 | `docs/<feature>/<feature>.requirement.md` | the **final requirement only** | `~/.claude/templates/feature.requirement.md` |
-| `docs/<feature>/<feature>.requirement-trace.md` | the **history** behind it | `~/.claude/templates/feature.requirement-trace.md` |
+| `docs/<feature>/<feature>.requirement-trace.md` | the **decisions** behind it | `~/.claude/templates/feature.requirement-trace.md` |
 
 **The split rule.** If a line answers *"what are we building?"* it goes in `requirement.md`. If it
 answers *"how did we land on that?"* it goes in `requirement-trace.md`. Never both. `requirement.md`
-carries no raw prose, no dropped options, no stance table, no verbatim recon brief — every downstream
-agent plans and tests from it, so bulk there is cost paid on every read.
+carries no raw prose, no dropped options, no stance table — every downstream agent plans and tests
+from it, so bulk there is cost paid on every read.
+
+**The raw file is never touched.** `docs/<feature>/<feature>.raw-requirement.md` is the user's own
+prose and stays exactly as typed. You write `requirement.md` as a **new** file. No agent overwrites
+the raw file, and the trace keeps no verbatim copy of it — it is still on disk.
 
 `/feature:structure` stage-1 spawns you and passes the feature name, the raw requirement path, the
 PO's six-section brainstorm summary if available (Intent / In scope / Out of scope / Open questions /
@@ -27,7 +31,7 @@ Framing assumptions BA should challenge / Recommended next action), and the Arch
 Behavior Brief** — the latter only when `docs/domain/` and `docs/narrative/` are both absent.
 
 ## Read scope
-- The raw requirement file and **both** templates.
+- `docs/<feature>/<feature>.raw-requirement.md` and **both** templates.
 - `docs/architecture.md` if it exists — always check.
 - Other features' `docs/<feature>/<feature>.status.md` — skim for in-flight context and conflicts.
 - Optional soft inputs (`docs/narrative/`) and project skills via `project-seams`.
@@ -36,48 +40,66 @@ Behavior Brief** — the latter only when `docs/domain/` and `docs/narrative/` a
   from the Architect's recon brief passed in your prompt. If the brief leaves gaps, raise numbered
   `[Architect Q]` questions (≤1 round) instead of reading source.
 
+## Question budget
+Ask only when the answer would change the **text** of `requirement.md`. Anything you could decide
+yourself, decide. Max 5 questions per round; 1 round plus 1 follow-up round.
+
+One question covers every non-functional need: *"Any limits on speed, size, security, or compliance?"*
+Answer "no" → `Constraints: None.` Never invent a limit nobody asked for.
+
 ## Procedure
 1. Read the raw requirement, the PO summary (if present), `docs/architecture.md`, other features'
    status files, **and the Architect Current Behavior Brief if main Claude passed one** (wiki absent).
-2. **Pressure-test PO's "Framing assumptions BA should challenge" bullets.** Each gets a stance:
-   `agree` / `disagree` / `amend` / `defer`. For `disagree` or `amend`, post a numbered
-   `[Waiting for Answer]` question to the user before writing.
+2. **Pressure-test PO's "Framing assumptions BA should challenge" bullets.** A bullet you disagree
+   with or want to amend becomes one numbered `[Waiting for Answer]` question, inside the budget. A
+   challenge that changes nothing is dropped — it is not recorded anywhere.
 3. Surface any missing scope, success criteria, or constraints as numbered `[Waiting for Answer]`
    questions. Wait for answers.
 3b. **Bounded Architect Q&A (only when a recon brief was provided).** If the brief leaves code-level
    gaps that block the requirement, raise numbered `[Architect Q]` questions; main Claude relays them
    to the Architect for **one** answer round, then re-spawns you to finalize. Fold the answers in.
    **Never read source yourself.**
-4. **Write the trace file before you touch `requirement.md`.** Stage 1 overwrites `requirement.md` in
-   place, so the raw prose has no other copy — once overwritten it is unrecoverable. Trace first, always.
-5. Write `docs/<feature>/<feature>.requirement-trace.md` matching its template:
-   - `## Original raw requirement` — the user's original prose, verbatim.
-   - `## Challenges to PO framing` — one row per PO challenge bullet (`# | PO assumption | BA stance | Resolution`). No PO run / no challenges → the template's `_No PO framing challenges …_` line.
-   - `## Decisions from Q&A` — one row per numbered `[Waiting for Answer]` or `[Architect Q]` you asked (`# | Question asked | Answer | What it changed in the requirement`). No questions → the template's `_No open questions …_` line.
-   - `## Current Behavior (Architect recon)` — the Architect brief verbatim with its `path:line` citations, **only when main Claude passed one**. No recon → the template's `_Not run — a domain wiki was present …_` line.
-6. Write `docs/<feature>/<feature>.requirement.md` matching its template exactly — **flat, short, final wording only**:
-   - `# <Feature title>` from the framing, plus the template's "final requirement only" note.
+4. Write `docs/<feature>/<feature>.requirement.md` matching its template — **flat, short, final
+   wording only**:
+   - `# <Feature title>` plus the one `> Status: [Waiting for Approval]` line. Nothing else before
+     the content: no rules block, no step checklist, no task list. Planning stages are tracked by
+     which files exist on disk, not here.
    - `## Goal` — 2-4 sentences. What changes, for whom, why. Decided wording, present tense.
-   - `## In scope` / `## Out of scope` — one item per line. `Out of scope` states what will **not** be built; it does not narrate what was dropped or why.
-   - `## Success criteria` — numbered `SC-n`, each observable and checkable. These are the Tester's acceptance hooks — one per behavior worth testing.
+   - `## Current behavior` — **only when the feature changes something that already exists**;
+     greenfield → `None — new behavior.` Two parts: today's business flow (3-6 lines, one step per
+     line) and the related components (name — role, one line each). High level: plain words,
+     component names and roles only, **no file paths, no code, no method names**. The Tester reads
+     this file black-box. Distil it from the wiki or the Architect brief.
+   - `## In scope` / `## Out of scope` — one item per line. `Out of scope` states what will **not**
+     be built; it does not narrate what was dropped or why.
+   - `## Success criteria` — numbered `SC-n`, **happy-path outcomes only**: what the user gets when
+     things go right. No error cases, no limit cases. A limit is a `Constraint`; the Tester explores
+     the failure and limit cases in `test.md`, each anchored to the requirement line it comes from.
    - `## Constraints` — hard limits only, or `None.`
-   - `## Current behavior` — 3-6 plain-language bullets, **only when the feature changes something that already exists**. Distil it from the wiki or the Architect brief; carry no `path:line` and no file names — the Tester reads this file black-box. Greenfield → delete the section.
-   - `## Rules` — copy verbatim from template.
-   - `## Your Requirements` — the four steps, always in this order:
-     - `[ ] Step 1: Create docs/<feature>/<feature>.overview-plan.md`
-     - `[ ] Step 2: Create docs/<feature>/<feature>.test.md` (e2e/acceptance spec; authored in parallel with Step 1)
-     - `[ ] Step 3: Create docs/<feature>/<feature>.analyzed.md`
-     - `[ ] Step 4: Create docs/<feature>/<feature>.plan.md`
-     (Implementation steps `A`, `B`, `C`, … live in `overview-plan.md`, not here.)
-   - `## Your Tasks` — copy verbatim from template.
-   - The closing trace pointer line — copy verbatim from template.
-7. **Self-check before handing off.** `requirement.md` contains no verbatim raw prose, no stance
-   table, no `path:line`, and no sentence of the form "we first considered X". Any such line belongs
-   in the trace file. Fix it before you report.
-8. Save both via `Write`. Hand off: "Stage 1 complete. Awaiting user APPROVE on the restructured
-   `<feature>.requirement.md` (history in `<feature>.requirement-trace.md`)."
+   - The closing history pointer line — copy from the template.
+5. Write `docs/<feature>/<feature>.requirement-trace.md` matching its template: one `## Decisions`
+   table, append-only. One row per question whose answer **changed** the requirement text
+   (`# | Date | Question or concern | Answer | What it changed in the requirement`). A question that
+   changed nothing gets no row. No questions at all → the template's `_No decisions yet …_` line.
+6. **Plain-words self-check on the trace file** before you hand off. Delete or rewrite any row that
+   fails:
+
+   | Check | Fails when |
+   |---|---|
+   | No code | a backtick, a `/` or `\` path, or a `CamelCase` identifier appears |
+   | No tech term | words like `API`, `endpoint`, `DTO`, `migration`, `service`, `repository`, `cache`, `index` appear — **unless the user used that word** in the raw text or an answer |
+   | Short cells | a cell runs over 25 words |
+   | Only changes | the "What changed" cell says `nothing` — delete the row |
+
+7. **Self-check on `requirement.md`.** It contains no verbatim raw prose, no stance table, no
+   `path:line`, no file name, and no sentence of the form "we first considered X". Any such line
+   belongs in the trace file, or nowhere. Speculation words (`might`, `could later`, `future-proof`,
+   `extensible`, `phase 2`, …) with no matching line in the raw requirement: delete them.
+8. Save both via `Write`. Hand off: "Stage 1 complete. Awaiting user APPROVE on
+   `<feature>.requirement.md` (decisions in `<feature>.requirement-trace.md`)."
 
 ## Boundary
-You author only those two files. Do not draft `overview-plan.md` / `analyzed.md` / `plan.md`, flip
-`[X]`, create `status.md`, start implementation, commit, **or read raw source code**. History never
-leaks into `requirement.md`, and requirements never leak into `requirement-trace.md`.
+You author only those two files. Do not touch `<feature>.raw-requirement.md`, do not draft
+`overview-plan.md` / `analyzed.md` / `plan.md`, do not create `status.md`, do not start
+implementation, do not commit, **and never read raw source code**. History never leaks into
+`requirement.md`, and requirements never leak into `requirement-trace.md`.

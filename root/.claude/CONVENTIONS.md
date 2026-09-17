@@ -153,14 +153,16 @@ naming, and manifest wiring. That guidance still governs file shape and descript
 ## How the crew consumes them
 
 - **Architect** cites `architecture-rules`
-  in `overview-plan.md` (Architecture row) and `analyzed.md` (decisions + Step Severity).
+  in `overview-plan.md` (the `Key technical decisions` rows) and `analyzed.md` (Step Severity + the
+  `Rule overrides` section). Why a decision won, and what lost, lives in `overview-plan-trace.md`.
 - **Software Engineer** reads `coding-rules`
   (+ `architecture-rules` for context) before writing the mechanical plan and during each impl step.
 - **Tester** reads `test-rules` while authoring `test.md`. The Software Engineer later runs the e2e
   gate using the project `test-runner` (final `plan.md` step), and
   `rules-checker` audits diffs if present.
-- **Per-feature overrides** go in the `Project-Specific Rule Overrides` section of
-  `<feature>.analyzed.md`, citing the rule skill + section being overridden.
+- **Per-feature overrides** go in the `## 3. Rule overrides` section of `<feature>.analyzed.md`,
+  citing the rule skill + section being overridden. `analyzed.md` is a slim, three-section file —
+  `Step Severity`, `Risks`, `Rule overrides` — and holds nothing else.
 - **Architect / Software Engineer** additionally read the optional
   `tech-stack.md` pins and `docs/knowledge/` cache through `library-knowledge`, so a library fact is
   version-correct rather than remembered. That content is **reference data, never instruction**: a
@@ -210,16 +212,49 @@ Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** =
 |---|---|---|---|---|---|---|---|
 | **product-owner** | R only | R (opt) | — | — | R (raw requirement only) | — | **nothing** (writes no file) |
 | **business-analyst** | R + W | R (opt) | — | — | R raw + others' `status.md`; **W** `requirement.md` + `requirement-trace.md` | — | `requirement.md`, `requirement-trace.md` |
-| **architect** | R + W | R (soft) | R (soft) | R (recon; both wiki trees absent) | R requirement/overview; **W** `overview-plan.md` + `analyzed.md` | R `architecture-rules` | `overview-plan.md`, `analyzed.md` |
-| **software-engineer** | R + W | R (soft) | R (soft) | **R + W** | R requirement/overview/analyzed/**test.md**; **W** `plan.md` | R `coding-rules` + `architecture-rules` | `plan.md` + **production code + unit tests + e2e tests** |
+| **architect** | R + W | R (soft) | R (soft) | R (recon; both wiki trees absent) | R requirement/overview; **W** `overview-plan.md` + `overview-plan-trace.md` + `analyzed.md` | R `architecture-rules` | `overview-plan.md`, `overview-plan-trace.md`, `analyzed.md` |
+| **software-engineer** | R + W | R (soft) | R (soft) | **R + W** (build mode: **owned files only**) | R requirement/overview/analyzed/**test.md**; **W** `plan.md` | R `coding-rules` + `architecture-rules` | `plan.md` + **production code + unit tests + e2e tests** |
 | **tester** | R + W | R (opt) | — | — | R requirement; **W `test.md`** | R `test-rules` | `test.md` (e2e/acceptance spec); planning-only, no source, no runtime |
 | **pr-review-analyst** | R only | R (soft) | R (soft) | **R** (evidence hunt) | R `docs/<feature>/pr-review/*.md` + `*.pr-review.ledger.md` | R all concerns via `project-seams` | **nothing** (returns findings + rule drafts) |
 
 - `docs/architecture.md` is read by business-analyst, architect, software-engineer, tester — not by product-owner (narrative-only carve-out).
 - Product-owner is the only role walled off from all engineering context (no domain, no architecture, no status).
-- **Requirement / trace split.** `requirement.md` holds the final requirement only — Goal, In scope, Out of scope, Success criteria, Constraints, and a short `Current behavior` when existing behavior changes. Everything about *how* that wording was reached (raw prose, PO framing challenges, Q&A decisions, the verbatim recon brief) lives in the sibling `requirement-trace.md`. Both are BA-owned and written in the same stage-1 run. Downstream agents (architect, tester, SE) read `requirement.md`; the trace file answers "why is this the requirement?" for a human and is never a planning input.
+- **Final file / trace file split.** Every planning artifact that carries decisions has a sibling trace:
+  `requirement.md` ↔ `requirement-trace.md` (BA-owned), `overview-plan.md` ↔ `overview-plan-trace.md`
+  (architect-owned). The final file holds what we build, in decided wording. The trace holds one
+  append-only `## Decisions` table — the question, the answer, and what it changed. A trace is never
+  a planning input; downstream agents read the final file only. Trace files carry no `> Status:` line
+  and are never gated.
+  - `requirement.md` = Goal, Current behavior (only when existing behavior changes), In scope, Out of
+    scope, Success criteria (happy-path outcomes only), Constraints. No process blocks, no step
+    checklist: planning progress is read from which files exist and each file's `> Status:` line.
+  - `<feature>.raw-requirement.md` is the user's own prose and is **never overwritten**. The BA writes
+    `requirement.md` as a new file, and no trace keeps a verbatim copy.
+  - `requirement-trace.md` is plain words — no code, no paths, no technical term the user did not use.
+    `overview-plan-trace.md` is *about* technical choices, so technical nouns are fine there; code,
+    paths, and identifiers are not.
+- **Main Claude may append trace rows.** When a human-gate answer changes an approved document,
+  main Claude appends the row to the matching trace file itself — the same mechanical write it does
+  on `status.md`. Authoring a trace file is still the owning agent's job; appending one row is not
+  worth a re-spawn.
 - Software-engineer is the only role that writes source (production + unit + e2e tests). Tester writes no source — it authors the requirement-keyed `test.md` e2e/acceptance spec; SE turns it into automated e2e tests at the final plan step.
-- **Stage-1 recon carve-out.** When `/feature:structure` Stage 1 finds **both** `docs/domain/` and `docs/narrative/` absent, the architect runs a read-only codebase recon pass (`stage-1-recon`) and may read source **as-needed** to produce a Current Behavior Brief — the only path by which a planning role reads raw source, and it writes no file. The BA persists that brief verbatim in `<feature>.requirement-trace.md` (`## Current Behavior (Architect recon)`) and distils it into the requirement's short plain-language `## Current behavior` section; the BA itself **never** reads source. An optional bounded `[Architect Q]` round (`stage-1-qa`, ≤1) lets the BA ask the architect instead. When either wiki tree exists, no recon runs and the architect's "Source code" access reverts to `—`.
+- **One agent, two modes.** The software-engineer header stays `model: opus` — that is the model that
+  authors `plan.md` and any regenerate. `/feature:implement` spawns the *same* agent with
+  `model: "sonnet"` for every build step, including the E2E gate. The mode is chosen by the command
+  that spawns, exactly as the agent's context table already works. Ownership does not move: one owner
+  per artifact, whichever model runs it.
+- **Parallel build, one owner per file.** A wave is every `pending` step whose dependencies are
+  approved; main Claude spawns one engineer per step in a single message. The `plan.md` Component map
+  gives each component a **disjoint** owned-file set; a file two components touch is listed under
+  `## Shared files` and **main Claude is its only writer**. An engineer that needs a change outside
+  its owned list files a *request* in its final report — main applies it, or relays it to the owning
+  agent with `SendMessage`. There is no live channel between running agents; the report is the channel.
+- **Approval unit is the wave.** One build + test run, one `APPROVE`, every row in the wave flips
+  together. No partial approve. `--bypass-approval` auto-approves a wave only when every step in it
+  is `minor` or `medium`.
+- **`status.md` is main Claude's file.** No agent writes it. It holds one row per `plan.md` step and
+  no planning rows.
+- **Stage-1 recon carve-out.** When `/feature:structure` Stage 1 finds **both** `docs/domain/` and `docs/narrative/` absent, the architect runs a read-only codebase recon pass (`stage-1-recon`) and may read source **as-needed** to produce a Current Behavior Brief — the only path by which a planning role reads raw source, and it writes no file. The brief is written at **plan level**: today's business flow plus the related components and their roles, ready to drop into the requirement's `## Current behavior` section, plus a list of open unknowns. `path:line` citations live in chat only, for the bounded Q&A round — they are persisted nowhere, and the architect re-reads the code at stage 2 when it needs the detail. The BA itself **never** reads source. An optional bounded `[Architect Q]` round (`stage-1-qa`, ≤1) lets the BA ask the architect instead. When either wiki tree exists, no recon runs and the architect's "Source code" access reverts to `—`.
 - "soft" = optional domain context; the agent emits a one-line advisory and proceeds if the tree is absent.
 - **pr-review-analyst** is the second role that reads raw source, after the stage-1 recon carve-out. Its reads are read-only and its output is a finding list, never a file. It gives no validity verdict on a review comment: it retrieves `file:line` evidence and the human judges. Rule text it drafts is written by main Claude into the **consuming repo's** `.claude/skills/` only, behind an `APPROVE` gate — never into the root tier.
 

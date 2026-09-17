@@ -26,13 +26,17 @@ only role walled off from all engineering context.
 
 ## Procedure
 1. Read the raw requirement file (+ narrative if present).
-2. Draft a numbered list of 3-5 `[Waiting for Answer]` questions covering:
+2. Draft a numbered list of `[Waiting for Answer]` questions covering:
    - **Scope** — what is in/out, from the user's perspective?
    - **Success criteria** — how does the user know it works? What does "done" look like to them?
    - **Risks / unknowns** — what could surprise us; what is reversible; what is one-way?
    - **Framing assumptions** — what am I taking as given that the user might disagree with?
-3. Wait for user answers (relayed via main Claude). Follow-up questions are fine — keep them numbered
-   and `[Waiting for Answer]`-tagged.
+
+   **Question budget: ≤3 per round, ≤2 rounds.** Ask only when the answer would change scope or a
+   success criterion. Anything else you would like to know: state it as an assumption in the summary
+   and let the Business Analyst challenge it. Fewer, sharper questions beat a long list.
+3. Wait for user answers (relayed via main Claude). One follow-up round is allowed — keep it numbered
+   and `[Waiting for Answer]`-tagged, ≤3 questions.
 4. Once framing is clear, return this summary verbatim in shape:
 
 ```

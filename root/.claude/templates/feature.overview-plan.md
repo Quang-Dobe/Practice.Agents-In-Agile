@@ -1,55 +1,74 @@
-# <Feature title> - Overview Plan
+# <Feature title> — Overview plan
 
-> **Status:** [Waiting for Approval]
+> Status: [Waiting for Approval]
 
 ## 1. Purpose
 
-One paragraph: what this feature delivers and why it exists. Phrase it as the user-facing outcome, not the implementation.
+<One paragraph. The user-facing outcome. Not the implementation.>
 
-## 2. High-Level Goals
+## 2. What is exposed
 
-| Goal | Description |
-|---|---|
-| <goal 1> | <one line> |
-| <goal 2> | <one line> |
-| <goal 3> | <one line> |
+<Outside view only: what a caller or a user sees. One `### <Kind> — <short description>` sub-section
+per kind of exposure. Nothing exposed → one line: `None — internal change.`
+An internal logic or architecture change is not exposure — its picture goes in §3.>
 
-## 3. Application Surface
+### API — <short description>
 
-How the feature is exposed (CLI, hosted service, API endpoint, library, batch job, etc.) and what it integrates with.
+| Method | Route | Input | Output | Purpose |
+|---|---|---|---|---|
+| <METHOD> | <route> | <what goes in> | <what comes back> | <why a caller uses it> |
 
-## 4. Solution / Module Structure
+<One row per endpoint. One line per cell. No schemas — they live in `plan.md`.>
 
-ASCII tree of the projects, modules, or folders the feature touches. Show where new code lands and what it depends on. If the feature only touches existing modules, list those modules and the role each plays.
+### UI — <short description>
 
-## 4a. Affected Bounded Contexts
+- Screen: <where the user is>
+- Change: <what is new or different>
+- User sees: <the visible result>
 
-> Scope key consumed by the project's `present-builder` overview-plan unit (if installed). List the domain-wiki bounded contexts this feature touches; absent → present draws nothing scoped and notes it.
+<Plain words. ≤5 lines. No pixel detail.>
 
-| Bounded context | Why this feature touches it |
-|---|---|
-| <bc> | <one line> |
+### Job / CLI / Event — <short description>
 
-## 5. Core Behaviour (MVP)
+- Name: <name>
+- Trigger: <when it runs, or what raises it>
+- Result: <what it produces, or who reacts>
 
-Numbered list of what happens end-to-end on the happy path. One sentence per step.
+<Same three lines per item. ≤5 items per kind.>
 
-## 6. Key Technical Decisions
+## 3. Components
+
+| Component | New or changed | Job (one line) |
+|---|---|---|
+| <name> | new / changed | <what it does after this feature> |
+
+<Only when structure or logic changes: one before → after diagram here. Mermaid (ASCII fallback),
+≤12 boxes, ≤3 lines of words under it. No structural change → table only, no diagram.
+"changed" rows start from the requirement's `## Current behavior`.>
+
+## 4. Happy-path flow
+
+1. <one sentence>
+2. <one sentence>
+
+## 5. Key technical decisions
 
 | Concern | Decision |
 |---|---|
-| Language / runtime | <choice> |
-| Architecture | <chosen architecture — cite the project's `architecture-rules` skill if one pins it> |
-| <other concern> | <decision> |
+| <concern> | <the decision — cite `architecture-rules` §n when a rule pins it> |
 
-## 7. Out of Scope (MVP)
+<Final decisions only, ≤7 rows. No options, no why — those live in `<feature>.overview-plan-trace.md`,
+one trace row per row of this table.>
 
-Bullet list of things explicitly **not** in this iteration.
+## 6. Steps
 
-## 8. Next Steps
+| Step | Component(s) | What | Depends on | Covers |
+|---|---|---|---|---|
+| A | <component> | <one line> | — | SC-1 |
+| B | <component> | <one line> | A | SC-2 |
+| <last> | E2E gate | Run every case in `<feature>.test.md` | <all> | all |
 
-- [ ] Step 1: Overview plan (this document)
-- [ ] Step 2: E2E / acceptance test spec (`<feature>.test.md`) — authored in parallel with this doc
-- [ ] Step 3: Approach analysis and rationale (`<feature>.analyzed.md`)
-- [ ] Step 4: Detailed mechanical implementation plan (`<feature>.plan.md`)
-- [ ] Implementation
+<This is the **canonical** step list. `analyzed.md`, `plan.md`, `status.md`, and `/feature:implement`
+all key on these IDs — do not rename or renumber them afterwards. `Covers` names the `SC-n` the step
+serves; a step that covers no SC does not belong here. The final step is always the E2E gate.
+Severity, Risks, and Rule overrides are not here — they live in `<feature>.analyzed.md`.>

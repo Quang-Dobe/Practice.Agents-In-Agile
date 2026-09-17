@@ -34,7 +34,7 @@ After install, every repo you open gets the crew. The crew reads the repo and wr
 ```
 
 Roles of the outputs:
-- `docs/<FEATURE>/` — `requirement.md`, `requirement-trace.md`, `overview-plan.md`, `test.md`, `analyzed.md`, `plan.md`, `status.md`; each authored by its owning role, each behind an `APPROVE` gate. `requirement.md` is flat and holds the **final requirement only**; `requirement-trace.md` holds how it was reached (raw prose, PO challenges, Q&A decisions, recon brief) and is never a planning input.
+- `docs/<FEATURE>/` — `raw-requirement.md` (yours, never overwritten), `requirement.md`, `requirement-trace.md`, `overview-plan.md`, `overview-plan-trace.md`, `test.md`, `analyzed.md`, `plan.md`, `status.md`. Each final artifact is authored by its owning role and carries one `> Status:` line that main Claude flips on `APPROVE`. Each **trace** file is an append-only `## Decisions` table — what was asked, what was answered, what it changed — and is never a planning input.
 - `docs/narrative/` — one `architecture.md` + one `walkthrough.md` per bounded context; bootstrapped by `/project:overview`, refreshed by `/project:update`.
 - `docs/domain/` — Evans-canonical schema (bounded contexts, aggregates, events, commands, repositories, services, glossary, context map); bootstrapped by `/project:explore`, refreshed by `/project:update`.
 
@@ -76,11 +76,12 @@ The feature pipeline writes `docs/<FEATURE>/` plus the source code its steps pro
 
 | Artifact | Owner |
 |---|---|
-| `<FEATURE>.requirement.md` (final requirement), `<FEATURE>.requirement-trace.md` (its history) | business-analyst |
-| `<FEATURE>.overview-plan.md`, `.analyzed.md` (incl. Severity table) | architect |
-| `<FEATURE>.test.md` (Given/When/Then e2e spec) | tester (planning-only; no runtime role) |
-| `<FEATURE>.plan.md` + all source code | software-engineer |
-| `<FEATURE>.status.md` | mechanical (template-initialized, flipped by `/feature:implement` Phase 3) |
+| `<FEATURE>.requirement.md` (final requirement), `<FEATURE>.requirement-trace.md` (its decisions) | business-analyst |
+| `<FEATURE>.overview-plan.md`, `.overview-plan-trace.md` (its decisions), `.analyzed.md` (Severity, Risks, Rule overrides) | architect |
+| `<FEATURE>.test.md` (Given/When/Then acceptance spec, happy cases first) | tester (planning-only; no runtime role) |
+| `<FEATURE>.plan.md` (component design) + all source code | software-engineer |
+| `<FEATURE>.status.md`, the `Shared files` edits, and trace rows appended at a human gate | main Claude (mechanical — no agent writes them) |
+| `<FEATURE>.raw-requirement.md` | you — no agent ever writes it |
 | `docs/narrative/` | project-overview (bootstrap), project-update (every refresh) |
 | `docs/domain/` | project-explorer (bootstrap), project-update (every refresh) |
 | `<stem>.pr-review.ledger.md` | `/pr-review:analyze` appends findings; the human owns `status`; `/pr-review:learn` flips `promoted` |
@@ -94,16 +95,16 @@ The product-owner writes nothing.
 | Path | Role |
 |---|---|
 | `agents/product-owner.md` | Frames raw idea into product intent via Q&A; writes no files. |
-| `agents/business-analyst.md` | Pressure-tests the PO framing; authors the requirement. |
-| `agents/architect.md` | Authors overview-plan + analyzed (risk + per-step Severity). |
+| `agents/business-analyst.md` | Pressure-tests the PO framing; authors the requirement + its trace. |
+| `agents/architect.md` | Authors overview-plan + its trace, and the slim analyzed (Severity, Risks, Rule overrides). |
 | `agents/tester.md` | Authors the e2e/acceptance spec from the approved requirement. |
-| `agents/software-engineer.md` | Authors the mechanical plan; implements every step (code + tests). |
+| `agents/software-engineer.md` | Authors the component-level plan; builds every component (code + tests). |
 | `agents/project-overview.md` | Wiki runtime: bootstraps `docs/narrative/`. |
 | `agents/project-explorer.md` | Wiki runtime: bootstraps `docs/domain/`. |
 | `agents/project-update.md` | Wiki runtime: dual-pass diff-aware refresh of both trees. |
 | `commands/feature/new.md` | Start a brainstorm with the Product Owner. |
-| `commands/feature/structure.md` | Four APPROVE-gated stages: requirement → overview+test → analyzed → plan. |
-| `commands/feature/implement.md` | The whole step loop: brief, spawn the SE, flip to done after `APPROVE`, advance. |
+| `commands/feature/structure.md` | Four APPROVE-gated stages: requirement → overview-plan + test → analyzed → plan. The stage is read from which files exist on disk. |
+| `commands/feature/implement.md` | The build loop, wave by wave: brief, spawn one sonnet engineer per component in parallel, one build run, one `APPROVE`, advance. |
 | `commands/project/overview.md` | One-shot narrative bootstrap (refuses on non-empty tree). |
 | `commands/project/explore.md` | One-shot schema bootstrap (refuses on non-empty tree). |
 | `commands/project/update.md` | Diff-aware dual-pass refresh (refuses when both trees missing). |
@@ -112,7 +113,7 @@ The product-owner writes nothing.
 | `agents/pr-review-analyst.md` | Read-only: returns evidenced findings, then rule drafts. Gives no validity verdict. |
 | `skills/` — 4 cross-cutting skills | `project-seams` (optional repo-tier rules), `prompt-defense`, `repo-layout` (opt-in scan-scope contract; read-only for the crew), `library-knowledge` (opt-in pinned library docs via Context7; read-only for the crew). |
 | `skills/` — 3 wiki skills | `project-overview`, `project-explorer`, `project-update`. Shared across the wiki agents; `project-update` also has its sections cited by `project-overview`. |
-| `templates/feature.*.md` | Document shapes for the six feature artifacts. |
+| `templates/feature.*.md` | Document shapes for the eight feature artifacts (five final files, two traces, one status). |
 | `templates/project-rules.template.md` | Copy-me example for a repo-tier rule skill. |
 | `templates/pr-review.ledger.md` | The ledger shape: one `## PR-NN` section per finding, each carrying a short `title` and an optional `### Hints` list. |
 | `templates/pr-review.html` | The card page shell. One collapsible card per finding at its own `#PR-NN` anchor, plus a sticky link rail. Open findings expand, `fixed` and `rejected` collapse. Dark default, theme-aware, all CSS and JS inlined. |

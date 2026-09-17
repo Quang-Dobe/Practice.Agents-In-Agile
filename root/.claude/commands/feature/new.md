@@ -19,4 +19,4 @@ Brainstorm a new feature using the `product-owner` subagent. This command writes
 
 4. Print the final summary in chat. Do **not** modify any file. Do **not** spawn any other subagent.
 
-5. Recommend running `/feature:structure <name>` next (in this session for best context, or a fresh session if user prefers). The Business Analyst will pressure-test the PO's framing and author `<feature>.requirement.md` there.
+5. Recommend running `/feature:structure <name>` next (in this session for best context, or a fresh session if user prefers). There the Business Analyst pressure-tests the PO's framing and authors two **new** files — `<name>.requirement.md` (the final requirement) and `<name>.requirement-trace.md` (the decisions behind it). `<name>.raw-requirement.md` is never overwritten; it stays exactly as the user typed it.

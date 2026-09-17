@@ -1,12 +1,19 @@
 # <Feature title>
 
-> **This file holds the final requirement only.** Present tense, decided wording. No raw prose, no
-> options that were dropped, no record of how the wording changed. That history lives in
-> `<feature>.requirement-trace.md`.
+> Status: [Waiting for Approval]
 
 ## Goal
 
-<2-4 sentences. What changes, for whom, and why it matters. Final wording only.>
+<2-4 sentences. What changes, for whom, and why it matters. Final wording, present tense.>
+
+## Current behavior
+
+<Only when this feature changes something that already exists. Greenfield → `None — new behavior.`>
+
+- Today: <one line per step of the business flow as it works now — 3-6 lines>
+- Related components: <name — role in one line>, <name — role in one line>
+
+<Plain words. Component names and roles only. No file paths, no code, no method names.>
 
 ## In scope
 
@@ -14,48 +21,21 @@
 
 ## Out of scope
 
-- <one excluded item per line — state what will NOT be built>
+- <one excluded item per line — what will NOT be built>
 
 ## Success criteria
 
-- SC-1: <observable outcome anyone can check>
+- SC-1: <happy-path outcome anyone can check>
 - SC-2: <...>
+
+<Happy-path outcomes only — one per thing the user gets. No error or limit cases here. Limits go to
+Constraints; the Tester explores edge cases from them in `test.md`.>
 
 ## Constraints
 
 - <hard limit: platform, data, compatibility, deadline, rule to obey>
 - <or `None.`>
 
-## Current behavior
-
-<Only when this feature changes something that already exists. 3-6 plain-language bullets, no file
-paths — downstream readers include the black-box Tester. Delete this whole section for greenfield work.>
-
-## Rules
-
-- In `Your Requirements` path below there is a Requirements section describing what we need to do. Follow it STEP BY STEP.
-- In each step, mark `[Waiting for Answer]` (open question) and `[Waiting for Approval]` (needs sign-off) tags in any markdown you create or update if you have concerns. After APPROVE, move to the next step.
-- When working a step, all marked-DONE steps MUST NOT CHANGE. You have no permission to alter logic / plans / implementations of done steps or their markdown files. If a change is needed, propose it and wait for review using the same `[Waiting for Answer]` and `[Waiting for Approval]` tags.
-- Each step needs APPROVE before it is marked done. Use `[X]` (after the user types `APPROVE`) on the row in this file. Each step happens in **one session**. When a step is approved, close the session and start a new one for the next step.
-- Start implementation only after **all** planning steps (1-4) are APPROVED.
-- BE HARD AND GUIDE ME THROUGH QUESTIONS.
-
-## Your Requirements
-
-- [ ] Step 1: Create `docs/<feature>/<feature>.overview-plan.md` - high-level plan for <feature title>
-- [ ] Step 2: Create `docs/<feature>/<feature>.test.md` - e2e / acceptance test spec (Given/When/Then), authored in parallel with Step 1
-- [ ] Step 3: Create `docs/<feature>/<feature>.analyzed.md` - approach analysis and rationale (incl. per-step Severity table per R7)
-- [ ] Step 4: Create `docs/<feature>/<feature>.plan.md` - detailed mechanical implementation plan (final step is the E2E validation gate)
-
-> Implementation steps (A, B, C, ...) are NOT listed here. They belong inside `<feature>.overview-plan.md` (and detailed in `<feature>.plan.md`). This file tracks only the four planning artifacts.
-
-## Your Tasks
-
-- Create / update markdown files STEP BY STEP.
-- START IMPLEMENTATION based on the plan once Steps 1-4 are APPROVED.
-
 ---
 
-_Trace: `<feature>.requirement-trace.md` — the original raw prose, the PO framing challenges, the
-Q&A decisions, and the Architect recon brief. Read it to ask "why is this the requirement?"; never
-plan or test from it._
+_History: `<feature>.requirement-trace.md` — the questions and answers behind this text._

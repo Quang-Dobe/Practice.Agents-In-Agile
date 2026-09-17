@@ -1,34 +1,16 @@
-# <Feature title> - requirement trace
+# <Feature title> — requirement trace
 
-> **Nothing in this file is a requirement.** `<feature>.requirement.md` holds the final requirement.
-> This file holds only how that requirement was reached. No agent plans, tests, or builds from it.
-> Written once at `/feature:structure` stage-1, then left alone.
+Plain words only. No code, no file paths, no technical terms unless the user used them first.
+This file tracks requirement decisions, not how the code works. `<feature>.requirement.md` holds
+the requirement itself — nothing here is a requirement, and no agent plans, tests, or builds from it.
 
-## Original raw requirement
+Append-only. A row is added when an answer **changed** the requirement text. An answer that changed
+nothing gets no row.
 
-<verbatim copy of the user's pre-restructure raw prose — the only surviving copy, because stage-1
-rewrites `<feature>.requirement.md` in place>
+## Decisions
 
-## Challenges to PO framing
+| # | Date | Question or concern | Answer | What changed in the requirement |
+|---|---|---|---|---|
+| 1 | <YYYY-MM-DD> | <the question, in the user's own words where possible> | <the answer> | <the section it shaped, one line> |
 
-| # | PO assumption | BA stance | Resolution |
-|---|---|---|---|
-| 1 | <verbatim PO assumption> | agree / disagree / amend / defer | <one-line outcome — what the user decided, or `n/a (agreed)`> |
-
-<If `/feature:new` was not run, or the PO surfaced no assumptions to challenge, replace the table with:
-`_No PO framing challenges - /feature:new was not invoked or PO surfaced no assumptions to challenge._`>
-
-## Decisions from Q&A
-
-| # | Question asked | Answer | What it changed in the requirement |
-|---|---|---|---|
-| 1 | <the numbered `[Waiting for Answer]` or `[Architect Q]` question> | <the user's / Architect's answer> | <the section it shaped, or `nothing`> |
-
-<No questions were asked → `_No open questions — the raw requirement was complete._`>
-
-## Current Behavior (Architect recon)
-
-<The Architect's Current Behavior Brief verbatim, keeping its `path:line` citations. The distilled
-plain-language version lives in the requirement's `## Current behavior` section.>
-
-<No recon ran → `_Not run — a domain wiki was present, so the BA grounded on it._`>
+<No question changed the text → `_No decisions yet — the raw requirement was complete._`>

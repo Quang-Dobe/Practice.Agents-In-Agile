@@ -1,75 +1,174 @@
 ---
-description: Run the current open step of a feature end to end - brief, implement, approve, advance
+description: Build a feature wave by wave - brief, spawn parallel engineers, one build run, one APPROVE
 argument-hint: <feature> [step-id] [--bypass-approval]
 ---
 
-Run the current open requirement step of a feature from brief to approval. This is the only workflow command: it briefs, implements, records the approval, and moves to the next step.
+Build the feature described by `docs/<feature>/<feature>.plan.md`, one **wave** at a time. Main Claude (you) is the orchestrator: you pick the wave, spawn one engineer per component, collect their reports, apply the shared-file edits yourself, run the build once, and relay.
 
-`$ARGUMENTS` is `<feature>` followed optionally by `[step-id]`. The optional `--bypass-approval` flag is a boolean: **absent = false** (the normal per-step APPROVE gate, no auto-advance); it is order-independent and may appear before or after `[step-id]`. If `<feature>` is missing, error: `specify a feature, e.g. /feature:implement payments-export`.
+`$ARGUMENTS` is `<feature>` followed optionally by `[step-id]`. The optional `--bypass-approval` flag is a boolean: **absent = false** (the normal APPROVE gate per wave). It is order-independent. If `<feature>` is missing, error: `specify a feature, e.g. /feature:implement payments-export`.
 
-If `[step-id]` is provided (e.g., `C`), force that step.
+If `[step-id]` is provided (e.g. `C`), that single step is the wave.
 
-## Phase 1 - Brief
+If `docs/<feature>/<feature>.status.md` does not exist, error: `no status file at docs/<feature>/<feature>.status.md — run /feature:structure <feature> first`.
 
-1. Read `docs/<feature>/<feature>.requirement.md` and find the first row whose checkbox is NOT `[X]`.
-2. Read the matching section in `docs/<feature>/<feature>.plan.md` for that step.
-3. Read `docs/<feature>/<feature>.status.md` for relevant resolved-question history (especially the previous step's "Resolved questions" section, since it often constrains the next step).
-4. Read the Severity row for that step from `docs/<feature>/<feature>.analyzed.md` (2-col contract: `Step ID | Severity`, per R7). If `analyzed.md` is absent (planning steps of `requirement.md`), there is no Severity to consult; continue.
-5. When you spawn `software-engineer` for this step, it reads both `docs/narrative/` and `docs/domain/` if present, as optional soft context — emitting the symmetric advisory for whichever tree is absent and proceeding regardless. The trees never block.
-6. Print a focused brief in this exact shape:
+## What a wave is
 
-   **Step:** `<step-id>` - `<short title>`
-   **Goal:** one sentence.
-   **Inputs from prior steps:** the constraints / DTOs / interfaces this step builds on.
-   **Severity (from analyzed.md):** the step's `Severity` cell (or `n/a` if `analyzed.md` is absent).
-   **After go-ahead:** spawn the `software-engineer` (the Tester has no runtime role). SE writes production + unit tests; if this is the final step it also authors + runs the e2e tests from `test.md`.
-   **First action:** what should happen as soon as the user gives the go-ahead.
+A **wave** = every step in `status.md` whose status is `pending` and whose `Depends on` steps (from the `plan.md` Component map) are all `approved`.
 
-7. Do **not** write code. Do **not** modify any files. Wait for the user's response.
+- Steps with no dependency start together.
+- The E2E gate is always the last wave, alone.
+- A wave is **one unit**: one build, one test run, one `APPROVE`.
 
-## Phase 2 - Implement
+## Phase 1 — Brief the wave
 
-When the user gives the go-ahead, main Claude spawns the `software-engineer` subagent with `<feature>` + Step ID (it follows the `/feature:implement <Step ID>` section of its agent file; the final step also runs the E2E validation gate there). SE executes the step's substeps, writes production code and unit tests, and — for the final step — authors the e2e tests from `test.md` and runs them via the project `test-runner`. The Tester is not spawned here.
+1. Read `docs/<feature>/<feature>.status.md` — the **only** source of what is open. Never read `requirement.md` to find the next step; it tracks nothing.
+2. Read `docs/<feature>/<feature>.plan.md` — the Component map (owned files, `Depends on`, `Provides to others`), the `Shared files` list, and the section of every step in the wave.
+3. Read the Severity row of every step in the wave from `docs/<feature>/<feature>.analyzed.md` (2-column contract: `Step ID | Severity`, per R7).
+4. Print one brief for the whole wave:
 
-When SE reports back, show the user what changed and ask for `APPROVE` to close the step.
+   **Wave:** `<step ids>`
+   **Components:** one line each — `<id> — <component>: <job>`
+   **Owned files:** per component, from the map.
+   **Shared files:** the ones you will edit yourself after the reports come back (or `none`).
+   **Severity:** one cell per step.
+   **After go-ahead:** spawn one `software-engineer` per step, in parallel, each with `model: "sonnet"`.
 
-## Phase 3 - Approve and advance
+5. Do **not** write code. Do **not** modify any file. Wait for the user's go-ahead.
 
-Only after the user has typed `APPROVE` for this step. If that is unclear, ask before touching a file.
+## Phase 2 — Build, in parallel
 
-1. In `docs/<feature>/<feature>.requirement.md`, flip that step's checkbox from `[ ]` (or `[Waiting for Approval]`) to `[X]`. Preserve everything else on the line.
-2. Update `docs/<feature>/<feature>.status.md`:
-   - Flip the matching row in the "Step status table" to `**APPROVED <today>**`.
-   - Leave any "Resolved questions" addition from this session in place.
-   - Update the **Last updated** field at the top.
-   - Update the **Current step** field to the next non-`[X]` step.
-3. Run `git status` to show the user what changed. Do **not** `git add` and do **not** commit - the user does that explicitly.
-4. Print a one-line confirmation: `Step <X> of <feature> marked [X]. Next step: <Y>.`
-5. Return to Phase 1 for the next open step.
+On the go-ahead, spawn **one `software-engineer` per step in the wave, in a single message** (one `Agent` tool call each, so they run at the same time). Every spawn passes **`model: "sonnet"`** — the agent file's own header stays `opus`, which is what authors `plan.md`; the build runs on sonnet by this spawn-time override. The E2E gate spawn passes it too.
 
-If no non-`[X]` row exists, say "All requirement steps for `<feature>` are approved" and stop. The feature's e2e acceptance is the final implementation step (the E2E validation gate in `plan.md`), authored and run by the Software Engineer - there is no separate end-of-feature Tester pass.
+Each prompt carries, and nothing else:
+
+| Item | From |
+|---|---|
+| The component's section, verbatim | `plan.md` |
+| Its owned files (create / change) | Component map |
+| The `Shared files` list, marked **read-only for you** | `plan.md` |
+| The `Talks to` / `Provides to others` contracts of its neighbours | `plan.md` |
+| Expected output: files + tests | Component map + the Tests bullets |
+| Rule seams to honor (`coding-rules`, `architecture-rules`, `test-rules` via `project-seams`) | the repo |
+| The report format below | this file |
+| The hard rule | **never edit a file outside the owned list.** A change needed elsewhere is a *request*, not an edit |
+
+Set the matching `status.md` rows to `in progress` before the spawns.
+
+**Report format every engineer ends with:**
+
+```markdown
+## Done
+- files created / changed (paths)
+
+## Tests
+- tests added; result of build + unit run (or "no runner — diff reviewed")
+
+## Requests to main
+| # | File | Change needed | Why |
+|---|---|---|---|
+| R1 | <path> | <the edit> | <which step needs it> |
+
+## Questions [Waiting for Answer]
+- Q1 — <the question, and which document it may change> (or "none")
+```
+
+## Phase 2b — Collect, dispatch, build once
+
+When every engineer in the wave has reported:
+
+| Report item | What you do |
+|---|---|
+| Request touches a **shared file** | you edit it yourself — these files have no component owner |
+| Request touches **another component's owned file**, that agent has finished | `SendMessage` to that agent with the request; it keeps its context and applies the change |
+| Request touches a component in a **later** wave | hold it; attach it to that step's prompt when its wave starts |
+| Request reveals a **gap in the plan** | human gate — see the impact levels below |
+| A `[Waiting for Answer]` question | human gate; set that row to `blocked`, Note = the question number. The other steps in the wave may still finish |
+| An engineer edited a file outside its owned list | revert that hunk and re-send it as a request to the owning agent. Say so in the relay |
+| All clear | run build + tests **once** for the whole wave, via the project `test-runner` agent when the repo ships one |
+
+Then relay to the user: what each component changed, the build/test result, and anything you applied yourself. Set the wave's rows to `waiting approval`.
+
+## Phase 3 — Approve the wave
+
+The approval unit is the **wave**, never a single component.
+
+| Case | What happens |
+|---|---|
+| Whole wave good | the user types `APPROVE` → every row in the wave → `approved <today>`; `Current step` → the first step of the next wave |
+| One component bad | **no** `APPROVE`. The user says in chat what is wrong. You `SendMessage` that component's agent, the fix lands, you run build + tests once more, and relay the wave again. The other rows stay `pending` until the whole wave passes |
+| No partial approve | there is no `APPROVE except B`. The wave was built and tested as a set, so it is approved as a set |
+
+After an `APPROVE`:
+
+1. Update `docs/<feature>/<feature>.status.md`: the wave's rows → `approved <today>`, `Last updated` → today, `Current step` → the first `pending` step of the next wave. **Nothing is written to `requirement.md`** — it tracks nothing.
+2. Run `git status` to show what changed. Do **not** `git add`, do **not** commit — the user does that.
+3. Print one line: `Wave <ids> of <feature> approved. Next wave: <ids>.`
+4. Return to Phase 1 for the next wave.
+
+When no `pending` row is left, say "All steps for `<feature>` are approved" and stop. The feature's acceptance is the E2E gate (the last step of `plan.md`), authored and run by the Software Engineer — there is no separate end-of-feature Tester pass.
+
+## A question that changes a document (the human gate)
+
+An engineer's `[Waiting for Answer]` may need a decision that changes a planning document. Say which level it is in one line; the user confirms with one word.
+
+| Level | The answer changes… | Who updates it | What is redone below | Where the decision is recorded |
+|---|---|---|---|---|
+| **0** | nothing | nobody | nothing | nowhere — chat only |
+| **1** | one component section in `plan.md` | the SE (spawned as **opus**) for a real change; you, for a one-line patch | that component's row → `pending` or `reopened` | `overview-plan-trace.md` |
+| **2** | `overview-plan.md` — a step, a component, a tech decision | the `architect` (opus) | `plan.md` patched or regenerated by the SE (opus); `status.md` rebuilt | `overview-plan-trace.md` |
+| **3** | `requirement.md` — scope, an `SC-n`, a constraint | the `business-analyst` (opus); the `tester` too if an `SC-n` changed | the full level-2 cascade | `requirement-trace.md`, plus `overview-plan-trace.md` for the technical fallout |
+
+A decision is recorded **only** when it changed a document, and only in the trace of the highest document it changed. A level-0 answer leaves no paper.
+
+**Patch or regenerate `plan.md`?**
+
+| Signal | Action |
+|---|---|
+| Step IDs change — a step added, removed, or split | regenerate |
+| More than 1/3 of the Steps table rows change | regenerate |
+| Otherwise | patch the touched sections only |
+
+Say which rule fired. A **regenerated** `plan.md` is written against the code **as it is now**: the SE reads the current source first, every section describes only the work left, components already built stay in the Component map with `State: done` and get no section, and the E2E gate still covers the **whole** feature.
+
+**Rebuild `status.md` after a regenerate** — one row per Component map row:
+
+| Map row | Status row |
+|---|---|
+| `done`, no section | keeps `approved <date>` |
+| `done`, with a section (design changed) | `reopened` |
+| `partial` | `pending`, Note `part in code` |
+| `none` | `pending` |
+| step no longer in the map | row deleted |
+
+`Current step` → the first `pending` row.
+
+Every changed document re-enters its own `APPROVE` gate, exactly as the first time. `--bypass-approval` never skips a cascade approval — a document change is never `minor`.
 
 ## Bypass mode (`--bypass-approval`)
 
-**Trigger.** This mode is active only when `--bypass-approval` is passed.
+**Trigger.** Active only when `--bypass-approval` is passed.
 
-**Severity source.** For each step it lands on, the loop reads that step's `Severity` cell from the 2-column R7 Step Severity table in `docs/<feature>/<feature>.analyzed.md` (`Step ID | Severity`). If `analyzed.md` is absent (planning steps, before the analyzed doc is authored), the flag has nothing to consult — treat as a normal gate (no auto-advance).
+**Severity source.** For each wave, read the `Severity` cell of **every** step in it from the 2-column R7 table in `docs/<feature>/<feature>.analyzed.md`.
 
-**Auto-approve condition.** If the current step's `Severity` is `minor` or `medium`, the command:
-1. treats the step as approved **without** waiting for the human to type `APPROVE`;
-2. runs Phase 3's checkbox flip and `status.md` update itself;
-3. chains directly into the **next** open step's Phase 1 brief + SE spawn,
+**Auto-approve condition.** A wave auto-approves only when **every** step in it is `minor` or `medium`. Then the command:
+1. treats the wave as approved without waiting for the user to type `APPROVE`;
+2. runs Phase 3's `status.md` update itself;
+3. chains into the next wave's Phase 1 brief and spawns,
 
-and then repeats the loop on that next step.
+and repeats.
 
-**Hard-stop / severity gate.** If the current step's `Severity` is `major`, `risky`, or `irreversible`, the flag is **overridden** — behavior is **identical to a normal no-flag approval gate**: print the brief and wait for an explicit human decision on that step. The flag never auto-approves these.
+**Severity gate.** One `major`, `risky`, or `irreversible` step → the **whole wave** waits for a human, exactly as a normal gate. The flag never auto-approves these, and never approves part of a wave.
 
 **Four stop conditions (the loop halts on the first of):**
-1. a step whose declared `Severity` is `major` / `risky` / `irreversible` (the severity gate above);
-2. the last requirement step is reached (no further open step to advance into);
-3. the `software-engineer` posts a `[Waiting for Answer]` — the flag never answers a question on the human's behalf;
-4. a build or test failure (this applies to downstream consuming repos that have a build/test; this scaffold has none).
+1. a wave holding a step whose `Severity` is `major` / `risky` / `irreversible`;
+2. no `pending` row is left;
+3. an engineer posts a `[Waiting for Answer]` — the flag never answers a question on the human's behalf (see the human gate above);
+4. a build or test failure.
 
 On any stop condition the loop halts and control returns to the human exactly as a normal gate would.
 
-If `docs/<feature>/<feature>.requirement.md` does not exist, error: `feature '<feature>' not found at docs/<feature>/`.
+## Notes
+
+- **Ownership.** The Software Engineer owns `plan.md` and all source, whichever model runs it. You own `status.md`, the `Shared files` edits, and the trace rows you append during a human gate.
+- **No commits.** The user commits explicitly.
+- **Live-spawn note.** `software-engineer` must be installed at user scope (`~/.claude/agents/`, via `install.ps1`) and is loaded at session start; if you replaced it mid-session, restart the session before running this command.

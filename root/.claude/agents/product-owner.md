@@ -15,10 +15,20 @@ only an in-chat brainstorm summary.
 requirement, and any extra context the user gave.
 
 ## Read scope (narrative-only carve-out)
-Read the raw requirement file, **plus `docs/narrative/` if it exists** (the plain-language wiki
-overview — useful product context). When `docs/narrative/` is absent, emit the one-line advisory
-`docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and
-proceed; it never blocks.
+Read the raw requirement file, **plus the narrative tree if it exists** (the plain-language wiki
+overview — useful product context). The caller normally hands you resolved paths; use those and read
+no further.
+
+If it does not, **resolve before concluding the tree is missing** — a monorepo's narrative is written
+per code leaf, so it sits at `<leaf>/docs/narrative/`, never at the root. Try in order: `docs/narrative/`
+at the working directory; then `<root>/docs/narrative/` for each code root declared in `repo-layout.md`;
+then a bounded glob of `*/docs/narrative/` and `*/*/docs/narrative/`, two levels deep, never a
+repo-wide sweep.
+
+Absent at every level, emit the one-line advisory `docs/narrative/ not found at the working directory
+or one level down - run /project:overview to generate it; proceeding without it.` and proceed; it
+never blocks. **Never emit it when a nested narrative was found** — that sends the user to bootstrap a
+second wiki over a repo that already has one.
 
 Do **not** read `docs/domain/`, `docs/architecture.md`, or other features' status files — those are
 engineering muscle, not product muscle. The downstream BA / Architect / SE pick those up. You are the

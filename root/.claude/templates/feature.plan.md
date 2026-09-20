@@ -12,14 +12,28 @@
 
 | Step | Component | State | Owns files (new ★ / changed) | Depends on | Provides to others |
 |---|---|---|---|---|---|
-| A | <component> | none | ★ <path> · ★ <test path> | — | <the contract others call: method, route, event, table> |
-| B | <component> | none | <path> · <test path> | A | <contract> |
-| <last> | E2E gate | none | ★ <e2e test path> | <all> | — |
+| A | <component> | none | ★ `<path>`<br>★ `<test path>` | — | <the contract others call: method, route, event, table> |
+| B | <component> | none | `<path>`<br>`<test path>` | A | <contract> |
+| <last> | E2E gate | none | ★ `<e2e test path>` | <all> | — |
 
-<`State` = how much of this component is in code today: `none` / `partial` / `done`. First plan: all
-`none`. Owned file sets must not overlap — a file two components touch goes to `Shared files`.
-A `done` row with no section = nothing left to do. A `done` row with a section = the design changed;
-the section describes only the change.>
+<`Owns files` renders **one path per line**, using `<br>` as the separator so the table still renders.
+This is the whole column, not just the rows with many files — a row stacked next to three rows inline
+reads worse than either. A nine-path cell on one line cannot be scanned, counted, or diffed against
+another row.
+
+Take the file list from `<feature>.overview-plan.md` §3's tree — it is already settled and approved.
+Do not invent files it does not have, and do not drop any it does, including the guard tests §3 asked
+you to search for.
+
+`State` = how much of this component is in code today: `none` / `partial` / `done`. First plan: all
+`none`. A `done` row with no section = nothing left to do. A `done` row with a section = the design
+changed; the section describes only the change.
+
+**Owned file sets must not overlap** — a file two components touch goes to `Shared files`. One
+exception: when the steps sharing a file sit on a **strict dependency chain**, so no two of them can
+ever be in the same wave, the overlap is safe and the file stays with its steps. Say so in one line
+under the table. Moving a feature's main file to `Shared files` would make main Claude its author,
+which is worse than the overlap the rule guards against.>
 
 ## Shared files
 
@@ -30,20 +44,28 @@ None → `None.`>
 
 ## Step A — <component>
 
-- Job: <one sentence — what this component does>
-- Files: see map.
 - What changes:
-  - <bullet — the behavior after the change>
+  - <bullet — the behavior after the change, naming the file it lands in>
   - <bullet>
 - How it works: <short paragraph or ≤10 lines of pseudocode. For an endpoint named in the
   overview-plan §2, the request / response shape is written here, not there.>
-- Talks to: <who calls this component and through what; what this component calls and through what>
-- Tests: <what to cover — ≤6 bullets. What, not how.>
-- Done when: <1-3 checks>
 
 ## Step B — <component>
 
-<Same fields. One section per component. Roughly 20-40 lines each.>
+<**Exactly these two fields, never more.** One section per component, roughly 10-25 lines each.
+
+Five fields that look useful are deliberately absent, because each one echoes something already
+written and then drifts from it:
+
+| Not here | Where it already is |
+|---|---|
+| `Job` | the section heading, and the overview-plan §6 Steps row |
+| `Files` | the Component map above — a pointer to a table one screen up earns nothing |
+| `Talks to` | inside `How it works`, with the same names |
+| `Tests` | `<feature>.test.md`, which the E2E gate runs — a second looser list only drifts from it |
+| `Done when` | a restatement of `Tests` |
+
+If a field has nothing to put in it but a pointer, it should not be a field.>
 
 ## Step <last> — E2E gate
 

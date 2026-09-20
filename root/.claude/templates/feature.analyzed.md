@@ -17,9 +17,19 @@ for a human. E2E/acceptance cases are not here — they live in `<feature>.test.
 
 | Risk | What we do about it |
 |---|---|
-| <risk inside this feature> | <the mitigation we take> |
+| <risk inside this feature, tied to a step above `medium`> | <the mitigation we take> |
 
-<Max 5 rows. Only risks inside this feature. Nothing to report → `None seen.`>
+<**Entry rule: one row only for a step whose Severity in §1 is above `medium`** — `major`, `risky`,
+or `irreversible`. No row for a `medium` or `minor` step; §1 already ranked it, and a second mention
+says nothing new while diluting the rows that matter. No row that is not tied to a step.
+
+This keeps §2 and the manual-gate list the same list: a step here is exactly a step that will stop a
+wave in `/feature:implement`.
+
+Max 5 rows. Every step `medium` or below → `None seen.`, which is a real answer, not a gap.
+
+A concern that is **not** a step risk — an unconfirmed assumption, a deferred decision — does not
+belong here. It is already recorded under open assumptions in `<feature>.overview-plan-trace.md`.>
 
 ## 3. Rule overrides
 

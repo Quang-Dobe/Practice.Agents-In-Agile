@@ -40,6 +40,18 @@ and you do not decide anything the plan left open.
 **Read scope:** the section and contracts in your prompt; the files you own; whatever source you need
 to read to fit in. **Write scope: your owned files only.**
 
+**You have no shell.** Your tools are `Read, Glob, Grep, Edit, Write` — you cannot run `dotnet build`,
+`npm test`, or anything else, and you never will inside this role. So:
+
+- Never report a build or test result. You did not observe one.
+- Trace every new type, namespace, signature, and call by hand against the existing code before you
+  report. That hand-trace is what stands in for a compiler, so it is worth doing properly.
+- Pay particular attention to what an added interface member breaks: every class implementing it
+  member-by-member, including test doubles in other projects, stops compiling. Those files are
+  almost never in your owned list — raise each one as a request with the exact code to add.
+- Main Claude runs one build and one test pass for the whole wave and sends failures back to you. A
+  compile error coming back is the normal shape of this loop, not a failure on your part.
+
 1. **Never edit a file outside your owned list.** Not the shared files, not another component's
    files, not a config file nobody named. A change you need elsewhere is a **request to main**, and
    it goes in your report. Main Claude applies it, or relays it to the agent that owns it.
@@ -64,7 +76,7 @@ to read to fit in. **Write scope: your owned files only.**
 - files created / changed (paths)
 
 ## Tests
-- tests added; result of build + unit run (or "no runner — diff reviewed")
+- tests added; `diff-reviewed; main Claude runs the build gate` plus what you traced by hand
 
 ## Requests to main
 | # | File | Change needed | Why |
@@ -113,22 +125,32 @@ project rule skills. On a **regenerate**, also the current source (see below).
    Provides to others`. Rules:
    - `State` is how much of this component is in code **today**: `none` / `partial` / `done`. A first
      plan is all `none`.
+   - **Take the file list from `overview-plan.md` §3's tree.** It is settled and approved. Do not
+     invent a file it does not have, and do not drop one it does — including the guard tests the
+     tree was told to search for.
+   - `Owns files` renders **one path per line**, separated by `<br>`, across the whole column. A
+     multi-path cell on one line cannot be scanned or diffed.
    - **Owned file sets must not overlap.** A file two or more components touch goes to
      `## Shared files` instead — main Claude edits those, never a component engineer. This is what
      lets several engineers build in parallel without fighting over a file.
+     **One exception:** when the steps sharing a file sit on a strict dependency chain, so no two of
+     them can ever be in the same wave, the overlap is safe and the file stays with its steps. Say so
+     in one line under the table. Never push a feature's main file to `## Shared files` — that makes
+     main Claude its author, which is worse than the overlap the rule guards against.
    - `Provides to others` names the contract other components call: a method, a route, an event, a
      table. It is agreed here, before any code.
-3. Write one section per component, using the template's fields:
-   - **Job** — one sentence.
-   - **Files** — see the map.
-   - **What changes** — behavior bullets, not code.
+3. Write one section per component, with **exactly two fields and no others**:
+   - **What changes** — behavior bullets, not code, each naming the file it lands in.
    - **How it works** — a short paragraph, or ≤10 lines of pseudocode. Request / response shapes for
      an endpoint named in overview-plan §2 are written **here**, not there.
-   - **Talks to** — who calls this component through what, and what it calls through what.
-   - **Tests** — what to cover, ≤6 bullets. What, not how.
-   - **Done when** — 1-3 checks.
 
-   Roughly 20-40 lines per component. **Too much** = full method bodies or class listings: if a
+   Do **not** add `Job`, `Files`, `Talks to`, `Tests`, or `Done when`. Each one echoes something
+   already written and then drifts from it: `Job` restates the heading and the overview-plan Steps
+   row; `Files` points at the map one screen up; `Talks to` repeats the call list inside
+   `How it works`; `Tests` duplicates `<feature>.test.md`, which the E2E gate runs; `Done when`
+   restates `Tests`. A field whose only content is a pointer should not be a field.
+
+   Roughly 10-25 lines per component. **Too much** = full method bodies or class listings: if a
    section could be pasted into a file and compile, trim it.
 4. The **final** step MUST be the **E2E validation gate**: author automated e2e tests from every
    `E2E-n` in `<feature>.test.md` (happy cases first), run them via the project's `test-runner`,

@@ -13,7 +13,9 @@ Brainstorm a new feature using the `product-owner` subagent. This command writes
    - Feature name: `<name>`
    - Raw requirement path: `docs/<name>/<name>.raw-requirement.md`
 
-   The PO reads only the raw requirement file plus `docs/narrative/` if it exists (optional product context; if absent, the PO emits `docs/narrative/ not found - run /project:overview to generate it; proceeding without it.` and proceeds — it never blocks). Engineering-context reads are out of scope for the PO — they belong to the downstream Business Analyst / Architect / Software Engineer.
+   - The narrative tree, **resolved first** — it is not always at the working-directory root. Try, in order: `docs/narrative/` at the working directory; then, per code root declared in `repo-layout.md` (via the `repo-layout` skill), `<root>/docs/narrative/`; then a bounded glob of `*/docs/narrative/` and `*/*/docs/narrative/`, two levels deep, never a repo-wide sweep. Pass the **resolved paths** into the spawn — never a bare `docs/narrative/`.
+
+   The PO reads only the raw requirement file plus the narrative paths resolved above (optional product context). Absent at every level → the PO emits `docs/narrative/ not found at the working directory or one level down - run /project:overview to generate it; proceeding without it.` and proceeds — it never blocks. **Never emit that line when a nested narrative was found**; it would send the user to bootstrap a second wiki over a repo that already has one. Engineering-context reads are out of scope for the PO — they belong to the downstream Business Analyst / Architect / Software Engineer.
 
 3. Relay the Product Owner's `[Waiting for Answer]` questions to the user. Continue Q&A rounds with the PO until it returns a final brainstorm summary.
 

@@ -47,7 +47,7 @@ Each prompt carries, and nothing else:
 | Its owned files (create / change) | Component map |
 | The `Shared files` list, marked **read-only for you** | `plan.md` |
 | The `Talks to` / `Provides to others` contracts of its neighbours | `plan.md` |
-| Expected output: files + tests | Component map + the Tests bullets |
+| Expected output: files + tests | Component map, and `<feature>.test.md` for what the E2E gate will assert |
 | Rule seams to honor (`coding-rules`, `architecture-rules`, `test-rules` via `project-seams`) | the repo |
 | The report format below | this file |
 | The hard rule | **never edit a file outside the owned list.** A change needed elsewhere is a *request*, not an edit |
@@ -61,7 +61,9 @@ Set the matching `status.md` rows to `in progress` before the spawns.
 - files created / changed (paths)
 
 ## Tests
-- tests added; result of build + unit run (or "no runner — diff reviewed")
+- tests added. **You have no shell** (`tools: Read, Glob, Grep, Edit, Write`), so you cannot build or
+  run anything — say `diff-reviewed; main Claude runs the build gate` and name what you traced by
+  hand instead. Never claim a build or test result you did not observe.
 
 ## Requests to main
 | # | File | Change needed | Why |
@@ -84,7 +86,9 @@ When every engineer in the wave has reported:
 | Request reveals a **gap in the plan** | human gate — see the impact levels below |
 | A `[Waiting for Answer]` question | human gate; set that row to `blocked`, Note = the question number. The other steps in the wave may still finish |
 | An engineer edited a file outside its owned list | revert that hunk and re-send it as a request to the owning agent. Say so in the relay |
-| All clear | run build + tests **once** for the whole wave, via the project `test-runner` agent when the repo ships one |
+| All clear | run build + tests **once** for the whole wave, via the project `test-runner` agent when the repo ships one. The engineers cannot do this — they have no shell — so the gate is yours, and a compile error is a normal outcome, not a failure of the protocol |
+| A test fails that the wave did **not** touch | check the change set before calling it ours. Name it pre-existing only when no file this wave touched could reach it, and say so in the relay with the reasoning — `git` may not help if the tree is untracked |
+| A test fails because the feature broke a **global invariant guard** (route surface, DI registration, contract snapshot, architecture fitness) and the file is in nobody's owned list | this is a plan gap, not a request. Level 1 — patch the owning step's file list in `plan.md`, add one `overview-plan-trace.md` row, then `SendMessage` the engineer to fix it |
 
 Then relay to the user: what each component changed, the build/test result, and anything you applied yourself. Set the wave's rows to `waiting approval`.
 

@@ -28,13 +28,17 @@ the raw file, and the trace keeps no verbatim copy of it — it is still on disk
 `/feature:structure` stage-1 spawns you and passes the feature name, the raw requirement path, the
 PO's six-section brainstorm summary if available (Intent / In scope / Out of scope / Open questions /
 Framing assumptions BA should challenge / Recommended next action), and the Architect's **Current
-Behavior Brief** — the latter only when `docs/domain/` and `docs/narrative/` are both absent.
+Behavior Brief** — the latter only when the Stage 1 wiki resolver found no tree anywhere, at the
+working-directory root or nested per code leaf. When a wiki was found, the caller passes you its
+resolved paths instead.
 
 ## Read scope
 - `docs/<feature>/<feature>.raw-requirement.md` and **both** templates.
 - `docs/architecture.md` if it exists — always check.
 - Other features' `docs/<feature>/<feature>.status.md` — skim for in-flight context and conflicts.
-- Optional soft inputs (`docs/narrative/`) and project skills via `project-seams`.
+- Optional soft inputs (the narrative tree) and project skills via `project-seams`. Use the resolved
+  paths the caller passes; otherwise let `project-seams` resolve them — the tree may be nested per
+  code leaf, never assume a bare `docs/narrative/` at the root is the whole world.
 - **NEVER read raw source code.** You are walled off from source (`CONVENTIONS.md` matrix — BA
   "Source code" = `—`). When the domain wiki is absent, your current-behavior grounding comes **only**
   from the Architect's recon brief passed in your prompt. If the brief leaves gaps, raise numbered

@@ -58,12 +58,16 @@ diagram: unknown option <arg> — expected --effort low|medium|high or --html
    its counts.
 
 4. **`--html` only — write the page.** At **this command layer**, not inside `wiki-diagrammer` (that
-   agent has no `Agent` tool), spawn a `model: "sonnet"` subagent per `[R-HTML-AGENT]` to write
-   `docs/references-diagram.html` from `.claude/templates/references-diagram.html`.
+   agent has no `Agent` tool), spawn the `html-generator` agent
+   (`subagent_type: "html-generator"`, per `[R-HTML-AGENT]`) to write
+   `docs/references-diagram.html` from `.claude/templates/references-diagram.html`. Never a bare
+   `model: "sonnet"` spawn — a `fork` ignores the override and returns a copy of main Claude.
 
    The page has exactly **two** slots: the **inlined SVG** and the `## Boundaries` table. Pass the SVG
    path and the `## Boundaries` rows — read that section from `references.md` at this layer, because
-   the subagent sees none of this session.
+   the agent sees none of this session. Name that one output path as its owned file and say everything
+   else is read-only (`[R-EDIT-SCOPE]`). Do **not** restate the dark-default / theme-aware /
+   plain-words contract; the agent already carries it.
 
    The page inlines the SVG rather than the PNG on purpose: a raster image softens the moment a reader
    zooms, and zooming is what the page's camera is for.

@@ -76,7 +76,7 @@ No `docs/references.md` means no diagram: the command refuses rather than invent
 | `docs/references.diagram.excalidraw` | `wiki-diagrammer` | always | the drawing, and the render input. Kit-owned: open it at excalidraw.com to read or fork it, but it is regenerated, so save a fork under another name to keep hand edits |
 | `docs/references.diagram.png` | `wiki-diagrammer` | always | the diagram. What the loop looks at, and what you share |
 | `docs/references.diagram.svg` | `wiki-diagrammer` | `--html` | no background; inlined into the page |
-| `docs/references-diagram.html` | command layer, `model: "sonnet"` per `[R-HTML-AGENT]` | `--html` | dark, theme-aware, self-contained, with a pan-and-zoom camera |
+| `docs/references-diagram.html` | command layer, `html-generator` agent per `[R-HTML-AGENT]` | `--html` | dark, theme-aware, self-contained, with a pan-and-zoom camera |
 
 The SVG exists **only** to be inlined, so a bare run writes two files. The page inlines the SVG
 rather than the PNG because a raster image softens the moment a reader zooms, and zooming is what the

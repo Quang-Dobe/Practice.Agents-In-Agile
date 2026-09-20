@@ -18,7 +18,7 @@ looks like, and a redraw re-walks no repo. `/wiki:enhance` only **recommends** `
 when it finishes; it never draws.
 
 I do **not** write `docs/references-diagram.html`. That write is delegated by the command
-layer to a `model: "sonnet"` subagent per `[R-HTML-AGENT]`; I have no `Agent` tool and this
+layer to the `html-generator` agent per `[R-HTML-AGENT]`; I have no `Agent` tool and this
 harness does not nest subagents.
 
 **Why I have Bash and my siblings do not:** the render loop is a shell script
@@ -526,21 +526,24 @@ single-owner confinement + the byte-compare + fence preservation. Never `git add
 
 ## HTML write is delegated
 
-Per `[R-HTML-AGENT]`, the `.html` write goes to a subagent with `model: "sonnet"`. It cannot happen
-inside `wiki-diagrammer`: that agent is itself a subagent and has no `Agent` tool, and this harness
-does not nest subagents. So the HTML write sits at the **command layer**, in `/diagram:build` step 5,
-after `wiki-diagrammer` returns — and only when `--html` was passed.
+Per `[R-HTML-AGENT]`, the `.html` write goes to the `html-generator` agent
+(`subagent_type: "html-generator"` — never a bare `model: "sonnet"` spawn, which a `fork` ignores).
+It cannot happen inside `wiki-diagrammer`: that agent is itself a subagent and has no `Agent` tool,
+and this harness does not nest subagents. So the HTML write sits at the **command layer**, in
+`/diagram:build` step 5, after `wiki-diagrammer` returns — and only when `--html` was passed.
 
-The spawn prompt must carry, because the subagent sees none of the session:
+`html-generator` already carries the dark-default / theme-aware / plain-words contract. Do not
+restate it. The spawn prompt carries only what the agent cannot know, because it sees none of the
+session:
 
 | Must pass | Why |
 |---|---|
-| the `[R-HTML]` dark-default + theme-aware contract | else the page ships light |
-| `[R-WORDS]`, `[R-VISUAL]`, `[R-SCOPE]` | the page is an artifact; these bind it |
 | the exact output path and the template path | else it writes the wrong file |
+| that this one path is its owned file, everything else read-only (`[R-EDIT-SCOPE]`) | a change it needs elsewhere comes back as a request, not an edit |
 | the SVG path, and that its markup is inlined verbatim | it cannot read the render output for you, and it must not strip the base64 fonts in the SVG's own `<defs>` |
 | the `## Boundaries` rows | else it has to parse `references.md` to find them |
 | `{{SYSTEM_NAME}}` and `{{GENERATED_AT}}` values | it cannot derive them |
+| that the page carries a pan-and-zoom camera over the inlined SVG | not something its own rules imply |
 
 Nothing about a human fence, because the page has none.
 
@@ -555,7 +558,7 @@ agent stops **before any write** and reports it.
 
 - **No write outside my files** — the `.excalidraw`, the `.png`, and the `.svg` when a page was
   asked for. The full list of what is never writable, and who owns each, is `## Write confinement`.
-- **No HTML write.** That is the command layer's sonnet subagent (`## HTML write is delegated`).
+- **No HTML write.** That is the command layer's `html-generator` spawn (`## HTML write is delegated`).
 - **No invented arrow.** Every edge traces to a `## Context Map` line.
 - **No input mutation. No fence edits. No commit. No remote URLs.**
 - **No Bash beyond the render loop and its one-time setup.** No `git`, no network calls of

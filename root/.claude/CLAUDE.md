@@ -65,22 +65,22 @@ Every rule in this section is binding on **all output channels**, not only the t
 
 **This rule is my standing request to use the Agent tool for HTML. Pre-authorized — do not ask me first.**
 
-- Any write to a `.html` or `.htm` file → **spawn a subagent with `model: "sonnet"`** and let it write the file. No size floor. No exceptions. One-line edits included.
-- I name another model (`opus`, `haiku`, `fable`) → use that one, no argument.
+- Any write to a `.html` or `.htm` file → **spawn the `html-generator` agent** (`subagent_type: "html-generator"`) and let it write the file. No size floor. No exceptions. One-line edits included.
+- **Spawn it by name, never as a bare model override.** `subagent_type: "fork"` ignores `model:` entirely — a fork always runs on my model, so "spawn a sonnet subagent" silently gives you a copy of yourself. The named agent pins `model: sonnet` in its own frontmatter and cannot drift.
+- I name another model (`opus`, `haiku`, `fable`) → pass it as `model:` on the same `html-generator` spawn. It overrides the frontmatter; the agent's rules still apply.
 - **Only literal `.html` / `.htm`.** Framework templates (`.cshtml`, `.razor`, `.tsx`, `.jsx`, `.vue`, `.svelte`) are source code — they stay with whoever owns the source.
 - HTML shown inside a chat reply is not a file. Write it inline, no spawn.
 
-The subagent sees **none** of our conversation. Its prompt MUST spell out:
+The agent carries the *how* — dark default, theme-aware tokens, one self-contained file, `[R-WORDS]` / `[R-VISUAL]` / `[R-SCOPE]`, never invent a number. Do not restate any of it. It sees **none** of our conversation, so its prompt carries only what it cannot know:
 
 | Must pass | Why |
 |---|---|
-| the `[R-HTML]` dark-default + theme-aware contract | else the page ships light |
-| `[R-WORDS]` + `[R-VISUAL]` + `[R-SCOPE]` | the page is an artifact; these bind it |
 | the exact output file path | else it writes the wrong file |
 | every number, fact, and decision the page must show | it cannot read our thread |
 | for an edit: the current file content, or the exact lines to change | else it rewrites from scratch |
+| anything about the page that is not in its rules — an audience, a brand color, a required section | it defaults to its own rules otherwise |
 
-- **Feature-pipeline collision (known, accepted).** In a `/feature:implement` step the software-engineer still owns the step and the review; for a `.html` / `.htm` file it delegates the **write** to the sonnet subagent, then verifies and integrates. Step ownership does not move.
+- **Feature-pipeline collision (known, accepted).** In a `/feature:implement` step the software-engineer still owns the step and the review; for a `.html` / `.htm` file it delegates the **write** to `html-generator`, then verifies and integrates. Step ownership does not move.
 - Publishing it as an Artifact → **read the whole file first** (the Artifact tool's own rule for files I did not write), then publish.
 - Relay what the page contains. The subagent's own report is never shown to me.
 
@@ -113,6 +113,22 @@ The subagent sees **none** of our conversation. Its prompt MUST spell out:
 - **[R-NFR]** Ask about non-functional requirements early — performance, security, compliance, scale, observability.
 - **[R-EXPLORE]** When exploring a codebase to learn how it works — reading code, recovering domain knowledge, deriving business logic / rules / invariants, mapping bounded contexts, answering "what / why does this do" — treat **code as the single source of knowledge**. Derive every behaviour, invariant, and `file:line` fact from executable code only. Comments, docstrings, READMEs, and prose are advisory seeds for naming — they **lose every conflict** with code and never substitute for a code-derived fact. When a comment and the code disagree, follow the code and record the divergence. Surface the `[R-EXPLORE]` tag whenever this rule shaped the exploration.
   - **Presentation style:** per `[R-WORDS]` + `[R-VISUAL]` + `[R-SCOPE]` — they already bind every answer and every artifact. Exploration adds one rule of its own: background beyond what is actually in the repo renders as a small italic aside, never mixed into the main explanation.
+
+## Spawning agents — [R-EDIT-SCOPE]
+
+Binds **every** `Agent` spawn — a crew agent, `html-generator`, a one-off `general-purpose`. No exceptions.
+
+**Every spawn names the files the agent may write.** A prompt with no owned-file list is a bug in the prompt, not a free hand for the agent. Say it as a list of paths, and say plainly that everything else is read-only.
+
+**The agent edits nothing outside that list.** Not a sibling file, not a shared config, not a file "it had to touch to make this work". When it needs a change elsewhere, it:
+
+1. Finishes everything inside its owned files that does not depend on the change.
+2. Writes the change under `## Requests to main` in its **final report** — file, exact change, why.
+3. Stops there.
+
+**The report is the only channel back.** A one-shot subagent has no `SendMessage` and cannot reach you mid-run. You read the report, then you either apply the change yourself or `SendMessage` the agent that owns that file. Never let an agent "just fix" a file it does not own — two agents editing one file in the same wave is a lost write, and nobody sees it happen.
+
+**On the way back in:** an agent that edited outside its list → revert that hunk and re-send it as a request to the real owner. Say so when you relay.
 
 ## Artifact Discipline — [R-ARTIFACT]
 

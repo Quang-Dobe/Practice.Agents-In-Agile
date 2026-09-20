@@ -42,15 +42,17 @@ Turn hand-written PR review notes into evidenced findings you can judge.
 6. **Write the ledger, then render the page. Always in that order.** The ledger is upstream; the page is derived from it.
    a. Append each **new** finding to `docs/<feature>/pr-review/<stem>.pr-review.ledger.md` as a whole `## PR-NN` section, mirroring `~/.claude/templates/pr-review.ledger.md`. New findings carry `status: open` and `promoted: no`. Append-only: never edit an existing section, and skip any finding whose quote already appears in the ledger.
       Create the ledger from the template when it does not exist — the template's `## PR-01` section is a labeled example only, so a freshly created ledger starts with zero finding sections, and the title's and the `source:` line's `<stem>` placeholder is replaced with this review file's real stem.
-   b. Spawn a subagent with `model: "sonnet"` to write `docs/<feature>/pr-review/<stem>.pr-review.html` from `~/.claude/templates/pr-review.html`. The subagent sees none of this session, so its prompt must carry:
+   b. Spawn the `html-generator` agent (`subagent_type: "html-generator"`, per `[R-HTML-AGENT]`) to write `docs/<feature>/pr-review/<stem>.pr-review.html` from `~/.claude/templates/pr-review.html`. Never a bare `model: "sonnet"` spawn — a fork ignores the override and returns a copy of main Claude. The agent sees none of this session, so its prompt must carry:
       - the exact output path;
       - the template path;
       - every token value — with `&`, `<`, and `>` escaped to `&amp;`, `&lt;`, and `&gt;` in every token except `{{EVIDENCE_STATE}}`, `{{STATUS}}`, `{{DETAILS_OPEN}}`, `{{COUNT_LOCATED}}`, `{{COUNT_NOT_LOCATABLE}}`, and `{{COUNT_NOT_FOUND}}` — those six are fixed enums or numbers with no free text. `{{EVIDENCE_DETAIL}}`, `{{ROOT_CAUSE}}`, `{{PROPOSED_FIX}}`, `{{TITLE}}`, and `{{HINT_TIP}}` are agent-written prose about code and need this as much as `{{QUOTE}}` and `{{SNIPPET}}` do — a stray `<` or `>` would corrupt the page. **No token value may carry HTML tags.** The page's own markup is the template's job alone;
       - one card's worth of content per finding, in ledger order;
       - `{{DETAILS_OPEN}}` per card: the literal `open` when `status` is `open`, and an empty string when `status` is `fixed` or `rejected`. Unfixed work is expanded on first paint; settled work is collapsed;
       - the nested hint block per card: one copy of the `<!-- pr-review:hints -->` block per hint line in the ledger's `### Hints` section, filling `{{HINT_TERM}}` and `{{HINT_TIP}}`. Zero hints → delete the whole hint row from that card;
-      - the dark-default plus theme-aware contract;
-      - the rule that the page is rewritten only when its bytes actually change.
+      - the rule that the page is rewritten only when its bytes actually change;
+      - its owned file is that one output path and nothing else — a change it needs anywhere else comes back as a request in its report (`[R-EDIT-SCOPE]`).
+
+      Do **not** restate the dark-default / theme-aware / plain-words contract — the agent already carries it.
 
 7. **Print the audit output.**
    - every written path;

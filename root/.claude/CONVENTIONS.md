@@ -203,6 +203,7 @@ Each agent's `skills:` manifest:
 | software-engineer | _(inlined in the agent)_ | `project-seams`, `library-knowledge`, `prompt-defense` |
 | tester | _(inlined in the agent)_ | `project-seams`, `prompt-defense` |
 | pr-review-analyst | _(inlined in the agent)_ | `project-seams`, `prompt-defense` |
+| html-generator | _(inlined in the agent)_ | `prompt-defense` |
 
 Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** = optional, never blocks.
 
@@ -257,6 +258,42 @@ Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** =
 - **Stage-1 recon carve-out.** When `/feature:structure` Stage 1 finds **both** `docs/domain/` and `docs/narrative/` absent, the architect runs a read-only codebase recon pass (`stage-1-recon`) and may read source **as-needed** to produce a Current Behavior Brief — the only path by which a planning role reads raw source, and it writes no file. The brief is written at **plan level**: today's business flow plus the related components and their roles, ready to drop into the requirement's `## Current behavior` section, plus a list of open unknowns. `path:line` citations live in chat only, for the bounded Q&A round — they are persisted nowhere, and the architect re-reads the code at stage 2 when it needs the detail. The BA itself **never** reads source. An optional bounded `[Architect Q]` round (`stage-1-qa`, ≤1) lets the BA ask the architect instead. When either wiki tree exists, no recon runs and the architect's "Source code" access reverts to `—`.
 - "soft" = optional domain context; the agent emits a one-line advisory and proceeds if the tree is absent.
 - **pr-review-analyst** is the second role that reads raw source, after the stage-1 recon carve-out. Its reads are read-only and its output is a finding list, never a file. It gives no validity verdict on a review comment: it retrieves `file:line` evidence and the human judges. Rule text it drafts is written by main Claude into the **consuming repo's** `.claude/skills/` only, behind an `APPROVE` gate — never into the root tier.
+
+### Cross-pipeline agent (any command, any tier)
+
+| Agent | `tools:` | `model:` | Reads | Owns / writes |
+|---|---|---|---|---|
+| **html-generator** | R + W | `sonnet` | only what its prompt carries; the target file on an edit | the **one** `.html` / `.htm` path in its prompt |
+
+- Spawned per `[R-HTML-AGENT]` for every `.html` / `.htm` write, at any size, from any pipeline.
+- **Spawn it by `subagent_type: "html-generator"`, never as a bare `model:` override.** A
+  `subagent_type: "fork"` ignores `model:` and runs on the caller's model — "spawn a sonnet subagent"
+  then silently returns a copy of main Claude. The named agent pins the model in its own frontmatter.
+- It belongs to no pipeline and reads no wiki tree, no rule skill, and no feature doc. Every fact the
+  page shows arrives in the prompt; it invents none and verifies none (`[R-NUMBERS]` stays with the
+  caller).
+- It writes one file. Anything else it needs goes back as a request — see the spawn contract below.
+
+### Spawn contract — owned files and requests
+
+Binds **every** agent spawn in this kit, planning or runtime, and any ad-hoc spawn a command makes.
+It is the kit-side half of `[R-EDIT-SCOPE]`; the global rule states it for spawns outside the kit too.
+
+- **Every spawn prompt names the agent's owned files**, as a list of paths, and says that everything
+  else is read-only. A prompt without that list is a defect in the prompt.
+- **An agent writes only inside its owned list.** Not a shared config, not a neighbour's file, not a
+  file it "had to touch to compile".
+- **A change it needs elsewhere is a request, not an edit.** It finishes what does not depend on the
+  change, files it under `## Requests to main` in its **final report** — file, exact change, why —
+  and stops.
+- **The report is the only channel back.** No crew agent carries `SendMessage`; a running agent
+  cannot reach main Claude. Main reads the report, then applies the change itself or relays it with
+  `SendMessage` to the agent that owns that file.
+- **An agent that edited outside its list:** main reverts that hunk and re-sends it as a request to
+  the real owner, and says so in the relay.
+
+Where each pipeline already spells this out: `plan.md`'s `## Shared files` (main Claude is their only
+writer), the software-engineer's `## Requests to main` report block, and `/feature:implement` Phase 2b.
 
 ### Wiki runtime agents (domain / narrative pipeline)
 

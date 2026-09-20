@@ -20,7 +20,7 @@ After install, every repo you open gets the crew. The crew reads the repo and wr
 
 ```
 ~/.claude/                            ← install target (user scope)
-├── agents/                                ← 9 thin agents (identity + skills: manifest only)
+├── agents/                                ← 10 thin agents (identity + skills: manifest only)
 ├── commands/{feature,pr-review,project}/   ← the slash commands you type
 ├── skills/                                ← 7 shared skills (the actual "how")
 ├── templates/                             ← feature document shapes
@@ -111,6 +111,7 @@ The product-owner writes nothing.
 | `commands/pr-review/analyze.md` | Read PR review notes, attach code evidence, render one card page per review file. Gate-free. |
 | `commands/pr-review/learn.md` | Promote fixed findings into this repo's own rule skills. `APPROVE`-gated. |
 | `agents/pr-review-analyst.md` | Read-only: returns evidenced findings, then rule drafts. Gives no validity verdict. |
+| `agents/html-generator.md` | Belongs to no pipeline. Writes every `.html` / `.htm` file, at any size, per `[R-HTML-AGENT]`. Pins `model: sonnet` in its own frontmatter and carries the dark-default / theme-aware / plain-words rules, so a caller passes only the path and the facts. |
 | `skills/` — 4 cross-cutting skills | `project-seams` (optional repo-tier rules), `prompt-defense`, `repo-layout` (opt-in scan-scope contract; read-only for the crew), `library-knowledge` (opt-in pinned library docs via Context7; read-only for the crew). |
 | `skills/` — 3 wiki skills | `project-overview`, `project-explorer`, `project-update`. Shared across the wiki agents; `project-update` also has its sections cited by `project-overview`. |
 | `templates/feature.*.md` | Document shapes for the eight feature artifacts (five final files, two traces, one status). |

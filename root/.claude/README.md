@@ -24,6 +24,7 @@ After install, every repo you open gets the crew. The crew reads the repo and wr
 ├── commands/{feature,pr-review,project}/   ← the slash commands you type
 ├── skills/                                ← 7 shared skills (the actual "how")
 ├── templates/                             ← feature document shapes
+├── output-styles/                         ← ELI5.md, the active answer-shape style
 └── CONVENTIONS.md                         ← seam contract for repo-tier authors
 
 <your-repo>/                          ← any repo you open in Claude Code
@@ -118,4 +119,5 @@ The product-owner writes nothing.
 | `templates/project-rules.template.md` | Copy-me example for a repo-tier rule skill. |
 | `templates/pr-review.ledger.md` | The ledger shape: one `## PR-NN` section per finding, each carrying a short `title` and an optional `### Hints` list. |
 | `templates/pr-review.html` | The card page shell. One collapsible card per finding at its own `#PR-NN` anchor, plus a sticky link rail. Open findings expand, `fixed` and `rejected` collapse. Dark default, theme-aware, all CSS and JS inlined. |
+| `output-styles/ELI5.md` | The answer-shape style selected in `~/.claude/settings.json`. `[R-BRIEF]` defers to whatever style is active, so this file owns the length and tone limits. |
 | `CONVENTIONS.md` | Two-tier model + agent→skill map + how a repo authors rule skills. |

@@ -1,7 +1,7 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-    Installs the root tier (agents, skills, commands, templates + CLAUDE.md, CONVENTIONS.md)
+    Installs the root tier (agents, skills, commands, templates, output-styles + CLAUDE.md, CONVENTIONS.md)
     from this scaffold's root/.claude/ into user scope (~/.claude/).
 
 .DESCRIPTION
@@ -25,7 +25,7 @@ $srcRoot = (Resolve-Path $Source).Path
 
 Write-Host "Installing root tier:`n  from $srcRoot`n  to   $Target" -ForegroundColor Cyan
 
-$items = @('agents', 'skills', 'commands', 'templates', 'CLAUDE.md', 'CONVENTIONS.md')
+$items = @('agents', 'skills', 'commands', 'templates', 'output-styles', 'CLAUDE.md', 'CONVENTIONS.md')
 $files = $items | ForEach-Object { Join-Path $srcRoot $_ } | Where-Object { Test-Path $_ } |
     Get-ChildItem -Recurse -File
 

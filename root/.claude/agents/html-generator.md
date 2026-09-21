@@ -60,7 +60,7 @@ browser's default background is not dark.
   thing you click. Text contrast at least 4.5:1 against its own background, in both themes.
 - **No `alert`, `confirm`, or `prompt`.** They block the page.
 
-## The words — [R-WORDS], [R-VISUAL], [R-SCOPE]
+## The words — [R-BRIEF], [R-VISUAL], [R-SCOPE]
 
 The page is an artifact, so the writing rules bind it exactly as they bind a chat reply.
 

@@ -50,7 +50,7 @@ Steps 1-7, in order. Later sections give the precise contract per step.
 4. **Narrative soft input.** Read `docs/narrative/` when present per `## Soft input: docs/narrative/`; absent → no-op.
 5. **BC candidate surfacing** per `## BC candidate surfacing`. Names must trace to a real namespace or folder path; no invented taxonomy.
 6. **Print candidate report (non-blocking)**, then proceed. No approval, no halt.
-7. **Output generation + frontmatter.** Write the Evans-canonical tree per `## Output schema`; every file carries the four-field YAML block per `## Frontmatter contract`.
+7. **Output generation + frontmatter.** Write the Evans-canonical tree per `## Output schema`; every file carries the five-field YAML block per `## Frontmatter contract`.
 
 ## BC candidate surfacing
 
@@ -159,7 +159,7 @@ docs/
 
 ### Per-file content contract
 
-All `file:line` citations use paths relative to the `<path>` root. Empty sections render as `(none)` rather than being omitted, preserving the locked file shape for downstream `project-update`. Every file carries the four-field YAML block from `## Frontmatter contract` as its first content.
+All `file:line` citations use paths relative to the `<path>` root. Empty sections render as `(none)` rather than being omitted, preserving the locked file shape for downstream `project-update`. Every file carries the five-field YAML block from `## Frontmatter contract` as its first content.
 
 | File | Required content |
 |---|---|
@@ -194,12 +194,13 @@ The rule applies in multi-BC mode only. In fallback mode the single folder is em
 
 ## Frontmatter contract
 
-Every file under `docs/domain/` carries a four-field YAML block as its **first content**, before any heading. A heading before the block means the file is malformed.
+Every file under `docs/domain/` carries a five-field YAML block as its **first content**, before any heading. A heading before the block means the file is malformed.
 
 - **`source_repo`** — `<path>` resolved to an absolute path, normalized to POSIX forward slashes, trailing slashes stripped. UNC paths and symlinks pass through as the OS resolves them.
 - **`branch_name`** — the `[branch-name]` argument as a YAML scalar (e.g. `branch_name: main`), or the bare YAML `null` token when omitted — never the quoted string `"null"`.
 - **`generated_at`** — ISO-8601 UTC, second precision, literal `Z` suffix, e.g. `2026-05-18T10:30:00Z`. No sub-second precision; always UTC.
 - **`skill_version`** — integer matching this file's frontmatter `version` (currently `1`). A future bump is stamped by the writer; there is no auto-track magic.
+- **`last_generated_sha`** — the run tracker the `project-update` domain pass diffs against. Emitted on every file when `<path>` is a git working tree, stamped to current HEAD at run time; **omitted entirely** when it is not (the `project-update` skill `### last_generated_sha tolerate-missing` convention). Stamping it here is what keeps a freshly bootstrapped tree off the `missing-sha` full-walk fallback.
 
 ```yaml
 ---
@@ -207,6 +208,7 @@ source_repo: C:/repos/eShopOnContainers
 branch_name: main
 generated_at: 2026-05-18T10:30:00Z
 skill_version: 1
+last_generated_sha: 4f3a2b1c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a
 ---
 ```
 

@@ -139,13 +139,13 @@ Diff strategy: full-walk fallback (reason: <missing-git | missing-sha | unreacha
 
 ### last_generated_sha tolerate-missing
 
-Absent `last_generated_sha` — the case on the first enhancer run against any `project-explorer`-bootstrapped tree, since the field is new — falls through to the full-walk fallback with reason `missing-sha`. The enhancer never refuses on a missing or unreachable SHA, and never back-patches the sibling skill to emit the field at bootstrap.
+Absent `last_generated_sha` — a tree bootstrapped before the `project-explorer` frontmatter contract carried the field, or any no-git path — falls through to the full-walk fallback with reason `missing-sha`. The enhancer never refuses on a missing or unreachable SHA. A freshly bootstrapped tree no longer reaches this path: the sibling stamps the field at bootstrap per the `project-explorer` skill `## Frontmatter contract`.
 
 Per-path lifecycle:
 
 | Path | Writer behaviour | Next run |
 |---|---|---|
-| Git, first run (`missing-sha`) | Stamp `last_generated_sha = <current HEAD SHA>` on every file written. | Fast path. One-time legacy cost per repo. |
+| Git, first run (`missing-sha`) | Stamp `last_generated_sha = <current HEAD SHA>` on every file written. | Fast path **only if that run wrote at least one file**. A zero-change refresh writes nothing, so the field stays absent and every later run pays the walk again — legacy trees need a backfill to escape. |
 | Git, after force-push (`unreachable-sha`) | Re-stamp to current HEAD. | Fast path. Recovery is automatic, no user action. |
 | No git (`missing-git`) | Omit the field entirely — the YAML key does not appear. | Full-walk fallback again. No transition to the fast path exists. |
 
@@ -388,7 +388,7 @@ The enhancer reloads two sibling skills verbatim, so an edit to any contract bel
 Reloaded by name from the `project-explorer` skill:
 
 - `## Output schema` (`### Files written`, `### Per-file content contract`, `### Small-repo fallback variant`, `### Write order`, `### Hallucination guard`).
-- `## Frontmatter contract` — the four-field block; this skill adds `last_generated_sha` on top.
+- `## Frontmatter contract` — the five-field block, `last_generated_sha` included since the sibling stamps it at bootstrap; this skill refreshes the block per `## Frontmatter refresh rules`.
 - `## Comment policy (code is the single source of truth)` — code-only derivation for every regenerated logic, invariant, and `file:line` fact. The narrative pass inherits the mirrored copy in the `project-overview` skill `## Comment policy (code is the single source of truth)`.
 - `## BC candidate surfacing` `### Grouping rule` — feeds `### Namespace -> BC mapping`.
 - `## BC candidate surfacing` `### Reverse mapping (BC -> source paths)` — feeds `## Per-BC SHA pre-check`. It is the **strict inverse** of the grouping rule and shares its single source of truth, so any edit to `### Grouping rule` changes the inverted path set, the `<bc-source-paths>` fed to `git diff`, and the SKIP decision. Re-derive it on every grouping-rule edit.

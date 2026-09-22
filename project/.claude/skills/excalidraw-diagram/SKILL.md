@@ -17,7 +17,7 @@ changes, nothing else:
 
 | Change | Why |
 |---|---|
-| `references/color-palette.md` is **dark** | Every reader-facing page in this kit is dark on first paint (`[R-HTML]`). The palette file is the upstream customization seam, so this is the intended way to do it. |
+| `references/color-palette.md` is **dark** | Every reader-facing page in this kit is dark on first paint (`[R-HTML-AGENT]`). The palette file is the upstream customization seam, so this is the intended way to do it. |
 | `render_excalidraw.py` gained `--svg` | The kit inlines SVG markup into an HTML page. Upstream only saves a PNG. |
 | `render_template.html` takes a second `opts` arg | Carries `transparent: true` for the `--svg` path so the host page's ground shows through. |
 | `render_template.html` imports `@excalidraw/excalidraw@0.18.1` **without** `?bundle` | Upstream imports `@excalidraw/excalidraw?bundle`. On esm.sh that flag pulls `@braintree/sanitize-url@6.0.2/es2022/dist/constants.mjs`, which returns **404**. The module graph then never finishes, `window.__moduleReady` is never set, and the render dies on `Page.wait_for_function: Timeout 30000ms exceeded`. Dropping `?bundle` fixes it; pinning the version stops a future release from breaking it again. Verified end to end on 2026-08-22. |

@@ -52,7 +52,7 @@ to read to fit in. **Write scope: your owned files only.**
 - Main Claude runs one build and one test pass for the whole wave and sends failures back to you. A
   compile error coming back is the normal shape of this loop, not a failure on your part.
 
-1. **Never edit a file outside your owned list** (`[R-EDIT-SCOPE]`). Not the shared files, not
+1. **Never edit a file outside your owned list** (`[R-HTML-AGENT]`). Not the shared files, not
    another component's files, not a config file nobody named. A change you need elsewhere is a
    **request to main**, and it goes in your report. Main Claude applies it, or relays it to the agent
    that owns it. You have no `SendMessage` — your report is the only channel back. Finish everything

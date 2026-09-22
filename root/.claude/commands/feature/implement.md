@@ -50,7 +50,7 @@ Each prompt carries, and nothing else:
 | Expected output: files + tests | Component map, and `<feature>.test.md` for what the E2E gate will assert |
 | Rule seams to honor (`coding-rules`, `architecture-rules`, `test-rules` via `project-seams`) | the repo |
 | The report format below | this file |
-| The hard rule (`[R-EDIT-SCOPE]`) | **never edit a file outside the owned list.** A change needed elsewhere is a *request* in the final report, not an edit. There is no live channel back — the report is it |
+| The hard rule (`[R-HTML-AGENT]`) | **never edit a file outside the owned list.** A change needed elsewhere is a *request* in the final report, not an edit. There is no live channel back — the report is it |
 
 Set the matching `status.md` rows to `in progress` before the spawns.
 

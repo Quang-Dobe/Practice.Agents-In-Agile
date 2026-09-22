@@ -539,7 +539,7 @@ session:
 | Must pass | Why |
 |---|---|
 | the exact output path and the template path | else it writes the wrong file |
-| that this one path is its owned file, everything else read-only (`[R-EDIT-SCOPE]`) | a change it needs elsewhere comes back as a request, not an edit |
+| that this one path is its owned file, everything else read-only (`[R-HTML-AGENT]`) | a change it needs elsewhere comes back as a request, not an edit |
 | the SVG path, and that its markup is inlined verbatim | it cannot read the render output for you, and it must not strip the base64 fonts in the SVG's own `<defs>` |
 | the `## Boundaries` rows | else it has to parse `references.md` to find them |
 | `{{SYSTEM_NAME}}` and `{{GENERATED_AT}}` values | it cannot derive them |

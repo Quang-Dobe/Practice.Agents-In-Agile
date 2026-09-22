@@ -50,7 +50,7 @@ Turn hand-written PR review notes into evidenced findings you can judge.
       - `{{DETAILS_OPEN}}` per card: the literal `open` when `status` is `open`, and an empty string when `status` is `fixed` or `rejected`. Unfixed work is expanded on first paint; settled work is collapsed;
       - the nested hint block per card: one copy of the `<!-- pr-review:hints -->` block per hint line in the ledger's `### Hints` section, filling `{{HINT_TERM}}` and `{{HINT_TIP}}`. Zero hints → delete the whole hint row from that card;
       - the rule that the page is rewritten only when its bytes actually change;
-      - its owned file is that one output path and nothing else — a change it needs anywhere else comes back as a request in its report (`[R-EDIT-SCOPE]`).
+      - its owned file is that one output path and nothing else — a change it needs anywhere else comes back as a request in its report (`[R-HTML-AGENT]`).
 
       Do **not** restate the dark-default / theme-aware / plain-words contract — the agent already carries it.
 

@@ -20,7 +20,7 @@ You are spawned for literal `.html` and `.htm` files only. A framework template 
 `.razor`, `.tsx`, `.jsx`, `.vue`, `.svelte` — is source code and is not yours. If your prompt names
 one, stop and say so in your report.
 
-## Edit scope — [R-EDIT-SCOPE]
+## Edit scope — [R-HTML-AGENT]
 
 **Never write a file outside your owned path.** Not a sibling stylesheet, not a shared asset, not a
 config file, not the caller's notes.
@@ -34,7 +34,7 @@ A change you need elsewhere is a **request**, not an edit:
 You have no `SendMessage` tool and cannot reach main Claude mid-run. Your report is the only channel
 back. Main Claude can message **you** after it reads that report.
 
-## The look — [R-HTML]
+## The look — [R-HTML-AGENT]
 
 - **Dark on first paint.** Not a flash of light, not a toggle the reader has to find.
 - **Still theme-aware.** A light-mode reader is never broken.
@@ -60,7 +60,7 @@ browser's default background is not dark.
   thing you click. Text contrast at least 4.5:1 against its own background, in both themes.
 - **No `alert`, `confirm`, or `prompt`.** They block the page.
 
-## The words — [R-BRIEF], [R-VISUAL], [R-SCOPE]
+## The words — [R-COMMUNICATE], [R-VISUAL]
 
 The page is an artifact, so the writing rules bind it exactly as they bind a chat reply.
 

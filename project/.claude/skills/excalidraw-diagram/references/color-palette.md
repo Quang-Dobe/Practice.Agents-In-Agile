@@ -4,7 +4,7 @@
 diagrams for your own brand, edit this file — everything else in the skill is universal.
 
 > **This copy is dark-theme.** It is vendored into the project-tier wiki kit, where every
-> reader-facing page is dark on first paint (`[R-HTML]`). The upstream copy of this skill
+> reader-facing page is dark on first paint (`[R-HTML-AGENT]`). The upstream copy of this skill
 > ships a light palette; that is the only thing changed here. Table shapes and headings are
 > unchanged so the rest of `SKILL.md` still resolves against them.
 

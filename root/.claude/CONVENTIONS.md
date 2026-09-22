@@ -270,14 +270,14 @@ Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** =
   `subagent_type: "fork"` ignores `model:` and runs on the caller's model — "spawn a sonnet subagent"
   then silently returns a copy of main Claude. The named agent pins the model in its own frontmatter.
 - It belongs to no pipeline and reads no wiki tree, no rule skill, and no feature doc. Every fact the
-  page shows arrives in the prompt; it invents none and verifies none (`[R-NUMBERS]` stays with the
-  caller).
+  page shows arrives in the prompt; it invents none and verifies none — checking every number stays
+  with the caller.
 - It writes one file. Anything else it needs goes back as a request — see the spawn contract below.
 
 ### Spawn contract — owned files and requests
 
 Binds **every** agent spawn in this kit, planning or runtime, and any ad-hoc spawn a command makes.
-It is the kit-side half of `[R-EDIT-SCOPE]`; the global rule states it for spawns outside the kit too.
+It is the kit-side half of `[R-HTML-AGENT]`; the global rule states it for spawns outside the kit too.
 
 - **Every spawn prompt names the agent's owned files**, as a list of paths, and says that everything
   else is read-only. A prompt without that list is a defect in the prompt.

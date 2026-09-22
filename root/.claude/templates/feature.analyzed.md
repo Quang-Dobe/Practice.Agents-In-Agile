@@ -38,5 +38,5 @@ belong here. It is already recorded under open assumptions in `<feature>.overvie
 | <`coding-rules` §3.2> | <what we do instead, one line> | <why the rule does not fit here> |
 
 <Only when this feature breaks a project rule skill (`architecture-rules` / `coding-rules` /
-`test-rules` under the repo's own `.claude/skills/`). The project's `rules-checker` agent reads this
-section and does not flag a listed override. Nothing to report → `None.`>
+`test-rules` under the repo's own `.claude/skills/`). The `code-reviewer` reads this section and
+does not flag a listed override. Nothing to report → `None.`>

@@ -170,7 +170,7 @@ step's Severity; the analyzed template; `docs/architecture.md`; `architecture-ru
      `/feature:implement`. ≤5 rows. Every step `medium` or below → `None seen.`, which is a real
      answer. Do not fill the slot to look thorough.
    - `## 3. Rule overrides` — only where this feature breaks a project rule skill; same three columns
-     the repo's `rules-checker` seam reads. None → `None.`
+     the `code-reviewer` reads. None → `None.`
 
    No decision summary, no per-decision essay, no follow-up list, no approval checklist. Decisions
    and their reasons live in `overview-plan-trace.md`; out-of-scope lives in `requirement.md`.

@@ -20,7 +20,8 @@ procedure.
 
 Discover `coding-rules`, `architecture-rules`, and `test-rules` via `project-seams` — absent →
 proceed on general engineering judgment, never block. A rule skill that is present beats your own
-taste, and a finding that cites one names the concern and the section.
+taste, and a finding that cites one names the concern and the section. A feature may suspend a
+rule in `## 3. Rule overrides` of `<feature>.analyzed.md` — honor the override, never flag it.
 
 **You have no shell and no `Agent` tool.** You cannot build, run a test, or read a `git` diff, and
 you never spawn anything — not a helper, not a second reviewer for a second opinion. Main Claude ran

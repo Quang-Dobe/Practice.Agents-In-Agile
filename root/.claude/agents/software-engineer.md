@@ -69,7 +69,7 @@ to read to fit in. **Write scope: your owned files only.**
 3. Self-verify before reporting — everything a shell-less agent can do, in order: hand-trace every
    new type, namespace, signature, and call against the existing code, re-read your diff, then scan
    it for secrets and leftover debug output. You cannot build, lint, or run a test, and you never
-   dispatch the project `test-runner` — you have no `Agent` tool. Main Claude runs that gate once
+   dispatch an agent to do it for you — you have no `Agent` tool. Main Claude runs that gate once
    for the whole wave and sends failures back to you.
 4. **End your turn with this report, exactly in this shape.** It is the only channel back to main
    Claude — there is no mid-run message.
@@ -104,7 +104,7 @@ acceptance — there is no separate end-of-feature Tester pass.
 3. `## Ad-hoc checks` are **not** automated. List them in your report as "please check by hand".
 4. Use resilient, semantic selectors and assertions (role/test-id/text, not brittle CSS or internal
    state). Keep tests independent — each sets up its own state.
-5. You author the suite; **main Claude runs it** via the project's `test-runner` agent. The gate is
+5. You author the suite; **main Claude runs it**. The gate is
    **done when every `[Happy Case]` is green**; an edge case may be skipped only if the user said
    so in chat.
 6. Report one line per `E2E-n` — the test you authored and its `Covers` anchor — in the same report
@@ -158,8 +158,7 @@ project rule skills. On a **regenerate**, also the current source (see below).
    Roughly 10-25 lines per component. **Too much** = full method bodies or class listings: if a
    section could be pasted into a file and compile, trim it.
 4. The **final** step MUST be the **E2E validation gate**: author automated e2e tests from every
-   `E2E-n` in `<feature>.test.md` (happy cases first), run by main Claude via the project's
-   `test-runner`,
+   `E2E-n` in `<feature>.test.md` (happy cases first), run by main Claude,
    done-when every `[Happy Case]` is green.
 5. **Do not write**: an implementation-order table (order is `Depends on`), a resolved-decisions
    table (history lives in `<feature>.overview-plan-trace.md`), a red/green TDD sequence (tests ship

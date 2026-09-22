@@ -20,9 +20,6 @@ agent proceeds without it and **never blocks**.
         SKILL.md
       test-rules/              <- you author (optional)
         SKILL.md
-    agents/
-      rules-checker.md         <- you author (optional)
-      test-runner.md           <- you author (optional)
   docs/
     architecture.md            <- optional free-form architecture seam
 
@@ -87,15 +84,12 @@ Pattern 1, inside `<repo>/.claude/skills/coding-rules/SKILL.md`:
 **Depth is 1.** A reserved skill may name open concerns. An open concern loaded this way may **not**
 name more — its own `## Also load` is ignored. Keeps loading finite and easy to predict.
 
-## Optional project agents
+## Build and test commands
 
-| Agent (`.claude/agents/`) | Job |
-|---|---|
-| `rules-checker.md` | Read-only audit of a diff against the rule skills; returns a punch list, never auto-fixes. Honors the `Project-Specific Rule Overrides` block in `<feature>.analyzed.md`. |
-| `test-runner.md` | Runs the project's test command, returns ONLY failures + build errors (keeps raw output out of the main thread). |
-
-If you also want a PostToolUse build/test hook, add it to your project's
-`.claude/settings.json` — the scaffold no longer ships one.
+No crew agent has a shell. Main Claude runs the project's build and test commands itself and
+keeps the raw log out of the thread by filtering in the command — tail it, or use the runner's
+own quiet flag. If you want a PostToolUse build/test hook, add it to your project's
+`.claude/settings.json` — the scaffold ships none.
 
 ## How to author a rule skill
 
@@ -158,8 +152,7 @@ naming, and manifest wiring. That guidance still governs file shape and descript
 - **Software Engineer** reads `coding-rules`
   (+ `architecture-rules` for context) before writing the mechanical plan and during each impl step.
 - **Tester** reads `test-rules` while authoring `test.md`. The Software Engineer later authors the e2e
-  gate; main Claude runs it using the project `test-runner` (final `plan.md` step), and
-  `rules-checker` audits diffs if present.
+  gate and main Claude runs it (final `plan.md` step).
 - **Per-feature overrides** go in the `## 3. Rule overrides` section of `<feature>.analyzed.md`,
   citing the rule skill + section being overridden. `analyzed.md` is a slim, three-section file —
   `Step Severity`, `Risks`, `Rule overrides` — and holds nothing else.
@@ -267,8 +260,8 @@ Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** =
   engineers in a wave never spoke to each other, so the seam is where parallel work fails — then
   plan alignment, rule skills, quality, tests. It writes nothing and routes nothing: findings come
   back with an `Owner step` column and main Claude relays each with `SendMessage`, at most 3 fix
-  rounds. A whole-feature pass on `opus` runs before the E2E gate. The optional project
-  `rules-checker` is an extra audit, never the reviewer — a seam may be absent, and review may not.
+  rounds. A whole-feature pass on `opus` runs before the E2E gate. Review lives in the root tier on
+  purpose: a project seam may be absent, and review may not.
 - **`status.md` is main Claude's file.** No agent writes it. It holds one row per `plan.md` step and
   no planning rows.
 - **Stage-1 recon carve-out.** When `/feature:structure` Stage 1 finds **both** `docs/domain/` and `docs/narrative/` absent, the architect runs a read-only codebase recon pass (`stage-1-recon`) and may read source **as-needed** to produce a Current Behavior Brief — the only path by which a planning role reads raw source, and it writes no file. The brief is written at **plan level**: today's business flow plus the related components and their roles, ready to drop into the requirement's `## Current behavior` section, plus a list of open unknowns. `path:line` citations live in chat only, for the bounded Q&A round — they are persisted nowhere, and the architect re-reads the code at stage 2 when it needs the detail. The BA itself **never** reads source. An optional bounded `[Architect Q]` round (`stage-1-qa`, ≤1) lets the BA ask the architect instead. When either wiki tree exists, no recon runs and the architect's "Source code" access reverts to `—`.

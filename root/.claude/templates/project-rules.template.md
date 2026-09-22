@@ -57,4 +57,4 @@ What this ruleset governs and what it explicitly does not. One paragraph.
 
 A feature may override a rule here by listing it in the `Project-Specific Rule Overrides` section
 of that feature's `docs/<feature>/<feature>.analyzed.md`, citing this skill + the section number.
-The project's `rules-checker` agent (if any) honors those overrides and will not flag them.
+The `code-reviewer` honors those overrides and will not flag them.

@@ -9,9 +9,9 @@
 | A | <minor / medium / major / risky / irreversible> |
 | B | <...> |
 
-<One row per step in `<feature>.overview-plan.md` §6, same IDs, same order. `minor` and `medium`
-auto-approve under `/feature:implement --bypass-approval`; `major`, `risky`, and `irreversible` wait
-for a human. E2E/acceptance cases are not here — they live in `<feature>.test.md`.>
+<One row per step in `<feature>.overview-plan.md` §6, same IDs, same order. a wave of `minor` and
+`medium` steps closes on its own once build, tests, and the wave review are clean; `major`, `risky`,
+and `irreversible` wait for a human. E2E/acceptance cases are not here — they live in `<feature>.test.md`.>
 
 ## 2. Risks
 

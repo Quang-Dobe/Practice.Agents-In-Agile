@@ -71,7 +71,7 @@ If a field has nothing to put in it but a pointer, it should not be a field.>
 
 - Turn every `E2E-n` in `<feature>.test.md` into an automated test. `[Happy Case]` cases first, then
   edge cases.
-- Run them through the project's `test-runner` agent when the repo ships one.
+- Main Claude runs them through the project's `test-runner` agent when the repo ships one.
 - Done when: every `[Happy Case]` is green; edge cases green, or skipped by the user in chat (noted
   in the `status.md` Note column).
 - The gate always covers the **whole** feature, also on a regenerated plan.

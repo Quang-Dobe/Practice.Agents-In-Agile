@@ -101,12 +101,13 @@ The product-owner writes nothing.
 | `agents/architect.md` | Authors overview-plan + its trace, and the slim analyzed (Severity, Risks, Rule overrides). |
 | `agents/tester.md` | Authors the e2e/acceptance spec from the approved requirement. |
 | `agents/software-engineer.md` | Authors the component-level plan; builds every component (code + tests). |
+| `agents/code-reviewer.md` | Reviews a built wave, then the whole feature, against the plan. Read-only, writes nothing, returns findings plus one verdict. |
 | `agents/project-overview.md` | Wiki runtime: bootstraps `docs/narrative/`. |
 | `agents/project-explorer.md` | Wiki runtime: bootstraps `docs/domain/`. |
 | `agents/project-update.md` | Wiki runtime: dual-pass diff-aware refresh of both trees. |
 | `commands/feature/new.md` | Start a brainstorm with the Product Owner. |
 | `commands/feature/structure.md` | Four APPROVE-gated stages: requirement → overview-plan + test → analyzed → plan. The stage is read from which files exist on disk. |
-| `commands/feature/implement.md` | The build loop, wave by wave: brief, spawn one sonnet engineer per component in parallel, one build run, one `APPROVE`, advance. |
+| `commands/feature/implement.md` | The build loop, wave by wave: brief, spawn one sonnet engineer per component in parallel, one build run, one review, advance. Ungated by default; `--gate` restores a human `APPROVE` per wave. |
 | `commands/project/overview.md` | One-shot narrative bootstrap (refuses on non-empty tree). |
 | `commands/project/explore.md` | One-shot schema bootstrap (refuses on non-empty tree). |
 | `commands/project/update.md` | Diff-aware dual-pass refresh (refuses when both trees missing). |

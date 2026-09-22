@@ -143,7 +143,7 @@ if present; `architecture-rules` (skip rule skills for pure docs/config/process 
 
 > **R7 — Step Severity rule (verbatim)**
 >
-> *"For every step in the feature's overview-plan, output one row in the Step Severity table inside analyzed.md, each with a declared Severity (minor / medium / major / risky / irreversible). Severity drives /feature:implement --bypass-approval. E2E/acceptance cases are not here — they live in the Tester's test.md."*
+> *"For every step in the feature's overview-plan, output one row in the Step Severity table inside analyzed.md, each with a declared Severity (minor / medium / major / risky / irreversible). Severity decides whether a wave in /feature:implement closes on its own or waits for a human. E2E/acceptance cases are not here — they live in the Tester's test.md."*
 
 **Read scope:** the **approved** `requirement.md`; the **approved** `overview-plan.md` — load-bearing,
 every step in `## 6. Steps` becomes one Severity row; the **approved** `test.md`, read to inform each
@@ -159,8 +159,8 @@ step's Severity; the analyzed template; `docs/architecture.md`; `architecture-ru
      | A | <minor/medium/major/risky/irreversible> |
      ```
 
-     `minor`/`medium` auto-approve under `/feature:implement --bypass-approval`;
-     `major`/`risky`/`irreversible` hard-stop and wait for a human. E2E/acceptance cases are NOT
+     A wave of `minor`/`medium` steps closes on its own once build, tests, and the wave review
+     are clean; `major`/`risky`/`irreversible` hard-stop and wait for a human. E2E/acceptance cases are NOT
      here — they live in `<feature>.test.md` (Tester).
    - `## 2. Risks` — **one row per step whose Severity in §1 is above `medium`**, and nothing else.
      No row for a `medium` or `minor` step: §1 already ranked it, and a second mention dilutes the

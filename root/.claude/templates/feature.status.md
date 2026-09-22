@@ -13,7 +13,7 @@ Current step: Step <ID> — <component>
 are not tracked here: each planning artifact carries its own `> Status:` line, and the commands find
 the stage from which files exist on disk.>
 
-<Status values: `pending` · `in progress` · `waiting approval` · `approved <date>` · `reopened`
+<Status values: `pending` · `in progress` · `in review` · `waiting approval` · `approved <date>` · `reopened`
 (was approved, then a plan change touched it — the code stays, the row is open again) · `blocked`
 (a `[Waiting for Answer]` question — the Note says which one).>
 

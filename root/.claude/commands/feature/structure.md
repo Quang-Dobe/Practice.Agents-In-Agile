@@ -110,7 +110,7 @@ Print one line saying what you found, and carry the resolved paths into **every*
 
 ## Stage 2-plan — Software Engineer authors `<name>.plan.md` (component level; final step is the E2E gate)
 
-1. Spawn the `software-engineer` subagent via the `Agent` tool with `description: SE: author <name>.plan.md` and a `prompt` containing: the feature name, `stage: stage-2-plan` (→ follow its stage-2-plan section), the reminder that `plan.md` has no Severity column (that lives in `analyzed.md`), the directive that the **final** step MUST be the E2E validation gate (every `E2E-n` from `<name>.test.md`, happy cases first, run via the project `test-runner`), and **the wiki paths resolved above** for both trees (symmetric advisory; never blocks).
+1. Spawn the `software-engineer` subagent via the `Agent` tool with `description: SE: author <name>.plan.md` and a `prompt` containing: the feature name, `stage: stage-2-plan` (→ follow its stage-2-plan section), the reminder that `plan.md` has no Severity column (that lives in `analyzed.md`), the directive that the **final** step MUST be the E2E validation gate (every `E2E-n` from `<name>.test.md`, happy cases first, run by main Claude via the project `test-runner`), and **the wiki paths resolved above** for both trees (symmetric advisory; never blocks).
 2. Relay the draft. Mark `[Waiting for Approval]` and run the relay checks below.
 3. Wait for `APPROVE`.
 4. After APPROVE — do BOTH: (a) flip the `> Status:` line in `<name>.plan.md` to `APPROVED <today>`; (b) **present build** (unless `--present false`): invoke `/present:build <name> plan` **unconditionally** (it self-gates; skip only if `/present:build` does not resolve). Mechanical step, not optional.

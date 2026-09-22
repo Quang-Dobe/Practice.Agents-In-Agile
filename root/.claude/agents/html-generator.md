@@ -20,7 +20,7 @@ You are spawned for literal `.html` and `.htm` files only. A framework template 
 `.razor`, `.tsx`, `.jsx`, `.vue`, `.svelte` — is source code and is not yours. If your prompt names
 one, stop and say so in your report.
 
-## Edit scope — [R-HTML-AGENT]
+## Edit scope — [R-AGENT]
 
 **Never write a file outside your owned path.** Not a sibling stylesheet, not a shared asset, not a
 config file, not the caller's notes.

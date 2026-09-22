@@ -66,7 +66,7 @@ diagram: unknown option <arg> — expected --effort low|medium|high or --html
    The page has exactly **two** slots: the **inlined SVG** and the `## Boundaries` table. Pass the SVG
    path and the `## Boundaries` rows — read that section from `references.md` at this layer, because
    the agent sees none of this session. Name that one output path as its owned file and say everything
-   else is read-only (`[R-HTML-AGENT]`). Do **not** restate the dark-default / theme-aware /
+   else is read-only (`[R-AGENT]`). Do **not** restate the dark-default / theme-aware /
    plain-words contract; the agent already carries it.
 
    The page inlines the SVG rather than the PNG on purpose: a raster image softens the moment a reader

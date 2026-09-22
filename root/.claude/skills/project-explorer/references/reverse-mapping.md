@@ -1,0 +1,22 @@
+---
+name: reverse-mapping
+description: The strict inverse of the project-explorer grouping rule - maps a docs/domain/<bc>/ folder name back to the source paths that map into it. Consumed only by the project-update per-BC SHA pre-check; read on demand, never preloaded.
+owner: project-explorer skill
+---
+
+# Reverse mapping (BC -> source paths)
+
+Moved out of `../SKILL.md` because only `/project:update`'s per-BC pre-check consumes it. The bootstrap pass never needs it, so preloading it into every `project-explorer` and `project-overview` run was dead weight. Read this file at the point of use.
+
+## Reverse mapping (BC -> source paths)
+
+**What it inverts.** This is the strict inverse of ``../SKILL.md` `### Grouping rule``. The forward rule maps a source namespace token / folder path **into** a BC candidate name; this rule maps a `docs/domain/<bounded-context>/` folder name **back out** to the set of source paths that currently map into it. It is the single source of truth's inverse and is cited-by-reference (never forked) wherever it is consumed — mirror the cite pattern the `## Path -> BC classifier` `### Namespace -> BC mapping` already uses for the forward ``../SKILL.md` `### Grouping rule``. This rule does NOT restate the forward rule's namespace/folder mechanics; for those it points at ``../SKILL.md` `### Grouping rule``.
+
+**The deterministic inversion mechanism.** Given a `docs/domain/<bc>/` (a.k.a. `docs/domain/<bounded-context>/`) folder name, the agent re-applies the `## BC candidate surfacing` ``../SKILL.md` `### Grouping rule`` namespace/folder correspondence **against the current `<path>` working tree** the explorer already reads read-only: it resolves the set of source directories/files whose namespace token or folder path maps to that BC name under the forward rule. This is a deterministic re-application of a defined mechanism, not a free-text guess. It honours the forward rule's existing tie-break clause by reference — ``../SKILL.md` `### Grouping rule``'s "when namespace and folder structure disagree, the agent prefers the namespace as the canonical name and records the folder path in the candidate's rationale" — so name -> path resolution traces through either a namespace token OR a folder path exactly as the bootstrap recorded it. The tie-break is attributed to ``../SKILL.md` `### Grouping rule``, not re-decided here.
+
+**Output shape.** The result is the set of source paths (directories and/or files) for that one BC, expressed as the `<bc-source-paths>` argument list: space-separated, repo-root-relative POSIX pathspecs (forward slashes, matching the `source_repo` slash-normalization in `## Frontmatter contract`), passed after `--` to `git diff <base>..HEAD -- <bc-source-paths>` — the command the per-BC pre-check consumes. Because the inversion is taken against the working tree and the resulting pathspecs are handed to a commit-range diff, a pathspec that no longer exists at HEAD simply contributes no diff for that path (git resolves it against the range; an absent path yields an empty diff for that pathspec, never an error).
+
+**The conservative empty/unresolvable rule (the false-SKIP safety valve).** If the inversion resolves to an **empty or unresolvable path set** — the folder name does not trace back to any current namespace/folder; the BC was renamed, merged, or split since bootstrap; or the name is ambiguously spread across multiple folders — the result is treated as **"cannot determine slice" -> no skip -> full regen**, the same conservative posture a missing SHA forces in the per-BC pre-check. As a named special case, the `module-map` fallback token (the small-repo single-BC name from `### Small-repo fallback detection`) is **always** treated as unresolvable -> no skip -> full regen: `module-map` is an explicit fallback-mode token, not a discovered BC, so it has no clean source-path inversion and there is nothing to optimize in single-BC fallback mode. Ambiguity therefore degrades to **over-regen, never to under-skip**; a false SKIP is **impossible by construction**.
+
+**No-cache note.** The path set is **re-derived every run** from the working tree and is **never** persisted to frontmatter — caching it would add a new frontmatter field (the requirement freezes the frontmatter surface beyond `last_generated_sha`) and the cached field would itself drift from the forward ``../SKILL.md` `### Grouping rule``.
+

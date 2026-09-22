@@ -115,7 +115,7 @@ The product-owner writes nothing.
 | `agents/pr-review-analyst.md` | Read-only: returns evidenced findings, then rule drafts. Gives no validity verdict. |
 | `agents/html-generator.md` | Belongs to no pipeline. Writes every `.html` / `.htm` file, at any size, per `[R-HTML-AGENT]`. Pins `model: sonnet` in its own frontmatter and carries the dark-default / theme-aware / plain-words rules, so a caller passes only the path and the facts. |
 | `skills/` — 4 cross-cutting skills | `project-seams` (optional repo-tier rules), `prompt-defense`, `repo-layout` (opt-in scan-scope contract; read-only for the crew), `library-knowledge` (opt-in pinned library docs via Context7; read-only for the crew). |
-| `skills/` — 3 wiki skills | `project-overview`, `project-explorer`, `project-update`. Shared across the wiki agents; `project-update` also has its sections cited by `project-overview`. |
+| `skills/` — 3 wiki skills | `project-overview`, `project-explorer`, `project-update`. `project-update` preloads all three; each bootstrapper preloads only its own (plus `repo-layout` + `prompt-defense`), so BC detection and the comment policy are **mirrored** between the two bootstrap skills rather than inherited. Update-only contracts sit in co-located `references/*.md` that only `project-update` reads. |
 | `templates/feature.*.md` | Document shapes for the eight feature artifacts (five final files, two traces, one status). |
 | `templates/project-rules.template.md` | Copy-me example for a repo-tier rule skill. |
 | `templates/pr-review.ledger.md` | The ledger shape: one `## PR-NN` section per finding, each carrying a short `title` and an optional `### Hints` list. |

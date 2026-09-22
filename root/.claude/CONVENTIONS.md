@@ -204,6 +204,13 @@ Each agent's `skills:` manifest:
 | tester | _(inlined in the agent)_ | `project-seams`, `prompt-defense` |
 | pr-review-analyst | _(inlined in the agent)_ | `project-seams`, `prompt-defense` |
 | html-generator | _(inlined in the agent)_ | `prompt-defense` |
+| project-explorer | `project-explorer` | `repo-layout`, `prompt-defense` |
+| project-overview | `project-overview` | `repo-layout`, `prompt-defense` |
+| project-update | `project-update`, `project-overview`, `project-explorer` (locked reload order) | `repo-layout`, `prompt-defense` |
+
+**The bootstrappers do not preload each other.** `project-overview` used to load the whole `project-explorer` skill for two contracts; carrying a 27k-character sibling in the preamble of every request was the pipeline's largest avoidable cost. `## BC candidate surfacing` and `## Comment policy (code is the single source of truth)` are now **mirrored** in both bootstrap skills — edit the two copies in the same change. The language whitelist, the built-in 8 exclusion globs, and the never-read list moved to the `repo-layout` skill (`## Built-in scan filters`, `## Read discipline`), the one skill all three preload.
+
+**A `SKILL.md` is preloaded on every request; a `references/*.md` is not.** Anything one caller needs at one point in a run belongs in a co-located reference file read on demand, cited from a forwarding stub that keeps the original heading name so existing citations still resolve. Current split: `project-overview/references/diff-update.md` and `project-explorer/references/reverse-mapping.md` (update-pass only — `project-update` reads both), `repo-layout/references/drafting.md` (writer-only — the project-tier kit reads it).
 
 Legend: **R** = read · **W** = write/edit · **—** = no access · **(opt)** = optional, never blocks.
 

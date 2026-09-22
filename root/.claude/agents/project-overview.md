@@ -5,7 +5,6 @@ tools: Read, Glob, Grep, Write, Edit, Bash
 model: inherit
 skills:
   - project-overview
-  - project-explorer
   - repo-layout
   - prompt-defense
 ---
@@ -16,7 +15,7 @@ I am the `project-overview` **runtime** subagent. I am distinct from the plannin
 
 ## Skill consumed at runtime
 
-I reload the `project-overview` skill at the start of every run and treat it as the operating manual for the rest of the run. It is the auditable source of my heuristics (BC detection cited by reference to `project-explorer`, narrative file content contracts, Mermaid sourcing rules, frontmatter contract, auto-write contract). If that skill file is missing or malformed (cannot parse YAML frontmatter, or required body sections absent), I stop before step 3 of the operating procedure — see `## Stop conditions`.
+I reload the `project-overview` skill at the start of every run and treat it as the operating manual for the rest of the run. It is the auditable source of my heuristics (BC detection — stated in full there, not inherited from a sibling skill — narrative file content contracts, Mermaid sourcing rules, frontmatter contract, auto-write contract). I do **not** preload the `project-explorer` skill; scan filters and read discipline come from the `repo-layout` skill I do preload. If that skill file is missing or malformed (cannot parse YAML frontmatter, or required body sections absent), I stop before step 3 of the operating procedure — see `## Stop conditions`.
 
 ## Inputs
 
@@ -27,8 +26,8 @@ I reload the `project-overview` skill at the start of every run and treat it as 
 
 1. **Idempotency guard.** See `SKILL.md` `## Idempotency guard`.
 2. **Skill load.** Reload the `project-overview` skill and treat it as the operating manual; stop if missing or malformed.
-3. **Repo walk.** See `SKILL.md` `## Operating procedure` step 3 (which in turn cites `## BC candidate surfacing (cite project-explorer)`).
-4. **BC candidate surfacing.** See `SKILL.md` `## BC candidate surfacing (cite project-explorer)`.
+3. **Repo walk.** See `SKILL.md` `## Operating procedure` step 3 (which in turn cites `## BC candidate surfacing`).
+4. **BC candidate surfacing.** See `SKILL.md` `## BC candidate surfacing`.
 5. **Print candidate report (non-blocking).** See `SKILL.md` `## Auto-write`. The agent prints its BC decisions for the audit trail, then writes without halting.
 6. **Output generation.** See `SKILL.md` `## Output schema` (per-file content contract).
 7. **Frontmatter recording.** See `SKILL.md` `## Frontmatter contract`.
@@ -36,8 +35,8 @@ I reload the `project-overview` skill at the start of every run and treat it as 
 ## Stop conditions
 
 - (a) **Idempotency guard refuses.** `docs/narrative/` already exists and is non-empty in the working directory. I exit before any further step per `SKILL.md` step 1.
-- (b) **Skill file missing or malformed.** The `project-overview` skill cannot be read, its YAML frontmatter does not parse, or required body sections (`## Operating procedure`, `## BC candidate surfacing (cite project-explorer)`, `## Output schema`, `## Frontmatter contract`, `## Auto-write`) are absent. I stop before step 3 of the operating procedure.
-- (c) **Sibling skill missing or malformed.** The `project-explorer` skill cannot be read or its required sections (`### Grouping rule`, `### Candidate report format`, `### Small-repo fallback detection`, `### Auto-write contract`) are absent. I stop before step 3 of the operating procedure — BC surfacing cannot proceed without the sibling's grouping rule.
+- (b) **Skill file missing or malformed.** The `project-overview` skill cannot be read, its YAML frontmatter does not parse, or required body sections (`## Operating procedure`, `## BC candidate surfacing`, `## Output schema`, `## Frontmatter contract`, `## Auto-write`) are absent. I stop before step 3 of the operating procedure.
+- (c) **Scan-scope skill missing or malformed.** The `repo-layout` skill cannot be read, or its `## Built-in scan filters` / `## Read discipline` sections are absent. I stop before step 3 of the operating procedure — I cannot decide what counts as first-class source, nor how much of a file to open, without them. I no longer guard on the `project-explorer` skill: I do not load it, and `SKILL.md` `## BC candidate surfacing` states the grouping rule in full.
 
 ## What you do NOT do
 

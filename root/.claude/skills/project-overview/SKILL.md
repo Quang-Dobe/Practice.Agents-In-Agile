@@ -1,80 +1,76 @@
 ---
 name: project-overview
-description: Heuristics + operating manual for the project-overview runtime agent that bootstraps a human-readable narrative tree under docs/narrative/ from a fresh repository.
+description: Operating manual for the project-overview agent - bootstraps the human-readable narrative tree under docs/narrative/.
 version: 2
 consumed_by: project-overview agent
 ---
 
 ## Purpose
 
-This skill is the operating manual the `project-overview` runtime agent reloads at the start of every run. It is the auditable source for narrative-tree generation under `docs/narrative/` — BC detection cited by reference to `project-explorer`, narrative file content contracts (`architecture.md` + `walkthrough.md`), Mermaid sourcing rules, frontmatter contract, human-edit fence convention, auto-write contract, idempotency guard. The agent treats this file as authoritative for the run; the co-located `research.md` carries the long-form citations and per-category enumerations that this file cites by reference. This file is also reloaded by the `project-update` agent when it runs the narrative pass of `/project:update` (see `## Diff-aware update mode` below); the bootstrap `project-overview` agent uses sections above `## Diff-aware update mode`, the enhancer agent uses sections at or below it.
+The operating manual the `project-overview` agent reloads at the start of every run and treats as authoritative: BC detection (stated in full here, not inherited), the `architecture.md` + `walkthrough.md` content contracts, Mermaid sourcing rules, frontmatter contract, fence convention, auto-write contract, idempotency guard. The co-located `research.md` carries long-form citations this file cites by reference.
+
+The `project-update` agent also reloads this file for the narrative pass of `/project:update`. The bootstrap agent uses sections above `## Diff-aware update mode`; the enhancer uses those at or below it **plus** `./references/diff-update.md`, which holds the update-pass contracts in full. They live there so the bootstrap agent stops carrying them in its preamble on every request.
 
 ## Inputs
 
-- `<path>` (required) — local filesystem path to the target repository. No remote URLs; no cloning; no git invocation. The agent reads the path read-only.
-- `[branch-name]` (optional) — recording-only string. Written to the `branch_name` field in each generated file's frontmatter. The user is responsible for actually checking out the branch they want recorded before invoking the command — the agent does not switch branches.
+- `<path>` (required) — local filesystem path to the target repo. No remote URLs, no cloning, no git invocation; read-only.
+- `[branch-name]` (optional) — recording-only, written to `branch_name` in each file's frontmatter. The user checks out the branch themselves; the agent never switches branches.
 
 ## Scan scope (repo-layout manifest)
 
-Before the repo walk (operating procedure step 3), the agent resolves scan scope via the `repo-layout` skill, identically to the sibling `project-explorer` skill `## Scan scope (repo-layout manifest)` (reused by reference). Walk up from `<path>` to the scan root, read the matching `repos[]` entry, and:
+Before the repo walk, resolve scan scope via the `repo-layout` skill — the single source of truth for both the manifest contract and the built-in language whitelist + eight exclusion globs (`## Built-in scan filters`). The sibling `project-explorer` skill resolves scope from the same section, so the two bootstrap passes stay in lockstep without either preloading the other. Walk up from `<path>` to the scan root, read the matching `repos[]` entry:
 
-- **Entry with `roots`** → walk ONLY the declared roots minus effective excludes; each root's `bc` label pins the narrative `<bc>/walkthrough.md` folder name.
+- **Entry with `roots`** → walk only the declared roots minus effective excludes; each root's `bc` label pins the `<bc>/walkthrough.md` folder name.
 - **Entry without `roots`** → whole repo minus effective excludes.
-- **No manifest / no entry** → built-in heuristics + the matching advisory from the `repo-layout` skill `## Advisory literals`; narrative output is byte-identical to pre-manifest runs.
+- **No manifest / no entry** → built-in heuristics + the matching advisory from `## Advisory literals`; output byte-identical to pre-manifest runs.
 
-The same safety net applies: an undeclared source-bearing dir is provisionally scanned + flagged, never silently skipped (the `repo-layout` skill `## Precision instrument + discovery safety net`).
+An undeclared source-bearing dir is provisionally scanned and flagged, never silently skipped (`## Precision instrument + discovery safety net`).
 
 ## Idempotency guard
 
-Before reloading this skill (operating procedure step 2), the agent checks `docs/narrative/` of the **current working directory** (not `<path>`).
+Before reloading this skill, check `docs/narrative/` of the **working directory** (not `<path>`).
 
-**Refuse condition.** `docs/narrative/` exists AND contains at least one non-hidden file when searched recursively. "Hidden" means the filename starts with `.` — the POSIX convention; the Windows filesystem hidden attribute is not consulted. Examples of hidden files that do NOT trigger refusal: `.git`, `.DS_Store`, `.gitkeep`.
+**Refuse** when `docs/narrative/` exists AND contains at least one non-hidden file, searched recursively. "Hidden" means a leading `.` — the POSIX convention, not the Windows attribute; `.git`, `.DS_Store`, `.gitkeep` do not trigger refusal. **Proceed** when the folder is missing, or exists with no non-hidden file; empty subtrees alone never refuse.
 
-**Proceed condition.** `docs/narrative/` is missing, OR `docs/narrative/` exists but contains no non-hidden files (recursive). Empty subtrees alone do not trigger refusal — only at least one non-hidden file (recursive) triggers.
-
-**Refusal message.** When the refuse condition is met, the agent prints the literal message:
+On refusal, print the literal message and exit before the skill-load step — no repo walk, no candidate surfacing, no writes:
 
 ```
 docs/narrative/ is not empty. project-overview is a one-shot bootstrapper. Re-run after manually clearing docs/narrative/ if you need to regenerate.
 ```
 
-and exits before the skill-load step (step 2 of `## Operating procedure`) continues. No repo walk, no candidate surfacing, no writes.
-
 ## Output root (nested mode)
 
-When the dispatch provides an `output_root`, this skill writes its `docs/narrative/` tree under `<output_root>/docs/narrative/` and runs the `## Idempotency guard` against `<output_root>/docs/narrative/` instead of the bare `docs/narrative/` of the working directory; the scan `<path>` and all `file:line` citations are unaffected. Absent `output_root` → bare `docs/narrative/` of the working directory, byte-identical to today. The nested orchestrator sets this per the `wiki-orchestration` skill `## Output root (nested mode)`.
+Given an `output_root`, write under `<output_root>/docs/narrative/` and run `## Idempotency guard` against that path instead of the bare `docs/narrative/`. The scan `<path>` and every `file:line` citation are unaffected. Absent → bare `docs/narrative/` of the working directory. Set by the orchestrator per the `wiki-orchestration` skill `## Output root (nested mode)`.
 
 ## Operating procedure
 
-Numbered steps 1-7. The agent must execute these in order; later sections in this skill fill in the precise contract for each step.
+Steps 1-7, in order. Later sections give the precise contract per step.
 
-1. **Idempotency guard.** Resolve `<path>`; check the current working directory's `docs/narrative/`. If it exists and is non-empty, refuse with the canonical message and exit before any further step runs. See `## Idempotency guard` above.
-2. **Skill load.** The agent reloads this `SKILL.md` and treats it as the operating manual for the rest of the run. The agent must not proceed past this step if the skill file is missing or malformed.
-3. **Repo walk.** First resolve scan scope per `## Scan scope (repo-layout manifest)` above. Then the agent scans the in-scope source for exposed endpoints, handlers, workers, and domain code signals via the reuse-by-reference rule in `## BC candidate surfacing (cite project-explorer)` below. Excludes test projects, generated files, `bin/`, `obj/`, `node_modules/`, `dist/` per the same exclusion globs as `project-explorer`.
-4. **BC candidate surfacing.** The agent groups signals into bounded-context candidates per `## BC candidate surfacing (cite project-explorer)` below — same grouping rule as the sibling skill.
-5. **Print candidate report (non-blocking).** The agent prints the candidate report for the audit trail per `## Auto-write` below, then proceeds directly to output generation. No human approval is required; the agent does not halt.
-6. **Output generation.** After printing the candidate report, the agent writes `docs/narrative/architecture.md` and `docs/narrative/<bc>/walkthrough.md` per `## Output schema` below.
-7. **Frontmatter recording.** Every file the agent emits under `docs/narrative/` carries the five-field YAML frontmatter block per `## Frontmatter contract` below.
+1. **Idempotency guard.** Resolve `<path>`; check the working directory's `docs/narrative/`. Non-empty → refuse and exit before anything else runs.
+2. **Skill load.** Reload this `SKILL.md` as the operating manual. Do not proceed if it is missing or malformed.
+3. **Repo walk.** Resolve scan scope per `## Scan scope (repo-layout manifest)`, then scan in-scope source for exposed endpoints, handlers, workers, and domain code signals. Excludes test projects, generated files, `bin/`, `obj/`, `node_modules/`, `dist/` per the `repo-layout` skill `## Built-in scan filters`, and honours its `## Read discipline` for every file opened.
+4. **BC candidate surfacing** per `## BC candidate surfacing`.
+5. **Print candidate report (non-blocking)** for the audit trail, then proceed. No approval, no halt.
+6. **Output generation.** Write `docs/narrative/architecture.md` and `docs/narrative/<bc>/walkthrough.md` per `## Output schema`.
+7. **Frontmatter recording.** Every emitted file carries the five-field YAML block per `## Frontmatter contract`.
 
-## BC candidate surfacing (cite project-explorer)
+## BC candidate surfacing
 
-This section is the full contract for steps 4 and 5 of the `## Operating procedure`. The contract is **reused by reference, not by copy** from the sibling skill — the runtime agent loads the sibling's authoritative content at runtime.
+The full contract for steps 4 and 5, **self-contained**: the narrative agent does not preload the `project-explorer` skill, so everything it needs is here or in the `repo-layout` skill it does preload. The `project-explorer` skill `## BC candidate surfacing` is the canonical wording for the domain pass; the two must stay in lockstep (`## Known coupling`).
 
-- **Grouping rule reuse.** BC grouping rules are reused verbatim from the `project-explorer` skill `## BC candidate surfacing` `### Grouping rule`. Reference by section name; the text is not duplicated here. The rule: BC candidates MUST be derived from observable repo namespacing, top-level project boundaries, or folder structure observed during step 3 (repo walk); each candidate name MUST trace to a real namespace token or folder path; names that do not trace to source MUST be rejected before the candidate report is printed.
+- **Grouping rule.** Identical to the `project-explorer` skill `### Grouping rule`. BC candidates MUST derive from observable repo namespacing, top-level project boundaries, or folder structure seen during the walk. Each name MUST trace to a real namespace token or folder path; names that do not trace to source MUST be rejected before the report is printed. When namespace and folder disagree, prefer the namespace as canonical and record the folder in the rationale.
+- **Candidate report format.** Identical to the `project-explorer` skill `### Candidate report format` — a numbered `### BC candidates` list with per-candidate nested bullets (`Rationale` naming the contributing folders / namespaces, `Aggregates detected` listing the aggregate root with a `file:line` citation as an inline-code span), a `### Fallback flag` line carrying the boolean plus the triggers that fired, and a `### Conflicts detected` H3 whose entries cite both divergent definitions by `file:line` (`(none)` when empty).
+- **Small-repo fallback detection.** Identical to the `project-explorer` skill `### Small-repo fallback detection`. Three independent triggers, any one flips the flag: (i) total first-class source files `< 20`, counted with the whitelist and built-in 8 globs from the `repo-layout` skill `## Built-in scan filters`; (ii) only one top-level namespace or project across the walked set (zero counts as `<= 1`); (iii) BC candidate count `<= 1`. When it fires, emit a single-folder tree at `docs/narrative/module-map/walkthrough.md` — or at `docs/narrative/<bc>/walkthrough.md` when the scanned root carries a manifest `bc` label, which overrides the `module-map` token. `module-map` is a fallback-mode token exempt from the trace-to-source rule.
 
-- **Candidate report format reuse.** The candidate report format is reused verbatim from the `project-explorer` skill `## BC candidate surfacing` `### Candidate report format` — same numbered `### BC candidates` list with per-candidate nested bullets (`Rationale` naming the contributing folders / namespaces, `Aggregates detected` listing the aggregate root with `file:line` citation as an inline-code span), same `### Conflicts detected` H3 subsection (rendered as `(none)` when empty).
+**Editor obligation.** This section no longer inherits by reload, so an edit to grouping rules, report format, or fallback detection in the `project-explorer` skill must be mirrored here in the same change (`## Known coupling`).
 
-- **Small-repo fallback detection reuse.** Small-repo fallback detection rules are reused verbatim from the `project-explorer` skill `## BC candidate surfacing` `### Small-repo fallback detection`. The same three independent triggers apply (total first-class source files < 20; only one top-level namespace or project; BC candidate count <= 1). When the fallback fires, the agent emits a single-folder narrative tree at `docs/narrative/module-map/walkthrough.md` — or, when the scanned root carries a manifest `bc` label, at `docs/narrative/<bc>/walkthrough.md` (the manifest pin overrides the `module-map` token; the `repo-layout` skill `## Scope resolution`). `module-map` is used only when no `bc` pin applies; it is a fallback-mode token exempt from the trace-to-source rule, same as the sibling skill.
+## Comment policy (code is the single source of truth)
 
-The reuse is by reference, not by copy. Any edit to grouping rules, candidate report format, or fallback detection in the `project-explorer` skill is automatically inherited by this skill on next reload.
-
-## Comment policy (cite project-explorer)
-
-Code is the single source of truth for the narrative pass too. This skill reuses **by reference** the `project-explorer` skill `## Comment policy (code is the single source of truth)` in full: every endpoint, handler, worker, sequence-diagram node, and `file:line` citation written under `docs/narrative/` MUST be derived from executable code. Comments / docstrings / XML-doc are advisory seeds for plain-language prose only (the `## Intro` paragraphs, drill-down descriptions) — they lose every conflict with code, never supply or alter a `file:line` citation, and never decide a BC boundary. This composes with `## Mermaid sourcing rules`'s no-hallucination guard: a node the agent can only justify from a comment (not from code) is **not** derivable and falls to the `TODO: ` stub path. Any edit to the sibling section is inherited here on next reload.
+Stated in full so the narrative agent needs no sibling skill to apply it: every endpoint, handler, worker, sequence-diagram node, and `file:line` citation written under `docs/narrative/` MUST derive from executable code. Comments, docstrings, and XML-doc are advisory seeds for plain-language prose only (the `## Intro` paragraphs, drill-down descriptions) — they lose every conflict with code, never supply or alter a `file:line` citation, and never decide a BC boundary. This composes with `## Mermaid sourcing rules`' no-hallucination guard: a node justifiable only from a comment is not derivable and falls to the `TODO: ` stub path. Same policy as the `project-explorer` skill's section of the same name; edit both together (`## Known coupling`).
 
 ## Output schema
 
-The agent emits a human-readable narrative tree under `docs/narrative/` of the working directory. The three subsections below define exactly which files are written, what content each file carries, and the always-emit `## Stubs` summary contract. Frontmatter contract for every emitted file is defined in `## Frontmatter contract`; every file under `docs/narrative/` carries the five-field YAML block as its first content.
+All `file:line` citations use paths relative to the `<path>` root. Empty sections render as `(none)` rather than being omitted, preserving the locked file shape the narrative updater consumes.
 
 ### Files written
 
@@ -88,22 +84,14 @@ docs/
 
 ### Per-file content contract
 
-All `file:line` citations in the output tree use paths relative to the `<path>` root the agent was invoked against. Empty sections are rendered as `(none)` rather than omitted, preserving the locked file shape consumed by the narrative diff-aware updater documented in `## Diff-aware update mode` below.
-
 | File | Required content |
 |---|---|
-| `architecture.md` | One-pager narrative overview. Section list in order: `## Overview` (3-paragraph plain-words intro to the repo and its business purpose), `## File structure` (annotated tree of the top-level repo layout — directories + one-line descriptions), `## Dependencies` (bulleted list of top-level external dependencies — frameworks, runtimes, datastores — derived from `*.csproj` / `package.json` / `pom.xml` / equivalent), `## Exposed endpoints` (table of detected HTTP / gRPC / message-queue entry points with `file:line` citation column), `## Workers` (table of detected background workers / hosted services / scheduled jobs with `file:line` citation column), `## Outbound dependencies`, `## Stores owned`, `## Config-swapped seams`, `## Out-of-scope mediators` (the four integration-inventory tables — see `## Integration inventory contract` below), `## Logic overview` (one paragraph per detected BC summarising its responsibility in plain words), `## Skipped candidates` (removed-BC log target per `## Removed-BC logging (narrative)` below; body renders as `(none)` when bootstrap detected no skips). `(none)` for empty sections. All `file:line` citations relative to `<path>`. |
-| `<bounded-context>/walkthrough.md` | Per-BC narrative walkthrough. Section list in order: `## Sequence diagram` (exactly one Mermaid sequence diagram of the BC's main flow — see `## Mermaid sourcing rules` for derived-vs-stub policy), `## Intro` (3-paragraph plain-words intro to what this BC does, who its actors are, and what its key invariants are), one `## Drill-down: <name>` section per detected endpoint / handler / worker inside the BC (each contains a 1-2 paragraph technical explanation with `file:line` citations as inline-code spans). `(none)` for empty sections. Single file per BC — no fan-out. |
+| `architecture.md` | One-pager narrative overview, sections in order: `## Overview` (3-paragraph plain-words intro to the repo and its business purpose), `## File structure` (annotated tree of the top-level layout — directories + one-line descriptions), `## Dependencies` (top-level external dependencies — frameworks, runtimes, datastores — from `*.csproj` / `package.json` / `pom.xml` / equivalent), `## Exposed endpoints` (HTTP / gRPC / message-queue entry points, with a `file:line` column), `## Workers` (background workers / hosted services / scheduled jobs, with a `file:line` column), `## Outbound dependencies`, `## Stores owned`, `## Config-swapped seams`, `## Out-of-scope mediators` (the four tables in `### Integration inventory contract`), `## Logic overview` (one paragraph per detected BC, plain words), `## Skipped candidates` (removed-BC log target; `(none)` when bootstrap detected no skips). |
+| `<bounded-context>/walkthrough.md` | Per-BC walkthrough, sections in order: `## Sequence diagram` (exactly one Mermaid sequence diagram of the BC's main flow — see `## Mermaid sourcing rules`), `## Intro` (3 plain-words paragraphs: what this BC does, who its actors are, what its key invariants are), then one `## Drill-down: <name>` per detected endpoint / handler / worker, each 1-2 paragraphs with `file:line` citations as inline-code spans. Single file per BC — no fan-out. |
 
 ### Integration inventory contract
 
-Four tables, always emitted, `(none)` when empty. They exist for one reason: a **rollup** above this
-repo has to draw the system, and under leaf-scope confinement it can see only what these tables say.
-Prose in `## Logic overview` cannot be joined on; these can.
-
-`## Dependencies` is **not** one of them and does not replace them. That section lists packages —
-what the build pulls in. These list **runtime edges** — what this process actually reaches, and the
-configuration that decides where.
+Four tables, always emitted, `(none)` when empty. A **rollup** above this repo has to draw the system and, under leaf-scope confinement, can see only what these tables say. Prose in `## Logic overview` cannot be joined on; these can. `## Dependencies` is not one of them and does not replace them — that section lists packages the build pulls in; these list **runtime edges** the process actually reaches, and the configuration deciding where.
 
 **1. `## Outbound dependencies`** — every call that leaves this process.
 
@@ -113,15 +101,7 @@ configuration that decides where.
 | a sibling service | `IAgentClient` / `HttpAgentClient` | `POST /api/agent/chat` | `Agent:BaseUrl` | `Shared/DependencyInjection.cs:55` |
 ```
 
-- **`Config key` is mandatory.** Write the key exactly as code reads it. If the target is hard-coded,
-  write `none — hard-coded`. If a vendor SDK owns the address and only a credential is configured,
-  name the credential key and add `(SDK default endpoint)`. **Never leave the cell vague.** A rollup
-  that receives "with a database URL" instead of a key name cannot label the edge, and the diagram
-  ends up saying `key not named` where a real key exists in the code you were already reading.
-- Name the target as concretely as the code allows. When the code genuinely does not name it — a base
-  address that is purely a config value — say so in the `Target` cell rather than guessing a service.
-- Include datastores, caches, brokers, model hosts, telemetry collectors and identity providers. Every
-  one is an edge somebody needs to see.
+`Config key` is **mandatory**, written exactly as code reads it. Hard-coded target → `none — hard-coded`. Vendor SDK owning the address with only a credential configured → name the credential key and add `(SDK default endpoint)`. **Never leave the cell vague** — a rollup given "with a database URL" instead of a key name cannot label the edge. Name the target as concretely as the code allows; when the code genuinely does not name it, say so in `Target` rather than guessing. Include datastores, caches, brokers, model hosts, telemetry collectors, and identity providers.
 
 **2. `## Stores owned`** — persistent state this repo, and only this repo, connects to.
 
@@ -131,9 +111,7 @@ configuration that decides where.
 | the conversation record | PostgreSQL | tables `conversation`, `message` | `ConnectionStrings:PostgresDb` | `Shared/DependencyInjection.cs:29` |
 ```
 
-Name the actual tables, views, collections or indexes. `Objects` is what makes two rows for the same
-engine legibly different, and a rollup uses it to decide whether two repos share an instance or
-merely share a product.
+Name the actual tables, views, collections, or indexes. `Objects` is what makes two rows for one engine legibly different, and a rollup uses it to decide whether two repos share an instance or merely share a product.
 
 **3. `## Config-swapped seams`** — the highest-value table here, and the one no other section captures.
 
@@ -143,25 +121,18 @@ merely share a product.
 | `Authz:BaseUrl` | `AuthzClient` — real HTTP call | `UnconfiguredAuthzClient` — throws `authz.notConfigured`, no call leaves the process | `Infrastructure/Identity/IdentityRegistration.cs:19` |
 ```
 
-One row per **config branch**: any key whose presence or absence changes what the process does at
-startup. Name both implementations as written — `Unconfigured*`, `Stub*`, `Fake*`, `Mock*`, an
-in-memory store, a hermetic double. This is the difference between what the system does and what it
-does when somebody forgot an environment variable, and it is invisible in every other section.
+One row per **config branch**: any key whose presence or absence changes what the process does at startup. Name both implementations as written — `Unconfigured*`, `Stub*`, `Fake*`, `Mock*`, an in-memory store, a hermetic double.
 
-**A key that fails fast is a row, not an omission.** There are two shapes and the table must tell
-them apart, because which one a service chose is a real design decision:
+A key that fails fast is a row, not an omission. Two shapes, and the table must tell them apart:
 
 | Shape | `With it absent` cell begins | Means |
 |---|---|---|
 | swap | the stand-in's name | the process starts and answers, without leaving itself |
 | fail-fast | the literal words `fail-fast —` | the process refuses to start at all |
 
-Write `(none)` only when the repo has **no** config branch of either shape. A repo whose every key
-throws on absence has a table full of `fail-fast —` rows, and that is the most informative thing it
-can say about itself: nothing degrades quietly here. Two repos in the same system, one all swaps and
-one all fail-fast, differ in a way no other section records.
+Write `(none)` only when the repo has **no** config branch of either shape. A repo whose every key throws on absence has a table full of `fail-fast —` rows, and that is the most informative thing it can say about itself.
 
-**4. `## Out-of-scope mediators`** — outbound calls this repo makes through code you could not read.
+**4. `## Out-of-scope mediators`** — outbound calls made through code you could not read.
 
 ```
 | Library | What it mediates | Why out of scope |
@@ -169,26 +140,21 @@ one all fail-fast, differ in a way no other section records.
 | `AskNanci.ServiceDefaults` | OpenTelemetry export, health endpoints | declared but not a scanned root |
 ```
 
-A shared library referenced here whose own source sits outside the scan scope, and that mediates a
-real outbound call. **Record the gap; do not follow it** — following it would break leaf-scope
-confinement. Without this table the edge simply vanishes: five hosts can each reach a collector
-through one shared library and no repo's narrative mentions a collector at all.
+A shared library referenced here whose own source sits outside the scan scope and that mediates a real outbound call. **Record the gap; do not follow it** — following it would break leaf-scope confinement. Without this table the edge vanishes: five hosts can each reach a collector through one shared library and no repo's narrative mentions a collector at all.
 
 ### Stubs summary contract
 
-Every `walkthrough.md` file carries a `## Stubs` H2 section near the top of the file (immediately after the frontmatter and before the first content section) summarising every `TODO: ` stub block elsewhere in the file. See `## Mermaid sourcing rules` below for the per-stub format. The `## Stubs` section is **always emitted on every `walkthrough.md`** — its body is `(none)` when no stubs were emitted, but the heading is always present. The `## Stubs` section is **not emitted in `architecture.md`** (no Mermaid blocks appear there).
+Every `walkthrough.md` carries a `## Stubs` H2 immediately after the frontmatter and before the first content section, summarising every `TODO: ` stub block elsewhere in the file (per-stub format in `## Mermaid sourcing rules`). The heading is **always emitted**; its body is `(none)` when there are no stubs. It is **not** emitted in `architecture.md`, which carries no Mermaid blocks.
 
 ## Frontmatter contract
 
-Every file the agent emits under `docs/narrative/` carries a five-field YAML frontmatter block as its **first content**, before any heading. The contract:
+Every file under `docs/narrative/` carries a five-field YAML block as its **first content**, before any heading. A heading before the block means the file is malformed.
 
-- **`source_repo`** — the `<path>` argument resolved to an absolute path, normalized to POSIX-style forward slashes (the agent normalizes Windows backslashes to forward slashes). Trailing slashes are stripped. UNC paths and symlinks are passed through as the OS resolves them; this contract does not enforce a specific transformation beyond slash normalization.
-- **`branch_name`** — the `[branch-name]` argument as a YAML scalar when supplied (e.g., `branch_name: main`). When the argument is omitted, the value is the bare YAML `null` token (which parses as the YAML null value), NOT the quoted string `"null"`.
-- **`generated_at`** — ISO-8601 UTC timestamp with second precision and the literal `Z` suffix, e.g., `2026-05-18T10:30:00Z`. Sub-second precision is not used. The timezone is always UTC.
-- **`skill_version`** — integer matching the `version` field of this `SKILL.md`'s YAML frontmatter (currently `2`). If a future revision of this skill bumps the `version` field, the writer stamps the new integer; the contract has no auto-track magic.
-- **`last_generated_sha`** — added for parity with the field `project-update` introduces on `docs/domain/`. v1 emits this field on every file under `docs/narrative/` when `<path>` is a git working tree, stamped to current HEAD SHA at the time of the run. When `<path>` is not a git working tree, the field is **omitted entirely** from the frontmatter block (same tolerate-missing convention as `project-update`'s no-git path — see the `project-update` skill `## Hybrid diff strategy` `### last_generated_sha tolerate-missing`).
-
-Example frontmatter block emitted at the top of every file under `docs/narrative/` (git working tree case):
+- **`source_repo`** — `<path>` resolved to an absolute path, normalized to POSIX forward slashes, trailing slashes stripped. UNC paths and symlinks pass through as the OS resolves them.
+- **`branch_name`** — the `[branch-name]` argument as a YAML scalar (e.g. `branch_name: main`), or the bare YAML `null` token when omitted — never the quoted string `"null"`.
+- **`generated_at`** — ISO-8601 UTC, second precision, literal `Z` suffix, e.g. `2026-05-18T10:30:00Z`. No sub-second precision; always UTC.
+- **`skill_version`** — integer matching this file's frontmatter `version` (currently `2`). A future bump is stamped by the writer; there is no auto-track magic.
+- **`last_generated_sha`** — parity with the field `project-update` introduces on `docs/domain/`. Emitted on every file when `<path>` is a git working tree, stamped to current HEAD at run time; **omitted entirely** when it is not (same tolerate-missing convention as the `project-update` skill `### last_generated_sha tolerate-missing`).
 
 ```yaml
 ---
@@ -200,92 +166,58 @@ last_generated_sha: 4f3a2b1c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a
 ---
 ```
 
-The frontmatter block is the **first content** in every file under `docs/narrative/`, before any heading or paragraph. If a heading appears before the frontmatter block, the file is malformed.
-
 ## Human-edit fences
 
-Every file the agent emits under `docs/narrative/` carries `<!-- human:begin -->` and `<!-- human:end -->` fence markers around editable zones, exactly mirroring `docs/domain/`'s convention.
+Every emitted file carries `<!-- human:begin -->` / `<!-- human:end -->` markers around editable zones, mirroring `docs/domain/`'s convention. Canonical placement: in `walkthrough.md`, one pair immediately after each `## Intro` H2; in `architecture.md`, one pair immediately after the `## Overview` H2. Those zones are where a human records context, corrections, or domain-expert commentary that must survive regeneration.
 
-**Canonical fence placement.**
+The narrative updater preserves fenced content byte-for-byte per `## Fenced human-edit zone splice (narrative)` — the fences are not inert.
 
-- In `walkthrough.md`: one fence pair immediately after each `## Intro` H2 heading. The fenced zone is the space where a human reader records additional plain-language context, corrections, or domain-expert commentary that should survive future regenerations.
-- In `architecture.md`: one fence pair immediately after the `## Overview` H2 heading. The fenced zone is the space where a human reader records repo-level commentary (e.g., business context, historical decisions) that should survive future regenerations.
-
-The narrative-side diff-aware updater is now active and preserves the fenced content byte-for-byte per `## Fenced human-edit zone splice (narrative)` below, which cite-by-references the `project-update` skill `### Fenced human-edit zone splice`. The fences are no longer inert.
-
-**Migration shift on the narrative side (identical contract to the domain side).** With the narrative per-BC pre-check (`## Per-BC SHA pre-check (narrative)` below) in place, regen never fires for a BC whose narrative source slice is unchanged — so an outside-fence human edit in a `walkthrough.md` or `architecture.md` now **survives until that BC's narrative source slice changes**, at which point regen fires and overwrites it exactly as before. Fences (`<!-- human:begin --> ... <!-- human:end -->`) remain the **only** way to make an edit durable **across a source change** on the narrative side too — an outside-fence edit gains a reprieve only while the BC's narrative slice is unchanged, not durability in general. This is the **identical contract** to the domain side; see the `project-update` skill `## Migration caveat` for the canonical statement.
+**Migration shift, identical to the domain side.** With `## Per-BC SHA pre-check (narrative)` in place, regen never fires for a BC whose narrative source slice is unchanged, so an outside-fence edit survives until that slice changes — then regen fires and overwrites it exactly as before. Fences remain the **only** way to make an edit durable **across a source change**; an outside-fence edit gets a reprieve, not durability. Canonical statement: the `project-update` skill `## Migration caveat`.
 
 ## Diff-aware update mode
 
-This section and every section below cite-by-reference contracts from the `project-update` skill and are loaded by the `project-update` agent when the narrative pass runs. The bootstrap `project-overview` agent ignores everything under this heading; the bootstrap agent's contract is fully described in `## Operating procedure` above and finishes at `## Stop conditions`.
+Entry point for the narrative pass of `/project:update`. This section and the seven below are consumed **only** by the `project-update` agent; their full contracts live in `./references/diff-update.md` under these same headings, and that agent reads the file at the point of use. The `project-overview` bootstrap agent never enters update mode and never reads it. Headings are kept here verbatim so existing citations of the form "the `project-overview` skill `## <heading>`" still resolve.
 
 ## Hybrid diff strategy (narrative)
 
-See the `project-update` skill `## Hybrid diff strategy` for the full contract (git fast path / full-walk fallback / reason-token short-circuit / first-failure-wins ordering / `last_generated_sha` tolerate-missing). The narrative pass samples ONE file under `docs/narrative/` for `last_generated_sha`; the sampled file is `architecture.md` or any `<bc>/walkthrough.md` (NOT `<bc>/glossary.md`, which exists only under `docs/domain/`).
-
-The narrative pass surfaces the same `Diff strategy:` audit lines verbatim as the enhancer prints them for the domain pass — one line per run depending on which path fires:
-
-```
-Diff strategy: git fast path (<last_generated_sha>..HEAD)
-```
-
-```
-Diff strategy: full-walk fallback (reason: <missing-git | missing-sha | unreachable-sha>)
-```
+Git fast path / full-walk fallback / reason-token short-circuit / `last_generated_sha` tolerate-missing, and which narrative file is sampled. Full contract: `./references/diff-update.md` `## Hybrid diff strategy (narrative)`.
 
 ## Path -> BC classifier (narrative)
 
-See the `project-update` skill `## Path -> BC classifier` (including `### Exclusion globs (verbatim)`, `### Namespace -> BC mapping`, `### Classification buckets`, and the per-bucket count-summary audit line). The narrative pass reuses the same three buckets (`BC-affecting` / `infra — no BC impact` / `new-namespace`) and the same eight exclusion globs without modification.
+The three classification buckets (`BC-affecting` / `infra — no BC impact` / `new-namespace`) and the eight exclusion globs the narrative pass reuses unmodified. Full contract: `./references/diff-update.md` `## Path -> BC classifier (narrative)`.
 
 ## Per-BC SHA pre-check (narrative)
 
-See the `project-update` skill `## Per-BC SHA pre-check` for the full per-BC pre-check contract (per-BC source-path resolution via the reverse mapping, per-BC SHA gather, conservative any-missing/any-unreachable/unresolvable -> no-skip gates, oldest-wins `min(reachable)` base, empty->SKIP / non-empty->fall-through). The narrative pass uses the **identical algorithm** — same gates, same oldest-wins base; only the inputs differ, not the logic. It does **not** fork or restate the gate logic, the SHA-gather loop, the reachability test, or the diff command — the enhancer section owns those literals and the narrative pass borrows them by reference.
-
-**Narrative-side source slice.** The narrative pass resolves the **narrative** source slice for a BC — the endpoints / handlers / workers its `walkthrough.md` drills into — which is **distinct** from the domain slice (the aggregates / events / commands / repositories / services its schema rows cite). Same algorithm, different inputs. The narrative pass gathers per-file `last_generated_sha` from the BC's narrative output under `docs/narrative/<bc>/` (the narrative tree's **own** frontmatter), **not** from `docs/domain/<bc>/`. `architecture.md` is the repo-wide narrative roll-up and is **out of per-BC scope**, mirroring how `context-map.md` / `glossary.md` are roll-ups on the domain side. For which narrative files carry `last_generated_sha` and how the narrative pass samples them, see `## Hybrid diff strategy (narrative)` above (the sampled file is `architecture.md` or any `<bc>/walkthrough.md`) — that fact is not redefined here.
-
-**Per-pass independence.** The narrative pass and the domain pass each own their **own** pre-check decision — independent decisions, not coupled. In a **single run** the narrative pass MAY **SKIP** a BC while the domain pass **REGENERATES** the same BC, **or vice versa** (the domain pass SKIPs a BC the narrative pass regenerates). This divergence is **expected and correct, NOT a bug**, and MUST NOT be "fixed" by coupling the two decisions — coupling would force regen of a tree whose own slice is unchanged, re-introducing the exact waste this feature removes. The two trees carry **independent** `last_generated_sha` values and **independent** source slices, which is the structural reason the decisions diverge.
-
-**Reuse the skip line with `pass=narrative`.** The narrative SKIP reuses the **same** skip-line literal defined in the `project-update` skill `### Skip log line (verbose/debug only)` (cited by exact heading name); it does **not** redefine the parameterized literal. The narrative-side application emits the concrete instance:
-
-```
-SKIP bc=<name> pass=narrative (sha unchanged)
-```
-
-The **same** verbose/debug-only emission condition applies: the line is emitted only under verbose/debug mode, once per SKIPPED BC; a **normal** narrative-pass run stays **silent** for a skipped BC. The locked `No changes detected. 0 files written.` cross-pass exit is **unchanged** — per `## Idempotency exit (narrative)` it fires **once per run** across both passes, so the narrative SKIP introduces no new normal-run line.
+Narrative source-slice resolution, conservative any-missing / any-unreachable / unresolvable no-skip gates, oldest-wins `min(reachable)` base, empty -> SKIP / non-empty -> fall-through. Identical algorithm to the domain side, different inputs. Full contract: `./references/diff-update.md` `## Per-BC SHA pre-check (narrative)`.
 
 ## Fenced human-edit zone splice (narrative)
 
-See the `project-update` skill `### Fenced human-edit zone splice` for the per-file algorithm, never-touch invariant, and anchor-drift limitation. The narrative pass uses the identical algorithm. The narrative fences have the two canonical placements defined in `## Human-edit fences` above; both placements survive the splice unchanged because the algorithm is anchor-position based, not section-name based.
+Byte-for-byte preservation of `<!-- human:begin -->` / `<!-- human:end -->` zones on the narrative side, for both canonical placements defined in `## Human-edit fences` above. Full contract: `./references/diff-update.md` `## Fenced human-edit zone splice (narrative)`.
 
 ## Removed-BC logging (narrative)
 
-The narrative-side equivalent of the `project-update` skill `## Removed-BC logging`. For each existing `<bc>/` folder under `docs/narrative/` whose namespace is no longer present in source, the enhancer appends one bullet to the log target described below. **Never delete** the `<bc>/walkthrough.md` file. **Never delete** the `<bc>/` folder. **Never touch** any file inside a removed-BC folder beyond the single `architecture.md` append.
-
-- **Log target.** The append target is the `## Skipped candidates` H2 section in `docs/narrative/architecture.md`. The bootstrap writer (operating procedure step 6) MUST also emit this `## Skipped candidates` section as part of the per-file content contract for `architecture.md`, rendering the body as `(none)` when bootstrap detected no skips — same convention as the domain side's `context-map.md`.
-- **Bullet format.** Identical to the domain side. The bullet template is exactly `- <bc-name>: namespace no longer present` (single locked reason token per the `project-update` skill `### Reason token (locked)`).
-- **Folder-name vs namespace-token disambiguation.** The `<bc-name>` is the on-disk folder name under `docs/narrative/<bc>/`, NOT the source namespace token. Case preserved verbatim from the filesystem. The folder name is the user-visible identifier the human reader recognises from their `docs/narrative/` tree; the source namespace token may already have disappeared by the time this code runs.
-- **Idempotency of the log.** Before appending, the enhancer reads the body of the `## Skipped candidates` section and checks for an existing matching line. The duplicate check is **exact-line match** (the full literal line including the leading `- ` bullet prefix), **case-sensitive**, scoped between the `## Skipped candidates` H2 and the next H2 (or EOF). Verbatim per the `project-update` skill `### Idempotency of the log`. Note: in `docs/narrative/architecture.md`, `## Skipped candidates` IS the final H2 (it is inserted after `## Logic overview` per `### Per-file content contract` above), so the EOF clause of the scope rule is the one that fires for this file in practice.
-- **`(none)` placeholder handling.** If the body of `## Skipped candidates` is the literal single line `(none)` (the bootstrap placeholder when no skips were detected), the enhancer replaces that line **in place** with the first bullet on first append. Identical replacement-in-place rule per the `project-update` skill `` ### `(none)` placeholder handling ``.
-- **Strict no-delete contract.** Never delete `<bc>/walkthrough.md`. Never delete the `<bc>/` folder. Never rewrite any file inside a removed-BC folder beyond the single `architecture.md` append. The folder is frozen until the human author decides to remove it manually.
-- **Tolerate-missing on first run.** If `## Skipped candidates` is absent from a pre-feature `docs/narrative/architecture.md` (bootstrapped before this feature shipped), the updater emits the section with the first bullet (or with `(none)` if no removed BCs were detected this run).
+Append-only log of BC folders whose namespace is no longer present in source. Never delete a `walkthrough.md`, never delete the `<bc>/` folder, never touch anything inside it beyond the single `architecture.md` append. Full contract: `./references/diff-update.md` `## Removed-BC logging (narrative)`.
 
 ## Byte-compare + selective write + frontmatter refresh (narrative)
 
-See the `project-update` skill `### Byte-compare` (UTF-8 byte-exact comparison; no normalization; skip-write decision) and `### Selective write + frontmatter refresh` (4-numbered-step refresh order; preserved `source_repo`; refreshed `branch_name`; refreshed `generated_at`; refreshed `skill_version`; `last_generated_sha` per the per-file git-path rule). The narrative pass writes only files whose post-fence-splice bytes differ from the on-disk bytes, exactly as the domain pass does. Frontmatter refresh stamps `skill_version` from this `project-overview/SKILL.md`'s `version` field (NOT the enhancer's), because output-schema versioning belongs to the schema owner — same rule the enhancer applies for the domain pass against the `project-explorer` skill version.
+Write only files whose bytes actually changed, and refresh frontmatter accordingly. Full contract: `./references/diff-update.md` `## Byte-compare + selective write + frontmatter refresh (narrative)`.
 
 ## Idempotency exit (narrative)
 
-See the `project-update` skill `## Idempotency exit` for the zero-write exit message literal (`No changes detected. 0 files written.`), the non-zero-write summary format, and the no-partial-exit rule. **Cross-pass aggregation rule (load-bearing):** the canonical zero-write exit message is emitted **once per run**, NOT once per pass. It fires only when both passes (narrative + domain) together wrote zero files. On any non-zero-write run, the summary line aggregates counts across both passes — every write the narrative pass made plus every write the domain pass made contributes to the single run-summary line.
+The once-per-run, cross-pass `No changes detected. 0 files written.` exit. Full contract: `./references/diff-update.md` `## Idempotency exit (narrative)`.
 
 ## Known coupling
 
-- **Soft-input cite-back.** the `project-explorer` skill already documents the soft-input read of `docs/narrative/<bc>/walkthrough.md`. That soft-input contract is fully active: `project-explorer` reads the narrative as soft input.
+- **Soft-input cite-back.** The `project-explorer` skill documents the soft-input read of `docs/narrative/<bc>/walkthrough.md`; that contract is fully active.
+- **Mirrored, no longer inherited.** The `project-overview` agent does **not** preload the `project-explorer` skill — carrying a 27k-character sibling in the preamble of every request of every bootstrap run was the single largest avoidable cost in the pipeline. `## BC candidate surfacing` and `## Comment policy (code is the single source of truth)` are therefore stated in full here. An edit to either contract in the sibling MUST be mirrored here in the same change, and vice versa. The `project-update` agent preloads both, so it sees drift first.
+- **Shared filters.** The language whitelist, the built-in 8 globs, and the never-read list are owned by the `repo-layout` skill (`## Built-in scan filters`, `## Read discipline`) — the one skill all three crew agents preload. Neither bootstrap skill restates them.
+- **Update contracts are read on demand.** `## Diff-aware update mode` and the seven sections under it forward to `./references/diff-update.md`, which only the enhancer reads.
 
 ## Mermaid sourcing rules
 
-**Derived-where-reliable rule.** A Mermaid sequence diagram MAY be derived from code only when every node in the sequence cites a real `file:line` location in `<path>`. Nodes without a traceable `file:line` MUST NOT appear in a derived diagram.
+**Derived where reliable.** A Mermaid sequence diagram MAY be derived from code only when every node cites a real `file:line` in `<path>`. Nodes without a traceable `file:line` MUST NOT appear in a derived diagram.
 
-**Stub-otherwise rule.** When the agent cannot reliably derive every node, it emits a `TODO: ` stub block instead. The stub format is a Mermaid code fence whose first line inside the fence is the literal `sequenceDiagram` keyword (required so Mermaid renderers parse the block), followed by the literal comment `%% TODO: derive this sequence — agent could not trace <N> step(s) to file:line` (where `<N>` is the count of underivable steps), followed by a single placeholder participant line. Example block:
+**Stub otherwise.** When the agent cannot reliably derive every node it emits a `TODO: ` stub instead: a Mermaid fence whose first line inside is the literal `sequenceDiagram` keyword (required for renderers to parse it), then the literal comment `%% TODO: derive this sequence — agent could not trace <N> step(s) to file:line` with `<N>` the count of underivable steps, then one placeholder participant line:
 
 ````
 ```mermaid
@@ -295,18 +227,16 @@ participant TODO
 ```
 ````
 
-**No-hallucination guard.** The agent MUST NOT invent participant names, message arrows, or `file:line` citations. This stance mirrors the `project-explorer` skill `### Hallucination guard` for narrative output.
+**No-hallucination guard.** Never invent participant names, message arrows, or `file:line` citations. Mirrors the `project-explorer` skill `### Hallucination guard`.
 
-**Top-of-file `## Stubs` summary requirement.** Every `walkthrough.md` file MUST carry a `## Stubs` H2 section immediately after the frontmatter and before the first content section, per the always-emit contract in `## Output schema` `### Stubs summary contract`. The section lists every stub in the file as a bulleted line `- <section name>: <reason>` (e.g., `- Drill-down: PlaceOrderEndpoint: could not trace 4 step(s) to file:line`). This is the operator-visible flag for stubs.
+**`## Stubs` summary.** Every `walkthrough.md` MUST carry the `## Stubs` H2 per `## Output schema` `### Stubs summary contract`, listing each stub as `- <section name>: <reason>` (e.g. `- Drill-down: PlaceOrderEndpoint: could not trace 4 step(s) to file:line`). It is the operator-visible flag for stubs.
 
 ## Auto-write
 
-This contract is reused by reference from the `project-explorer` skill `### Auto-write contract` — the narrative agent applies the identical posture to `docs/narrative/`. The cite-by-reference keeps the contract in a single place; any future edit to the sibling skill's auto-write contract is inherited here on next reload.
-
-The agent is **fully agent-driven**: after printing the candidate report (`## BC candidate surfacing (cite project-explorer)`), the agent proceeds directly to writing `docs/narrative/`. There is **no APPROVE gate, no halt, and no edit-revision loop** — the agent surfaces its BC decisions in the printed report for the audit trail, then writes immediately. The only thing that stops a run is the `## Idempotency guard` (refuses when `docs/narrative/` is already non-empty); that guard is a re-run safety check, not an approval gate.
+Identical posture to the `project-explorer` skill `### Auto-write contract`, applied to `docs/narrative/`. The agent is **fully agent-driven**: after printing the candidate report (`## BC candidate surfacing`) it writes immediately. No APPROVE gate, no halt, no edit-revision loop. The only thing that stops a run is `## Idempotency guard` — a re-run safety check, not an approval gate.
 
 ## Stop conditions
 
-- **(a) Idempotency guard refuses.** `docs/narrative/` already exists and is non-empty in the working directory. The agent exits before any further step per `## Idempotency guard`.
-- **(b) Skill file missing or malformed.** The `project-overview` skill cannot be read, its YAML frontmatter does not parse, or required body sections (`## Operating procedure`, `## BC candidate surfacing (cite project-explorer)`, `## Output schema`, `## Frontmatter contract`, `## Auto-write`) are absent. The agent stops before step 3 of `## Operating procedure`.
-- **(c) Sibling skill missing or malformed.** The `project-explorer` skill cannot be read or its required sections (`### Grouping rule`, `### Candidate report format`, `### Small-repo fallback detection`, `### Auto-write contract`) are absent. The agent stops before step 3 of `## Operating procedure` — BC surfacing cannot proceed without the sibling's grouping rule. (Without this guard, the cite-by-reference rule in `## BC candidate surfacing (cite project-explorer)` would silently degrade.)
+- **(a) Idempotency guard refuses.** `docs/narrative/` exists and is non-empty in the working directory; exit before any further step.
+- **(b) Skill file missing or malformed.** This skill cannot be read, its YAML frontmatter does not parse, or a required body section (`## Operating procedure`, `## BC candidate surfacing`, `## Output schema`, `## Frontmatter contract`, `## Auto-write`) is absent. Stop before step 3.
+- **(c) Scan-scope skill missing or malformed.** The `repo-layout` skill cannot be read, or its `## Built-in scan filters` / `## Read discipline` sections are absent. Stop before step 3 — the agent cannot decide what counts as first-class source, nor how much of a file to open, without them. This replaces the former sibling-skill guard: BC surfacing no longer depends on the `project-explorer` skill being loadable.

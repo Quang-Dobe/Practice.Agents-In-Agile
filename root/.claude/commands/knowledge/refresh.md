@@ -18,7 +18,13 @@ stands today. `[path]` is optional; default to the current working directory.
 4. Read the existing `tech-stack.md`.
 
 5. For each repo entry (matched by `path`):
-   a. Re-parse its dependency manifest using the same per-stack rules as `/knowledge:init` step 4.
+   a. Re-parse its dependency manifest using the `stack` value step 2 just produced for this
+      entry (not the `stack` previously recorded in the existing `tech-stack.md`), applying
+      that stack's per-stack rules from `/knowledge:init` step 4. If the freshly-detected
+      `stack` differs from the recorded one, update the entry's `stack` field to the fresh
+      value — step 2 already reruns the same repo-layout-hint-or-filesystem-inference logic on
+      every invocation, so refresh must not read stale stack data back out of the file it is
+      refreshing.
    b. Dependency present in the fresh parse but not in the existing entry's `libraries[]` →
       resolve its `library_id` via `mcp__plugin_context7_context7__resolve-library-id` (same
       never-guess rule as `/knowledge:init`), add it with `cache` set the same way `/knowledge:init`

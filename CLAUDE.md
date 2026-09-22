@@ -15,7 +15,7 @@ This file covers `root/.claude/` — the crew — and nothing else.
 > `/project:overview`, `/project:explore`, and `/project:update`, and it is the only writer of
 > `repo-layout.md`. Change either seam and read that README first.
 
-This scaffold ships three independent workflows:
+This scaffold ships four independent workflows:
 
 1. **Feature pipeline** — five-role crew that drives a feature from raw idea to
    approved, step-by-step implementation plan and then through code-producing steps.
@@ -24,8 +24,11 @@ This scaffold ships three independent workflows:
 3. **PR review loop** — a read-only analyst agent that turns hand-written PR
    review notes into evidenced findings, then, after you fix the code, into
    rule sections inside this repo's own `.claude/skills/`.
+4. **Library knowledge pipeline** — three commands that pin a repo's third-party
+   libraries into `tech-stack.md` and cache per-library cheatsheets under
+   `docs/knowledge/`, consumed by the `library-knowledge` skill.
 
-The three pipelines are independent. They share the same `docs/` root and never write each other's files.
+The four pipelines are independent. They share the same `docs/` root and never write each other's files.
 
 ## Feature/Workflow Pipeline
 
@@ -112,10 +115,33 @@ Load-bearing rules of this pipeline:
 
 Walkthrough: `docs/workflow-pr-review-loop.md`
 
+## Library Knowledge Pipeline
+
+Three commands pin a repo's third-party libraries and cache per-library docs, so the
+`library-knowledge` skill (loaded by `architect` and `software-engineer`) has current,
+version-correct facts instead of falling back to training memory.
+
+1. `/knowledge:init [path]` — one-shot bootstrap. Reuses the `repo-layout` skill's scope
+   discovery (or a single-repo fallback when `repo-layout.md` is absent), parses each repo's
+   dependency manifest by its `stack` (`dotnet`/`node`/`python`/`go`), resolves each dependency
+   against Context7, and writes `tech-stack.md` at the scan root. Refuses if `tech-stack.md`
+   already exists (not a re-runner).
+2. `/knowledge:refresh [path]` — diff-aware update. Re-parses the same manifests, adds new
+   dependencies, drops removed ones (deleting their orphaned cache file), and re-resolves
+   versions on survivors. Refuses if no `tech-stack.md` exists yet.
+3. `/knowledge:cache [library-name]` — fetches a Context7 cheatsheet for one named library, or
+   every pinned library when no arg is given, and writes `docs/knowledge/<slug>.md`. Skips
+   libraries with an unresolved `library_id` and caches already fresh per their
+   `detected_version`. Never writes `tech-stack.md` — separate ownership from the other two.
+
+All three are **gate-free** — print decisions, write immediately, no APPROVE — and run as main
+Claude directly rather than a spawned subagent, since only main Claude and these commands hold
+live Context7 MCP tools.
+
 ## Layout
 
 - `root/.claude/agents/` — subagent definitions (product-owner, business-analyst, architect, software-engineer, tester, project-explorer, project-update, project-overview, pr-review-analyst, html-generator)
-- `root/.claude/commands/` — slash commands under `feature/`, `pr-review/`, `project/`
+- `root/.claude/commands/` — slash commands under `feature/`, `pr-review/`, `project/`, `knowledge/`
 - `root/.claude/skills/` — **shared** skills only, one folder per skill: `project-seams`, `prompt-defense`, `repo-layout`, `library-knowledge`, plus the three wiki skills (`project-explorer`, `project-overview`, `project-update`). A procedure used by exactly one agent lives inside that agent's own file — see `CONVENTIONS.md` rule 5.
 - `root/.claude/templates/` — `feature.requirement.md`, `feature.requirement-trace.md`, `feature.overview-plan.md`, `feature.overview-plan-trace.md`, `feature.test.md`, `feature.plan.md`, `feature.analyzed.md`, `feature.status.md`, `project-rules.template.md` (copy-me example for a project rule skill), `pr-review.ledger.md`, `pr-review.html`
 - `root/.claude/CLAUDE.md` — versioned **Global Engagement Rules** (general R-XX rules only, no kit docs; source of truth for `~/.claude/CLAUDE.md`). `install.ps1` replaces the profile copy on every run (previous version kept as `CLAUDE.md.bak` when content changes).
@@ -128,6 +154,9 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 - `root/.claude/agents/pr-review-analyst.md` — read-only agent for the PR review loop
 - `root/.claude/templates/pr-review.ledger.md`, `root/.claude/templates/pr-review.html` — ledger shape + card page shell
 - `docs/<FEATURE>/pr-review/` — your review notes, plus the generated ledger and card page per review file
+- `root/.claude/commands/knowledge/` — `init.md`, `refresh.md`, `cache.md`
+- `tech-stack.md` — the pinned library manifest at the wiki scan root, written by `/knowledge:init` / `/knowledge:refresh`
+- `docs/knowledge/` — per-library cheatsheets, written by `/knowledge:cache`
 - `project/.claude/` — the wrapping kit. **Out of scope for this file**; see `project/.claude/README.md`.
 
 ## Conventions
@@ -151,6 +180,7 @@ Walkthrough: `docs/workflow-pr-review-loop.md`
 - New product feature, need to plan & build it → **Feature pipeline** (`/feature:new` then `/feature:structure`).
 - Onboarding a new repo, want a living wiki → **LLM wiki pipeline**. Run `/project:overview` first to produce a plain-language narrative under `docs/narrative/` (skip if you only want the canonical schema). Then run `/project:explore` once to produce the canonical schema under `docs/domain/` (it will read the narrative as soft input when present). Use `/project:update` whenever code changes to refresh both `docs/narrative/` and `docs/domain/` in one command.
 - Both can be used in the same repo. The feature pipeline writes under `docs/<FEATURE>/`; the wiki pipeline writes under `docs/domain/`. They never touch each other's files, and neither invokes the other — run `/project:update` yourself when you want the wiki caught up with code a feature changed.
+- Planning a feature or updating the wiki and want current library facts → run `/knowledge:init` once, `/knowledge:refresh` after dependency changes, `/knowledge:cache` for the libraries the current step actually touches. The `architect` and `software-engineer` agents consume this automatically via the `library-knowledge` skill.
 
 ## Environment
 

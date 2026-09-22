@@ -15,7 +15,9 @@ Fetch a Context7 cheatsheet for one or every library pinned in `tech-stack.md` a
 3. Read `tech-stack.md`. Build the target list:
    - `[library-name]` given → every library across every repo entry whose `name` matches
      case-insensitively (a name can legitimately appear in more than one repo entry in
-     multi-repo mode — process every match, not just the first). No match anywhere → refuse
+     multi-repo mode — process every match, not just the first) (see the shared-cache-file note
+     in `/knowledge:init` step 7 — every match writes to the same file when their names collide
+     across repos). No match anywhere → refuse
      with the literal `<library-name> not found in tech-stack.md.` and stop.
    - No arg → every library across every repo entry.
 
